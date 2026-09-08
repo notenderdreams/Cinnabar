@@ -383,7 +383,56 @@ const AiExplanationCard: React.FC<CardItemProps> = React.memo(
               )}
             </div>
 
-            <div className="flex items-center gap-1">
+            <div
+              className="flex items-center gap-1 shrink-0"
+              onPointerDown={(e) => e.stopPropagation()}
+            >
+              {annotation.response && !isRunning && (
+                <>
+                  <button
+                    type="button"
+                    className="macos-ai-action-btn w-6 h-6 rounded-md"
+                    title="Rasterize explanation into adjustable image on page"
+                    onClick={() => void handleRasterizeResponse()}
+                    aria-label="Rasterize as Image"
+                  >
+                    <ImageIcon className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    className="macos-ai-action-btn w-6 h-6 rounded-md"
+                    title={copied ? 'Copied to clipboard' : 'Copy response'}
+                    onClick={() => void handleCopyText(annotation.response)}
+                    aria-label="Copy Response"
+                  >
+                    {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                  </button>
+                  <button
+                    type="button"
+                    className="macos-ai-action-btn w-6 h-6 rounded-md"
+                    title="Regenerate"
+                    onClick={() => {
+                      onCloseJob(annotation.id);
+                      onSubmit(annotation, annotation.prompt);
+                    }}
+                    aria-label="Regenerate"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    className="macos-ai-action-btn macos-ai-action-btn-danger w-6 h-6 rounded-md"
+                    title="Delete"
+                    onClick={() => {
+                      onDelete(annotation.id);
+                      onCloseJob(annotation.id);
+                    }}
+                    aria-label="Delete"
+                  >
+                    <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                  </button>
+                </>
+              )}
               <button
                 type="button"
                 className="macos-ai-action-btn w-6 h-6 rounded-md"
@@ -661,59 +710,7 @@ const AiExplanationCard: React.FC<CardItemProps> = React.memo(
           )}
         </div>
 
-        {/* Sticky Action Footer */}
-        {annotation.response && !isRunning && (
-          <div className="flex items-center justify-between px-3.5 py-2 border-t border-[var(--border)] shrink-0 bg-[var(--secondary)]/40 backdrop-blur-xs select-none">
-            <div className="text-[10px] text-zinc-400 font-mono">
-              {Math.round(annotation.response.split(/\s+/).filter(Boolean).length)} words
-            </div>
 
-            <div className="flex items-center gap-1">
-              <button
-                type="button"
-                className="macos-ai-action-btn"
-                title="Rasterize explanation into adjustable image on page"
-                onClick={() => void handleRasterizeResponse()}
-                aria-label="Rasterize as Image"
-              >
-                <ImageIcon className="w-3.5 h-3.5" />
-              </button>
-              <button
-                type="button"
-                className="macos-ai-action-btn"
-                title={copied ? 'Copied to clipboard' : 'Copy response'}
-                onClick={() => void handleCopyText(annotation.response)}
-                aria-label="Copy Response"
-              >
-                {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-              </button>
-              <button
-                type="button"
-                className="macos-ai-action-btn"
-                title="Regenerate"
-                onClick={() => {
-                  onCloseJob(annotation.id);
-                  onSubmit(annotation, annotation.prompt);
-                }}
-                aria-label="Regenerate"
-              >
-                <RotateCcw className="w-3.5 h-3.5" />
-              </button>
-              <button
-                type="button"
-                className="macos-ai-action-btn macos-ai-action-btn-danger"
-                title="Delete"
-                onClick={() => {
-                  onDelete(annotation.id);
-                  onCloseJob(annotation.id);
-                }}
-                aria-label="Delete"
-              >
-                <Trash2 className="w-3.5 h-3.5 text-red-400" />
-              </button>
-            </div>
-          </div>
-        )}
       </div>
     );
   }
