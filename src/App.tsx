@@ -262,12 +262,18 @@ export function App() {
 
   const snippetFallbackKeys = useMemo(() => {
     const keys: string[] = [];
-    if (docInfo?.filePath) keys.push(docInfo.filePath);
-    if (docInfo?.fileName) {
-      keys.push(`${docInfo.fileName}_${docInfo.numPages ?? 0}_${docInfo.fileSize ?? 0}`);
+    if (docInfo?.filePath && docInfo.filePath !== docKey) keys.push(docInfo.filePath);
+    if (docInfo?.fingerprint && docInfo.fingerprint !== docKey && !keys.includes(docInfo.fingerprint)) {
+      keys.push(docInfo.fingerprint);
+    }
+    if (docInfo?.fileName && (docInfo?.numPages || docInfo?.fileSize)) {
+      const contentKey = `${docInfo.fileName}_${docInfo.numPages ?? 0}_${docInfo.fileSize ?? 0}`;
+      if (contentKey !== docKey && !keys.includes(contentKey)) {
+        keys.push(contentKey);
+      }
     }
     return keys;
-  }, [docInfo?.filePath, docInfo?.fileName, docInfo?.numPages, docInfo?.fileSize]);
+  }, [docInfo?.filePath, docInfo?.fileName, docInfo?.fingerprint, docInfo?.numPages, docInfo?.fileSize, docKey]);
 
   const {
     snippets,

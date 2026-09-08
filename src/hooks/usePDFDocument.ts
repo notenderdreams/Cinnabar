@@ -17,7 +17,7 @@ export function usePDFDocument() {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [docKey, setDocKey] = useState<string>('sample');
+  const [docKey, setDocKey] = useState<string>('');
   
   // Search state
   const [searchResults, setSearchResults] = useState<SearchMatch[]>([]);
@@ -59,18 +59,21 @@ export function usePDFDocument() {
         });
 
         const loadedDoc = await loadingTask.promise;
-        activeDocRef.current = loadedDoc;
-        setRawPdfBytes(bytes);
-        setPdfDoc(loadedDoc);
 
         const key = documentKeyOverride || `${fileName}_${loadedDoc.numPages}_${bytes.length}`;
-        setDocKey(key);
-        updateRecentDocPageCount(filePath || fileName, loadedDoc.numPages);
 
-        // Metadata
-        const metadata = await loadedDoc.getMetadata().catch(() => ({ info: {} }));
-        const infoObj = (metadata?.info || {}) as Record<string, string>;
-        setDocInfo({
+        // Fetch metadata and outline BEFORE updating any state so all document state updates synchronously and atomically together
+        const [metadata, rawOutline] = await Promise.all([
+          loadedDoc.getMetadata().catch(() => ({ info: {} })),
+          loadedDoc.getOutline().catch(() => null),
+        ]);
+        const infoObj = ((metadata as { info?: unknown })?.info || {}) as Record<string, string>;
+        const fingerprint =
+          documentFingerprintOverride ||
+          (loadedDoc as unknown as { fingerprint?: string }).fingerprint ||
+          key;
+
+        const nextDocInfo: DocumentInfo = {
           fileName,
           filePath,
           numPages: loadedDoc.numPages,
@@ -78,16 +81,12 @@ export function usePDFDocument() {
           title: infoObj.Title || fileName,
           author: infoObj.Author || undefined,
           libraryId: documentKeyOverride,
-          fingerprint:
-            documentFingerprintOverride ||
-            (loadedDoc as unknown as { fingerprint?: string }).fingerprint ||
-            key,
-        });
+          fingerprint,
+        };
 
         // Outline / Table of Contents
-        const rawOutline = await loadedDoc.getOutline().catch(() => null);
+        const parsedOutline: PDFOutlineItem[] = [];
         if (rawOutline && rawOutline.length > 0) {
-          const parsedOutline: PDFOutlineItem[] = [];
           for (const item of rawOutline) {
             let pageNum = 1;
             if (item.dest) {
@@ -109,16 +108,26 @@ export function usePDFDocument() {
               pageNumber: pageNum,
             });
           }
-          setOutline(parsedOutline);
-        } else {
-          setOutline([]);
         }
 
         // Restore last saved page or explicit initialPageNumber
         const savedPage =
           initialPageNumber || loadLastPageForDoc(key, filePath || fileName);
         const initialPage = savedPage && savedPage <= loadedDoc.numPages ? savedPage : 1;
+
+        // Atomically commit all document states in a single batch
+        activeDocRef.current = loadedDoc;
+        setRawPdfBytes(bytes);
+        setPdfDoc(loadedDoc);
+        setDocKey(key);
+        setDocInfo(nextDocInfo);
+        setOutline(parsedOutline);
         setCurrentPage(initialPage);
+        setSearchResults([]);
+        setCurrentMatchIndex(-1);
+        setIsSearching(false);
+
+        updateRecentDocPageCount(filePath || fileName, loadedDoc.numPages);
         saveLastPageForDoc(key, initialPage, fileName, filePath);
         saveLastActiveDoc({
           documentId: documentKeyOverride,
@@ -128,9 +137,6 @@ export function usePDFDocument() {
           numPages: loadedDoc.numPages,
           timestamp: Date.now(),
         });
-        setSearchResults([]);
-        setCurrentMatchIndex(-1);
-        setIsSearching(false);
         return true;
       } catch (err: unknown) {
         console.error('Error loading PDF:', err);

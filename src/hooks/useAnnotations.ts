@@ -9,49 +9,77 @@ import {
 import { calculateImagePlacement, type ImagePlacementOptions } from '../utils/imageUtils';
 
 export function useAnnotations(docKey: string, docInfo?: DocumentInfo | null) {
-  const [annotations, setAnnotations] = useState<Annotation[]>([]);
-  const [history, setHistory] = useState<Annotation[][]>([]);
-  const [historyIndex, setHistoryIndex] = useState<number>(-1);
-  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'error'>('saved');
-  const [loadedIdentity, setLoadedIdentity] = useState<string | null>(null);
-  const annotationsRef = useRef<Annotation[]>([]);
-  const mutationVersionRef = useRef(0);
-  const saveGenerationRef = useRef(0);
-  const skipAutosaveForRef = useRef<Annotation[] | null>(null);
+  const [activeDocKey, setActiveDocKey] = useState<string>(docKey);
 
   const fallbackKeys = useMemo(() => {
     const keys: string[] = [];
-    if (docInfo?.filePath) keys.push(docInfo.filePath);
-    if (docInfo?.fileName) keys.push(docInfo.fileName);
-    if (docInfo?.fingerprint) keys.push(docInfo.fingerprint);
+    if (docInfo?.filePath && docInfo.filePath !== docKey) {
+      keys.push(docInfo.filePath);
+    }
+    if (docInfo?.fingerprint && docInfo.fingerprint !== docKey && !keys.includes(docInfo.fingerprint)) {
+      keys.push(docInfo.fingerprint);
+    }
+    if (docInfo?.fileName && (docInfo?.numPages || docInfo?.fileSize)) {
+      const contentKey = `${docInfo.fileName}_${docInfo.numPages ?? 0}_${docInfo.fileSize ?? 0}`;
+      if (contentKey !== docKey && !keys.includes(contentKey)) {
+        keys.push(contentKey);
+      }
+    }
     return keys;
-  }, [docInfo?.filePath, docInfo?.fileName, docInfo?.fingerprint]);
+  }, [docInfo?.filePath, docInfo?.fileName, docInfo?.fingerprint, docInfo?.numPages, docInfo?.fileSize, docKey]);
+
   const storageIdentity = useMemo(
     () => [docKey, ...fallbackKeys].join('\u0000'),
     [docKey, fallbackKeys]
   );
 
-  // Load annotations on docKey or document identity change
-  useEffect(() => {
-    if (!docKey) return;
-    setLoadedIdentity(null);
-    const loadMutationVersion = ++mutationVersionRef.current;
+  const [annotations, setAnnotations] = useState<Annotation[]>(() => {
+    if (!docKey) return [];
+    return loadAnnotationRecordForDocSync(docKey, [])?.annotations ?? [];
+  });
+  const [history, setHistory] = useState<Annotation[][]>(() => {
+    if (!docKey) return [[]];
+    const initial = loadAnnotationRecordForDocSync(docKey, [])?.annotations ?? [];
+    return [initial];
+  });
+  const [historyIndex, setHistoryIndex] = useState<number>(0);
+  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'error'>('saved');
+  const [loadedIdentity, setLoadedIdentity] = useState<string | null>(() =>
+    docKey ? [docKey, ...fallbackKeys].join('\u0000') : null
+  );
+  const annotationsRef = useRef<Annotation[]>(annotations);
+  const mutationVersionRef = useRef(0);
+  const saveGenerationRef = useRef(0);
+  const skipAutosaveForRef = useRef<Annotation[] | null>(annotations);
 
-    // 1. Instant sync load from localStorage (0ms latency)
-    const syncRecord = loadAnnotationRecordForDocSync(docKey, fallbackKeys);
-    const savedSync = syncRecord?.annotations ?? [];
-    annotationsRef.current = savedSync;
-    skipAutosaveForRef.current = savedSync;
-    setAnnotations(savedSync);
-    setHistory([savedSync]);
+  // Synchronously switch document annotations during render to prevent any flash or bleed
+  if (docKey !== activeDocKey) {
+    setActiveDocKey(docKey);
+    const syncRecord = docKey ? loadAnnotationRecordForDocSync(docKey, fallbackKeys) : null;
+    const initialAnns = syncRecord?.annotations ?? [];
+    annotationsRef.current = initialAnns;
+    skipAutosaveForRef.current = initialAnns;
+    setAnnotations(initialAnns);
+    setHistory([initialAnns]);
     setHistoryIndex(0);
     setSaveStatus('saved');
     setLoadedIdentity(storageIdentity);
-    // 2. Async load from IndexedDB for high-capacity payloads (images/stickers)
+  }
+
+  // Load annotations from IndexedDB on docKey or document identity change
+  useEffect(() => {
+    if (!docKey) {
+      setLoadedIdentity(null);
+      return;
+    }
+    const loadMutationVersion = ++mutationVersionRef.current;
     let isCancelled = false;
+
+    // 2. Async load from IndexedDB for high-capacity payloads (images/stickers)
     loadAnnotationRecordForDocAsync(docKey, fallbackKeys).then((asyncRecord) => {
       if (isCancelled || mutationVersionRef.current !== loadMutationVersion) return;
 
+      const syncRecord = loadAnnotationRecordForDocSync(docKey, fallbackKeys);
       const newestRecord =
         asyncRecord && asyncRecord.updatedAt > (syncRecord?.updatedAt ?? -1)
           ? asyncRecord
@@ -63,9 +91,12 @@ export function useAnnotations(docKey: string, docInfo?: DocumentInfo | null) {
         setHistory([asyncRecord.annotations]);
         setHistoryIndex(0);
       }
+      // Materialize only if loaded from a fallback key rather than direct docKey
       if (newestRecord && newestRecord.annotations.length > 0) {
-        // Materialize only after choosing the newest localStorage/IndexedDB record.
-        void saveAnnotationsForDoc(docKey, newestRecord.annotations, fallbackKeys);
+        const hasDirectRecord = Boolean(loadAnnotationRecordForDocSync(docKey, []));
+        if (!hasDirectRecord) {
+          void saveAnnotationsForDoc(docKey, newestRecord.annotations);
+        }
       }
     });
 

@@ -3,58 +3,85 @@ import type { SnippetDividerEntry, SnippetEntry, SnippetImageEntry } from '../ut
 
 const STORAGE_PREFIX = 'pdfuck_snippets_';
 
+function loadSnippetsSync(docKey: string, fallbackKeys: string[] = []): SnippetEntry[] {
+  if (!docKey) return [];
+  try {
+    const raw = localStorage.getItem(`${STORAGE_PREFIX}${docKey}`);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch {}
+  for (const key of fallbackKeys) {
+    if (!key || key === docKey) continue;
+    try {
+      const raw = localStorage.getItem(`${STORAGE_PREFIX}${key}`);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch {}
+  }
+  return [];
+}
+
 export function useSnippets(docKey: string, fallbackKeys: string[] = []) {
-  const [snippets, setSnippets] = useState<SnippetEntry[]>([]);
-  const [history, setHistory] = useState<SnippetEntry[][]>([]);
-  const [historyIndex, setHistoryIndex] = useState<number>(-1);
-  const isLoadedRef = useRef(false);
-  const snippetsRef = useRef<SnippetEntry[]>([]);
-  snippetsRef.current = snippets;
+  const [activeDocKey, setActiveDocKey] = useState<string>(docKey);
   const storageIdentity = [docKey, ...fallbackKeys].join('\u0000');
+  const [snippets, setSnippets] = useState<SnippetEntry[]>(() => loadSnippetsSync(docKey, fallbackKeys));
+  const [history, setHistory] = useState<SnippetEntry[][]>(() => [loadSnippetsSync(docKey, fallbackKeys)]);
+  const [historyIndex, setHistoryIndex] = useState<number>(0);
+  const isLoadedRef = useRef(Boolean(docKey));
+  const snippetsRef = useRef<SnippetEntry[]>(snippets);
+  snippetsRef.current = snippets;
+  const [loadedIdentity, setLoadedIdentity] = useState<string | null>(() => (docKey ? storageIdentity : null));
+
+  // Synchronously switch document snippets during render to prevent stale leaks
+  if (docKey !== activeDocKey) {
+    setActiveDocKey(docKey);
+    const initial = loadSnippetsSync(docKey, fallbackKeys);
+    setSnippets(initial);
+    snippetsRef.current = initial;
+    setHistory([initial]);
+    setHistoryIndex(0);
+    isLoadedRef.current = Boolean(docKey);
+    setLoadedIdentity(storageIdentity);
+  }
 
   // Load saved snippets for the current document
   useEffect(() => {
-    if (!docKey) return;
-    isLoadedRef.current = false;
-
-    let loaded: SnippetEntry[] = [];
-    try {
-      for (const key of [docKey, ...fallbackKeys]) {
-        const raw = localStorage.getItem(`${STORAGE_PREFIX}${key}`);
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          if (Array.isArray(parsed)) {
-            loaded = parsed;
-            break;
-          }
-        }
-      }
-    } catch {
-      loaded = [];
+    if (!docKey) {
+      setLoadedIdentity(null);
+      return;
     }
-
+    const loaded = loadSnippetsSync(docKey, fallbackKeys);
     setSnippets(loaded);
     snippetsRef.current = loaded;
     setHistory([loaded]);
     setHistoryIndex(0);
     isLoadedRef.current = true;
+    setLoadedIdentity(storageIdentity);
+
     if (loaded.length > 0) {
-      try {
-        localStorage.setItem(`${STORAGE_PREFIX}${docKey}`, JSON.stringify(loaded));
-      } catch {}
+      const direct = loadSnippetsSync(docKey, []);
+      if (direct.length === 0) {
+        try {
+          localStorage.setItem(`${STORAGE_PREFIX}${docKey}`, JSON.stringify(loaded));
+        } catch {}
+      }
     }
   }, [docKey, storageIdentity]);
 
   // Persist snippets whenever they change
   useEffect(() => {
-    if (!isLoadedRef.current || !docKey) return;
+    if (!isLoadedRef.current || !docKey || loadedIdentity !== storageIdentity) return;
 
     try {
       localStorage.setItem(`${STORAGE_PREFIX}${docKey}`, JSON.stringify(snippets));
     } catch (e) {
       console.warn('Failed to save snippets to storage:', e);
     }
-  }, [snippets, docKey]);
+  }, [snippets, docKey, loadedIdentity, storageIdentity]);
 
   const pushState = useCallback(
     (newEntries: SnippetEntry[]) => {

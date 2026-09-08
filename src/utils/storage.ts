@@ -338,27 +338,23 @@ export async function saveAnnotationsForDoc(
   annotations: Annotation[],
   fallbackKeys: string[] = []
 ): Promise<void> {
+  if (!docKey) return;
   const persistable = filterPersistableAnnotations(annotations);
   const updatedAt = nextAnnotationSaveTimestamp();
   const record: StoredAnnotationRecord = { annotations: persistable, updatedAt };
-  const keys = annotationStorageKeys(docKey, fallbackKeys);
   let localSaveSucceeded = false;
 
-  // 1. LocalStorage for fast instant access
+  // 1. LocalStorage for fast instant access - save ONLY to primary docKey
   const json = JSON.stringify(record);
-  for (const key of keys) {
-    try {
-      localStorage.setItem(`${STORAGE_KEYS.ANNOTATIONS_PREFIX}${key}`, json);
-      localSaveSucceeded = true;
-    } catch {
-      // Large image annotations may exceed localStorage; IndexedDB remains authoritative.
-    }
+  try {
+    localStorage.setItem(`${STORAGE_KEYS.ANNOTATIONS_PREFIX}${docKey}`, json);
+    localSaveSucceeded = true;
+  } catch {
+    // Large image annotations may exceed localStorage; IndexedDB remains authoritative.
   }
 
-  // 2. Persistent IndexedDB for full-size payloads & image attachments
-  const idbResults = await Promise.all(
-    keys.map((key) => idbSaveAnnotations(key, persistable, updatedAt))
-  );
+  // 2. Persistent IndexedDB for full-size payloads & image attachments - save ONLY to primary docKey
+  const idbSucceeded = await idbSaveAnnotations(docKey, persistable, updatedAt);
 
   // 3. Update annotation count in recent docs
   try {
@@ -377,7 +373,7 @@ export async function saveAnnotationsForDoc(
     localStorage.setItem(STORAGE_KEYS.RECENT_DOCS, JSON.stringify(updated));
   } catch {}
 
-  if (!localSaveSucceeded && !idbResults.some(Boolean)) {
+  if (!localSaveSucceeded && !idbSucceeded) {
     throw new Error('No annotation storage backend is available.');
   }
 }
@@ -386,14 +382,30 @@ export function loadAnnotationRecordForDocSync(
   docKey: string,
   fallbackKeys: string[] = []
 ): StoredAnnotationRecord | null {
-  const records = annotationStorageKeys(docKey, fallbackKeys).map((key) => {
+  if (!docKey) return null;
+
+  // 1. Direct primary docKey lookup
+  try {
+    const raw = localStorage.getItem(`${STORAGE_KEYS.ANNOTATIONS_PREFIX}${docKey}`);
+    if (raw) {
+      const record = parseStoredAnnotationRecord(raw);
+      if (record) return record;
+    }
+  } catch {}
+
+  // 2. Only check fallback keys in order if primary docKey has no record
+  for (const fallbackKey of fallbackKeys) {
+    if (!fallbackKey || fallbackKey === docKey) continue;
     try {
-      const raw = localStorage.getItem(`${STORAGE_KEYS.ANNOTATIONS_PREFIX}${key}`);
-      return raw ? parseStoredAnnotationRecord(raw) : null;
+      const raw = localStorage.getItem(`${STORAGE_KEYS.ANNOTATIONS_PREFIX}${fallbackKey}`);
+      if (raw) {
+        const record = parseStoredAnnotationRecord(raw);
+        if (record) return record;
+      }
     } catch {}
-    return null;
-  });
-  return selectNewestAnnotationRecord(records);
+  }
+
+  return null;
 }
 
 export function loadAnnotationsForDocSync(docKey: string, fallbackKeys: string[] = []): Annotation[] {
@@ -404,10 +416,20 @@ export async function loadAnnotationRecordForDocAsync(
   docKey: string,
   fallbackKeys: string[] = []
 ): Promise<StoredAnnotationRecord | null> {
-  const records = await Promise.all(
-    annotationStorageKeys(docKey, fallbackKeys).map(idbLoadAnnotationRecord)
-  );
-  return selectNewestAnnotationRecord(records);
+  if (!docKey) return null;
+
+  // 1. Direct primary docKey lookup in IndexedDB
+  const primaryRecord = await idbLoadAnnotationRecord(docKey);
+  if (primaryRecord) return primaryRecord;
+
+  // 2. Only check fallback keys in order if primary docKey has no record
+  for (const fallbackKey of fallbackKeys) {
+    if (!fallbackKey || fallbackKey === docKey) continue;
+    const fallbackRecord = await idbLoadAnnotationRecord(fallbackKey);
+    if (fallbackRecord) return fallbackRecord;
+  }
+
+  return null;
 }
 
 export async function loadAnnotationsForDocAsync(
