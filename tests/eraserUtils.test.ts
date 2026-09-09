@@ -172,4 +172,22 @@ describe('eraserUtils', () => {
     expect(isAnnotationHitByEraser(image, 450, 600, pageWidth, pageHeight, 22)).toBe(true);
     expect(isAnnotationHitByEraser(image, 100, 100, pageWidth, pageHeight, 22)).toBe(false);
   });
+
+  test('isAnnotationHitByEraser scales eraser tolerance with zoom scale', () => {
+    const penAnn: DrawingAnnotation = {
+      id: 'penZoom',
+      pageNumber: 1,
+      type: 'pen',
+      points: [{ x: 0.1, y: 0.1 }], // (60, 80)
+      color: '#ff0000',
+      strokeWidth: 10,
+      opacity: 1,
+      createdAt: 1,
+    };
+
+    // At scale 1: threshold is 10 + 10 = 20. Point at dist 25 is missed.
+    expect(isAnnotationHitByEraser(penAnn, 60, 105, pageWidth, pageHeight, 10, 1)).toBe(false);
+    // At scale 2: threshold is 10 + 10*2 = 30. Point at dist 25 is hit.
+    expect(isAnnotationHitByEraser(penAnn, 60, 105, pageWidth, pageHeight, 10, 2)).toBe(true);
+  });
 });

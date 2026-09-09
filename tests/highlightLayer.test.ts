@@ -54,4 +54,19 @@ describe('Highlight layer and line highlight selection', () => {
     expect(pageSource).toContain('getAnnotationCoveredText');
     expect(pageSource).toContain('copyRegionImageToClipboard');
   });
+
+  test('scales stroke widths and underlines proportionally with zoom level', async () => {
+    const [canvasSource, pageSource] = await Promise.all([
+      projectFile('src/components/AnnotationCanvas.tsx'),
+      projectFile('src/components/PDFPage.tsx'),
+    ]);
+
+    expect(canvasSource).toContain('scale?: number;');
+    expect(canvasSource).toContain('const zoomScale = Math.max(0.1, scale);');
+    expect(canvasSource).toContain("strokeWidth={(line.style === 'underline' ? 2.5 : line.strokeWidth) * zoomScale}");
+    expect(canvasSource).toContain('strokeWidth={draw.strokeWidth * zoomScale}');
+    expect(canvasSource).toContain('strokeWidth={2.5 * zoomScale}');
+    expect(canvasSource).toContain('strokeWidth={strokeWidth * zoomScale}');
+    expect(pageSource).toContain('scale={scale}');
+  });
 });

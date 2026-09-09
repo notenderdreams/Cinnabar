@@ -27,11 +27,13 @@ export function isAnnotationHitByEraser(
   py: number,
   pageWidth: number,
   pageHeight: number,
-  eraseRadius: number = 22
+  eraseRadius: number = 22,
+  scale: number = 1
 ): boolean {
+  const zoomScale = Math.max(0.1, scale);
   if (ann.type === 'pen' || ann.type === 'highlight-pen') {
     const drawAnn = ann as DrawingAnnotation;
-    const threshold = eraseRadius + (drawAnn.strokeWidth || 4);
+    const threshold = eraseRadius + (drawAnn.strokeWidth || 4) * zoomScale;
     if (!drawAnn.points || drawAnn.points.length === 0) return false;
     if (drawAnn.points.length === 1) {
       const ptX = drawAnn.points[0].x * pageWidth;
@@ -55,7 +57,7 @@ export function isAnnotationHitByEraser(
     const x2 = lineAnn.endX * pageWidth;
     const y2 = lineAnn.endY * pageHeight;
     const dist = distToSegment({ x: px, y: py }, { x: x1, y: y1 }, { x: x2, y: y2 });
-    return dist <= eraseRadius + (lineAnn.strokeWidth || 10) / 2;
+    return dist <= eraseRadius + ((lineAnn.strokeWidth || 10) * zoomScale) / 2;
   }
 
   if (ann.type === 'highlight-rect') {

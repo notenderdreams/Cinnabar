@@ -228,14 +228,14 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
 
           const pageAnns = annotationsByPage.get(pageNumber) || EMPTY_ANNOTATIONS;
           for (const ann of pageAnns) {
-            if (isAnnotationHitByEraser(ann, px, py, pageWidth, pageHeight, ERASE_RADIUS)) {
+            if (isAnnotationHitByEraser(ann, px, py, pageWidth, pageHeight, ERASE_RADIUS, zoom)) {
               onDeleteAnnotation(ann.id);
             }
           }
         }
       });
     },
-    [annotationsByPage, onDeleteAnnotation]
+    [annotationsByPage, onDeleteAnnotation, zoom]
   );
 
   useEffect(() => {

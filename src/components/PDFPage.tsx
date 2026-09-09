@@ -418,7 +418,7 @@ export const PDFPageComponent: React.FC<PDFPageProps> = ({
       const thisPageAnns = annotations.filter((a) => a.pageNumber === pageNumber);
       hitAnn =
         [...thisPageAnns].reverse().find((a) =>
-          isAnnotationHitByEraser(a, px, py, pageDimensions.width, pageDimensions.height, 8)
+          isAnnotationHitByEraser(a, px, py, pageDimensions.width, pageDimensions.height, 8, scale)
         ) || null;
     }
 
@@ -544,6 +544,7 @@ export const PDFPageComponent: React.FC<PDFPageProps> = ({
         pageNumber={pageNumber}
         pageWidth={pageDimensions.width}
         pageHeight={pageDimensions.height}
+        scale={scale}
         activeTool={activeTool}
         selectedColor={selectedColor}
         highlightColors={highlightColors}

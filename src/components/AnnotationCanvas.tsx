@@ -44,6 +44,7 @@ interface AnnotationCanvasProps {
   pageNumber: number;
   pageWidth: number;
   pageHeight: number;
+  scale?: number;
   activeTool: ToolType;
   selectedColor: string;
   highlightColors: readonly string[];
@@ -68,6 +69,7 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
   pageNumber,
   pageWidth,
   pageHeight,
+  scale = 1,
   activeTool,
   selectedColor,
   highlightColors,
@@ -87,6 +89,7 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
   onCaptureSnippet,
   onAiBoxCreated,
 }) => {
+  const zoomScale = Math.max(0.1, scale);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
   // Freehand Drawing State
@@ -1024,7 +1027,7 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
                 x2={line.endX * pageWidth}
                 y2={line.endY * pageHeight}
                 stroke={line.color}
-                strokeWidth={line.style === 'underline' ? 2.5 : line.strokeWidth}
+                strokeWidth={(line.style === 'underline' ? 2.5 : line.strokeWidth) * zoomScale}
                 strokeOpacity={line.style === 'underline' ? 1 : line.opacity}
                 strokeLinecap={line.style === 'underline' ? 'round' : 'square'}
               />
@@ -1042,7 +1045,7 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
                 className={colorFilterClass}
                 d={pointsToSvgPath(draw.points)}
                 stroke={draw.color}
-                strokeWidth={draw.strokeWidth}
+                strokeWidth={draw.strokeWidth * zoomScale}
                 strokeOpacity={draw.opacity}
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -1064,7 +1067,7 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
                 : lineCurrent.y * pageHeight
             }
             stroke={selectedColor}
-            strokeWidth={lineHighlightStyle === 'underline' ? 2.5 : strokeWidth * 2.8}
+            strokeWidth={(lineHighlightStyle === 'underline' ? 2.5 : strokeWidth * 2.8) * zoomScale}
             strokeOpacity={lineHighlightStyle === 'underline' ? 1 : opacity}
             strokeLinecap={lineHighlightStyle === 'underline' ? 'round' : 'square'}
           />
@@ -1076,7 +1079,7 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
             className={colorFilterClass}
             d={pointsToSvgPath(currentStroke)}
             stroke={selectedColor}
-            strokeWidth={strokeWidth * 2.5}
+            strokeWidth={strokeWidth * 2.5 * zoomScale}
             strokeOpacity={opacity}
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -1095,7 +1098,7 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
             fill={selectedColor}
             fillOpacity={opacity}
             stroke={selectedColor}
-            strokeWidth={1}
+            strokeWidth={Math.max(0.5, 1 * zoomScale)}
           />
         )}
       </svg>
@@ -1118,11 +1121,11 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
                     key={`${textHighlight.id}_ul_${index}`}
                     className={colorFilterClass}
                     x1={rect.x * pageWidth}
-                    y1={(rect.y + rect.height) * pageHeight - 1.5}
+                    y1={(rect.y + rect.height) * pageHeight - 1.5 * zoomScale}
                     x2={(rect.x + rect.width) * pageWidth}
-                    y2={(rect.y + rect.height) * pageHeight - 1.5}
+                    y2={(rect.y + rect.height) * pageHeight - 1.5 * zoomScale}
                     stroke={textHighlight.color}
-                    strokeWidth={2.5}
+                    strokeWidth={2.5 * zoomScale}
                     strokeOpacity={1}
                     strokeLinecap="round"
                   />
@@ -1147,7 +1150,7 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
                   height={rect.height * pageHeight}
                   fill="none"
                   stroke={rect.color}
-                  strokeWidth={2.5}
+                  strokeWidth={2.5 * zoomScale}
                   strokeOpacity={1}
                 />
               );
@@ -1157,11 +1160,11 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
                 key={`underline_${rect.id}`}
                 className={colorFilterClass}
                 x1={rect.x * pageWidth}
-                y1={(rect.y + rect.height) * pageHeight - 1.5}
+                y1={(rect.y + rect.height) * pageHeight - 1.5 * zoomScale}
                 x2={(rect.x + rect.width) * pageWidth}
-                y2={(rect.y + rect.height) * pageHeight - 1.5}
+                y2={(rect.y + rect.height) * pageHeight - 1.5 * zoomScale}
                 stroke={rect.color}
-                strokeWidth={2.5}
+                strokeWidth={2.5 * zoomScale}
                 strokeOpacity={1}
                 strokeLinecap="round"
               />
@@ -1178,7 +1181,7 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
             height={Math.abs(rectCurrent.y - rectStart.y) * pageHeight}
             fill="none"
             stroke={selectedColor}
-            strokeWidth={2.5}
+            strokeWidth={2.5 * zoomScale}
             strokeOpacity={1}
           />
         )}
@@ -1193,7 +1196,7 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
                 className={colorFilterClass}
                 d={pointsToSvgPath(draw.points)}
                 stroke={draw.color}
-                strokeWidth={draw.strokeWidth}
+                strokeWidth={draw.strokeWidth * zoomScale}
                 strokeOpacity={1}
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -1208,7 +1211,7 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
             className={colorFilterClass}
             d={pointsToSvgPath(currentStroke)}
             stroke={selectedColor}
-            strokeWidth={strokeWidth}
+            strokeWidth={strokeWidth * zoomScale}
             strokeOpacity={1}
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -1304,14 +1307,14 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
                     />
                     {isSelected && (
                       <rect
-                        x={rect.x * pageWidth - 1.5}
-                        y={rect.y * pageHeight - 1.5}
-                        width={rect.width * pageWidth + 3}
-                        height={rect.height * pageHeight + 3}
+                        x={rect.x * pageWidth - 1.5 * zoomScale}
+                        y={rect.y * pageHeight - 1.5 * zoomScale}
+                        width={rect.width * pageWidth + 3 * zoomScale}
+                        height={rect.height * pageHeight + 3 * zoomScale}
                         fill="none"
                         stroke="#0080f0"
-                        strokeWidth={1.5}
-                        strokeDasharray="4 2"
+                        strokeWidth={Math.max(1, 1.5 * zoomScale)}
+                        strokeDasharray={`${4 * zoomScale} ${2 * zoomScale}`}
                         className="pointer-events-none"
                       />
                     )}
@@ -1347,14 +1350,14 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
                 />
                 {isSelected && (
                   <rect
-                    x={rect.x * pageWidth - 1.5}
-                    y={rect.y * pageHeight - 1.5}
-                    width={rect.width * pageWidth + 3}
-                    height={rect.height * pageHeight + 3}
+                    x={rect.x * pageWidth - 1.5 * zoomScale}
+                    y={rect.y * pageHeight - 1.5 * zoomScale}
+                    width={rect.width * pageWidth + 3 * zoomScale}
+                    height={rect.height * pageHeight + 3 * zoomScale}
                     fill="none"
                     stroke="#0080f0"
-                    strokeWidth={1.5}
-                    strokeDasharray="4 2"
+                    strokeWidth={Math.max(1, 1.5 * zoomScale)}
+                    strokeDasharray={`${4 * zoomScale} ${2 * zoomScale}`}
                     className="pointer-events-none"
                   />
                 )}
@@ -1391,7 +1394,7 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
                   x2={line.endX * pageWidth}
                   y2={line.endY * pageHeight}
                   stroke="transparent"
-                  strokeWidth={Math.max(line.strokeWidth, 24)}
+                  strokeWidth={Math.max((line.strokeWidth || 4) * zoomScale, 24)}
                   strokeLinecap="round"
                 />
               </g>
