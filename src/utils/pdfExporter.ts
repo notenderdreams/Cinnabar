@@ -111,14 +111,14 @@ export async function exportAnnotatedPDF(
             width,
             height,
             borderColor: rgb(color.r, color.g, color.b),
-            borderWidth: 2,
+            borderWidth: 1.5,
             opacity: 0.9,
           });
         } else if (hRect.style === 'underline') {
           page.drawLine({
             start: { x, y: y + 1 },
             end: { x: x + width, y: y + 1 },
-            thickness: 2,
+            thickness: 1.5,
             color: rgb(color.r, color.g, color.b),
             opacity: 0.9,
           });

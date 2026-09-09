@@ -63,9 +63,12 @@ describe('Highlight layer and line highlight selection', () => {
 
     expect(canvasSource).toContain('scale?: number;');
     expect(canvasSource).toContain('const zoomScale = Math.max(0.1, scale);');
-    expect(canvasSource).toContain("strokeWidth={(line.style === 'underline' ? 2.5 : line.strokeWidth) * zoomScale}");
+    expect(canvasSource).toContain('const DEFAULT_UNDERLINE_WIDTH = 1.5;');
+    expect(canvasSource).toContain('const DEFAULT_RECT_STROKE_WIDTH = 1.5;');
+    expect(canvasSource).toContain("strokeWidth={(line.style === 'underline' ? DEFAULT_UNDERLINE_WIDTH : line.strokeWidth) * zoomScale}");
     expect(canvasSource).toContain('strokeWidth={draw.strokeWidth * zoomScale}');
-    expect(canvasSource).toContain('strokeWidth={2.5 * zoomScale}');
+    expect(canvasSource).toContain('strokeWidth={DEFAULT_UNDERLINE_WIDTH * zoomScale}');
+    expect(canvasSource).toContain('strokeWidth={DEFAULT_RECT_STROKE_WIDTH * zoomScale}');
     expect(canvasSource).toContain('strokeWidth={strokeWidth * zoomScale}');
     expect(pageSource).toContain('scale={scale}');
   });

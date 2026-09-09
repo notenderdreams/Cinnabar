@@ -40,6 +40,9 @@ interface PendingHighlightSelection {
   lineHighlightStyle: 'highlight' | 'underline';
 }
 
+const DEFAULT_UNDERLINE_WIDTH = 1.5;
+const DEFAULT_RECT_STROKE_WIDTH = 1.5;
+
 interface AnnotationCanvasProps {
   pageNumber: number;
   pageWidth: number;
@@ -156,7 +159,7 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
           endX: pending.bounds.endX,
           endY: pending.bounds.y + pending.bounds.height,
           color: pending.color,
-          strokeWidth: 2.5,
+          strokeWidth: DEFAULT_UNDERLINE_WIDTH,
           opacity: 1,
           style: 'underline',
           text: pending.bounds.text || undefined,
@@ -801,7 +804,7 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
           endX,
           endY,
           color: selectedColor,
-          strokeWidth: strokeWidth * 2.8,
+          strokeWidth: lineHighlightStyle === 'underline' ? DEFAULT_UNDERLINE_WIDTH : strokeWidth * 2.8,
           opacity: lineHighlightStyle === 'underline' ? 1 : opacity,
           style: lineHighlightStyle,
           text: text || undefined,
@@ -1027,7 +1030,7 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
                 x2={line.endX * pageWidth}
                 y2={line.endY * pageHeight}
                 stroke={line.color}
-                strokeWidth={(line.style === 'underline' ? 2.5 : line.strokeWidth) * zoomScale}
+                strokeWidth={(line.style === 'underline' ? DEFAULT_UNDERLINE_WIDTH : line.strokeWidth) * zoomScale}
                 strokeOpacity={line.style === 'underline' ? 1 : line.opacity}
                 strokeLinecap={line.style === 'underline' ? 'round' : 'square'}
               />
@@ -1067,7 +1070,7 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
                 : lineCurrent.y * pageHeight
             }
             stroke={selectedColor}
-            strokeWidth={(lineHighlightStyle === 'underline' ? 2.5 : strokeWidth * 2.8) * zoomScale}
+            strokeWidth={(lineHighlightStyle === 'underline' ? DEFAULT_UNDERLINE_WIDTH : strokeWidth * 2.8) * zoomScale}
             strokeOpacity={lineHighlightStyle === 'underline' ? 1 : opacity}
             strokeLinecap={lineHighlightStyle === 'underline' ? 'round' : 'square'}
           />
@@ -1121,11 +1124,11 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
                     key={`${textHighlight.id}_ul_${index}`}
                     className={colorFilterClass}
                     x1={rect.x * pageWidth}
-                    y1={(rect.y + rect.height) * pageHeight - 1.5 * zoomScale}
+                    y1={(rect.y + rect.height) * pageHeight - 1.2 * zoomScale}
                     x2={(rect.x + rect.width) * pageWidth}
-                    y2={(rect.y + rect.height) * pageHeight - 1.5 * zoomScale}
+                    y2={(rect.y + rect.height) * pageHeight - 1.2 * zoomScale}
                     stroke={textHighlight.color}
-                    strokeWidth={2.5 * zoomScale}
+                    strokeWidth={DEFAULT_UNDERLINE_WIDTH * zoomScale}
                     strokeOpacity={1}
                     strokeLinecap="round"
                   />
@@ -1150,7 +1153,7 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
                   height={rect.height * pageHeight}
                   fill="none"
                   stroke={rect.color}
-                  strokeWidth={2.5 * zoomScale}
+                  strokeWidth={DEFAULT_RECT_STROKE_WIDTH * zoomScale}
                   strokeOpacity={1}
                 />
               );
@@ -1160,11 +1163,11 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
                 key={`underline_${rect.id}`}
                 className={colorFilterClass}
                 x1={rect.x * pageWidth}
-                y1={(rect.y + rect.height) * pageHeight - 1.5 * zoomScale}
+                y1={(rect.y + rect.height) * pageHeight - 1.2 * zoomScale}
                 x2={(rect.x + rect.width) * pageWidth}
-                y2={(rect.y + rect.height) * pageHeight - 1.5 * zoomScale}
+                y2={(rect.y + rect.height) * pageHeight - 1.2 * zoomScale}
                 stroke={rect.color}
-                strokeWidth={2.5 * zoomScale}
+                strokeWidth={DEFAULT_UNDERLINE_WIDTH * zoomScale}
                 strokeOpacity={1}
                 strokeLinecap="round"
               />
@@ -1181,7 +1184,7 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
             height={Math.abs(rectCurrent.y - rectStart.y) * pageHeight}
             fill="none"
             stroke={selectedColor}
-            strokeWidth={2.5 * zoomScale}
+            strokeWidth={DEFAULT_RECT_STROKE_WIDTH * zoomScale}
             strokeOpacity={1}
           />
         )}
