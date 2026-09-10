@@ -284,7 +284,7 @@ describe('exportAnnotatedPDF baking and highlights', () => {
     expect(loaded.getPageCount()).toBe(1);
   });
 
-  test('excludes normal text and sticky notes from being merged by default, but allows optional inclusion', async () => {
+  test('bakes text and sticky notes relative to page dimensions, with option to exclude', async () => {
     const original = await createSamplePdf();
     const annotations: Annotation[] = [
       {
@@ -317,15 +317,16 @@ describe('exportAnnotatedPDF baking and highlights', () => {
       } as TextNoteAnnotation,
     ];
 
-    // By default: text notes and normal text are NOT merged into the PDF
+    // By default: relative text notes are baked into the PDF
     const defaultResultBytes = await exportAnnotatedPDF(original, annotations);
     const defaultLoaded = await PDFDocument.load(defaultResultBytes);
     expect(defaultLoaded.getPageCount()).toBe(1);
+    expect(defaultResultBytes.length).toBeGreaterThan(original.length);
 
-    // Optional inclusion: can be merged when explicitly requested
-    const includedResultBytes = await exportAnnotatedPDF(original, annotations, { includeTextNotes: true });
-    const includedLoaded = await PDFDocument.load(includedResultBytes);
-    expect(includedLoaded.getPageCount()).toBe(1);
+    // Can exclude text notes if explicitly requested
+    const excludedResultBytes = await exportAnnotatedPDF(original, annotations, { includeTextNotes: false });
+    const excludedLoaded = await PDFDocument.load(excludedResultBytes);
+    expect(excludedLoaded.getPageCount()).toBe(1);
   });
 
   test('skips ai-explanation annotations as they are interactive windows', async () => {

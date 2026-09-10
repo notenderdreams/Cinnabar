@@ -346,8 +346,8 @@ export async function exportAnnotatedPDF(
         const textAnn = ann as TextNoteAnnotation;
         const isPlainText = textAnn.kind === 'plain';
 
-        // Normal text and sticky notes are removed from being merged into the exported PDF
-        if (!options?.includeTextNotes) {
+        // Include relative text notes by default unless explicitly excluded
+        if (options?.includeTextNotes === false) {
           if (!isPlainText) {
             // Sticky notes excluded
           }
@@ -393,10 +393,11 @@ export async function exportAnnotatedPDF(
         }
 
         // Vector / standard text fallback for headless/test environments
-        const fontSize = textAnn.fontSize || (isPlainText ? 14 : 11);
+        const relScale = pageWidth / 612;
+        const fontSize = Math.max(6, Math.round((textAnn.fontSize || (isPlainText ? 14 : 11)) * relScale));
         const lines = textAnn.text.split('\n');
         const lineHeight = fontSize * 1.35;
-        const boxPadding = 6;
+        const boxPadding = Math.max(3, Math.round(6 * relScale));
 
         let maxLineWidth = 0;
         for (const line of lines) {
@@ -408,7 +409,9 @@ export async function exportAnnotatedPDF(
           }
         }
 
-        const boxWidth = Math.max(maxLineWidth + boxPadding * 2, 60);
+        const boxWidth = textAnn.width
+          ? textAnn.width * pageWidth
+          : Math.max(maxLineWidth + boxPadding * 2, Math.round(60 * relScale));
         const boxHeight = lines.length * lineHeight + boxPadding * 2;
         const x = textAnn.x * pageWidth;
         const yTop = pageHeight - textAnn.y * pageHeight;
@@ -427,7 +430,7 @@ export async function exportAnnotatedPDF(
               Math.max(0, noteColor.g - 0.12),
               Math.max(0, noteColor.b - 0.12)
             ),
-            borderWidth: 1,
+            borderWidth: Math.max(0.5, 1 * relScale),
           });
         }
 

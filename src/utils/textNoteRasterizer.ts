@@ -128,14 +128,14 @@ export async function rasterizeStickyNote(
     return null;
   }
 
+  const relScale = pageWidth / 612;
   const color = resolveNoteColor(annotation.color);
-  const targetWidth = annotation.width
-    ? Math.max(140, Math.round(annotation.width * pageWidth))
-    : Math.min(220, Math.max(140, Math.round(pageWidth * 0.35)));
+  const targetWidth = Math.round((annotation.width ?? 0.28) * pageWidth);
 
-  const padding = 10;
-  const contentWidth = Math.max(40, targetWidth - padding * 2);
-  const fontSize = annotation.fontSize || 12;
+  const padding = Math.max(4, Math.round(10 * relScale));
+  const contentWidth = Math.max(30, targetWidth - padding * 2);
+  const baseFontSize = annotation.fontSize || 12;
+  const fontSize = Math.max(6, Math.round(baseFontSize * relScale));
   const fontStack = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
 
   const measureCanvas = document.createElement('canvas');
@@ -145,9 +145,9 @@ export async function rasterizeStickyNote(
 
   const lines = wrapTextLines(annotation.text || '', contentWidth, (s) => mctx.measureText(s).width);
   const lineHeight = Math.round(fontSize * 1.45);
-  const headerHeight = 22;
+  const headerHeight = Math.max(14, Math.round(22 * relScale));
   const bodyHeight = lines.length * lineHeight;
-  const targetHeight = Math.max(60, padding * 2 + headerHeight + bodyHeight);
+  const targetHeight = Math.max(Math.round(40 * relScale), padding * 2 + headerHeight + bodyHeight);
 
   const dpr = 2;
   const canvas = document.createElement('canvas');
@@ -160,7 +160,7 @@ export async function rasterizeStickyNote(
   ctx.clearRect(0, 0, targetWidth, targetHeight);
 
   // Background card with rounded corners
-  const radius = 8;
+  const radius = Math.max(3, Math.round(8 * relScale));
   ctx.beginPath();
   if (typeof ctx.roundRect === 'function') {
     ctx.roundRect(0, 0, targetWidth, targetHeight, radius);
@@ -178,29 +178,31 @@ export async function rasterizeStickyNote(
   }
   ctx.fillStyle = color.bg;
   ctx.fill();
-  ctx.lineWidth = 1;
+  ctx.lineWidth = Math.max(1, Math.round(1 * relScale));
   ctx.strokeStyle = color.border;
   ctx.stroke();
 
   // Header separator line
   const isDarkSlate = color.bg.toLowerCase() === '#272730';
+  const sepY = Math.round(24 * relScale);
   ctx.beginPath();
-  ctx.moveTo(padding, 24);
-  ctx.lineTo(targetWidth - padding, 24);
+  ctx.moveTo(padding, sepY);
+  ctx.lineTo(targetWidth - padding, sepY);
   ctx.strokeStyle = isDarkSlate ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.1)';
-  ctx.lineWidth = 1;
+  ctx.lineWidth = Math.max(1, Math.round(1 * relScale));
   ctx.stroke();
 
   // "NOTE" header label
-  ctx.font = `600 10px ${fontStack}`;
+  ctx.font = `600 ${Math.max(6, Math.round(10 * relScale))}px ${fontStack}`;
   ctx.fillStyle = isDarkSlate ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.55)';
-  ctx.fillText('NOTE', padding + 2, 17);
+  ctx.fillText('NOTE', padding + 2, Math.round(17 * relScale));
 
   // Text body
   ctx.font = `${fontSize}px ${fontStack}`;
   ctx.fillStyle = color.text;
+  const bodyStartY = Math.round(30 * relScale);
   for (let i = 0; i < lines.length; i++) {
-    const y = 30 + (i + 0.8) * lineHeight;
+    const y = bodyStartY + (i + 0.8) * lineHeight;
     ctx.fillText(lines[i], padding, y);
   }
 
@@ -222,6 +224,7 @@ export async function rasterizePlainText(
     return null;
   }
 
+  const relScale = pageWidth / 612;
   const fontStack =
     annotation.fontFamily === 'serif'
       ? 'Georgia, Cambria, "Times New Roman", Times, serif'
@@ -229,7 +232,8 @@ export async function rasterizePlainText(
         ? 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace'
         : '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
 
-  const fontSize = annotation.fontSize || 14;
+  const baseFontSize = annotation.fontSize || 14;
+  const fontSize = Math.max(6, Math.round(baseFontSize * relScale));
   const measureCanvas = document.createElement('canvas');
   const mctx = measureCanvas.getContext('2d');
   if (!mctx) return null;
@@ -239,8 +243,12 @@ export async function rasterizePlainText(
   let lines: string[];
 
   if (annotation.width) {
-    targetWidth = Math.max(40, Math.round(annotation.width * pageWidth));
-    lines = wrapTextLines(annotation.text || '', Math.max(20, targetWidth - 8), (s) => mctx.measureText(s).width);
+    targetWidth = Math.round(annotation.width * pageWidth);
+    lines = wrapTextLines(
+      annotation.text || '',
+      Math.max(20, targetWidth - Math.round(8 * relScale)),
+      (s) => mctx.measureText(s).width
+    );
   } else {
     const rawLines = (annotation.text || '').split('\n');
     let maxW = 0;
@@ -248,12 +256,12 @@ export async function rasterizePlainText(
       const w = mctx.measureText(l).width;
       if (w > maxW) maxW = w;
     }
-    targetWidth = Math.max(40, Math.ceil(maxW) + 12);
+    targetWidth = Math.min(pageWidth, Math.max(30, Math.ceil(maxW) + Math.round(12 * relScale)));
     lines = rawLines.length > 0 ? rawLines : [''];
   }
 
   const lineHeight = Math.round(fontSize * 1.45);
-  const targetHeight = Math.max(lineHeight, lines.length * lineHeight + 4);
+  const targetHeight = Math.max(lineHeight, lines.length * lineHeight + Math.round(4 * relScale));
 
   const dpr = 2;
   const canvas = document.createElement('canvas');
@@ -269,12 +277,12 @@ export async function rasterizePlainText(
   const align = annotation.align || 'left';
   ctx.textAlign = align;
 
-  let textX = 2;
+  let textX = Math.round(2 * relScale);
   if (align === 'center') textX = targetWidth / 2;
-  else if (align === 'right') textX = targetWidth - 2;
+  else if (align === 'right') textX = targetWidth - Math.round(2 * relScale);
 
   for (let i = 0; i < lines.length; i++) {
-    const y = (i + 0.82) * lineHeight + 2;
+    const y = (i + 0.82) * lineHeight + Math.round(2 * relScale);
     ctx.fillText(lines[i], textX, y);
   }
 

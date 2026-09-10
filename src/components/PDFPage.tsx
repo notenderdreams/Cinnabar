@@ -606,6 +606,7 @@ export const PDFPageComponent: React.FC<PDFPageProps> = ({
           isSelected={selectedAnnotationId === noteAnn.id}
           pageWidth={pageDimensions.width}
           pageHeight={pageDimensions.height}
+          scale={scale}
           currentTheme={currentTheme}
           activeTool={activeTool}
           highlightColors={highlightColors}
