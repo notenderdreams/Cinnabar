@@ -335,7 +335,14 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                     Save Modified PDF
                   </span>
                   <span className="text-[10.5px] text-zinc-400 leading-tight">
-                    Bakes {annotations.length} highlights & drawings permanently into a PDF
+                    {(() => {
+                      const count = annotations.filter(
+                        (a) => a.type !== 'ai-explanation' && a.type !== 'text-note'
+                      ).length;
+                      return count > 0
+                        ? `Bakes ${count} highlight${count === 1 ? '' : 's'} & drawing${count === 1 ? '' : 's'} permanently into a PDF`
+                        : 'Bakes highlights & drawings permanently into a PDF';
+                    })()}
                   </span>
                 </div>
               </div>
