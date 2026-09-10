@@ -1544,11 +1544,26 @@ export function App() {
                 onAiBoxCreated={(id) => {
                   setSelectedAnnotationId(id);
                   aiExplanations.openComposer(id);
-                  setActiveTool('select');
                 }}
-                onSubmitAi={(annotation, prompt) => void aiExplanations.submit(annotation, prompt)}
-                onCancelAi={(annotationId) => void aiExplanations.cancel(annotationId)}
-                onCloseAi={aiExplanations.close}
+                onSelectTool={handleSelectTool}
+                onSubmitAi={(annotation, prompt) => {
+                  void aiExplanations.submit(annotation, prompt);
+                  if (activeTool === 'ai-box') {
+                    setActiveTool('select');
+                  }
+                }}
+                onCancelAi={(annotationId) => {
+                  void aiExplanations.cancel(annotationId);
+                  if (activeTool === 'ai-box') {
+                    setActiveTool('select');
+                  }
+                }}
+                onCloseAi={(annotationId) => {
+                  aiExplanations.close(annotationId);
+                  if (activeTool === 'ai-box') {
+                    setActiveTool('select');
+                  }
+                }}
                 onAddPageBelow={handleAddPageBelow}
                 onDeletePage={requestDeletePage}
                 onCopySelectedText={(text) => void handleCopySelectedText(text)}

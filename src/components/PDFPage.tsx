@@ -61,6 +61,7 @@ interface PDFPageProps {
   onAskAiAboutPage: (pageNumber: number) => void;
   onCopySelectedText?: (text: string) => void;
   showToast?: (text: string, isError?: boolean) => void;
+  onSelectTool?: (tool: ToolType) => void;
   isFlush?: boolean;
   isReadOnly?: boolean;
   pageIdPrefix?: string;
@@ -103,6 +104,7 @@ export const PDFPageComponent: React.FC<PDFPageProps> = ({
   onAskAiAboutPage,
   onCopySelectedText,
   showToast,
+  onSelectTool,
   isFlush = false,
   isReadOnly = false,
   pageIdPrefix = 'pdf-page',
@@ -563,6 +565,7 @@ export const PDFPageComponent: React.FC<PDFPageProps> = ({
         onDeleteAnnotation={onDeleteAnnotation}
         onCaptureSnippet={onCaptureSnippet}
         onAiBoxCreated={onAiBoxCreated}
+        onSelectTool={onSelectTool}
       />}
 
       {!isReadOnly && <AiExplanationOverlay
@@ -613,6 +616,7 @@ export const PDFPageComponent: React.FC<PDFPageProps> = ({
           onSelect={onSelectAnnotation}
           onUpdate={onUpdateAnnotation}
           onDelete={onDeleteAnnotation}
+          onSelectTool={onSelectTool}
         />
       ))}
 

@@ -66,6 +66,7 @@ interface AnnotationCanvasProps {
   onDeleteAnnotation: (id: string) => void;
   onCaptureSnippet?: (pageNumber: number, rect: { x: number; y: number; width: number; height: number }) => void;
   onAiBoxCreated?: (annotationId: string) => void;
+  onSelectTool?: (tool: ToolType) => void;
 }
 
 export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
@@ -91,6 +92,7 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
   onDeleteAnnotation,
   onCaptureSnippet,
   onAiBoxCreated,
+  onSelectTool,
 }) => {
   const zoomScale = Math.max(0.1, scale);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -715,6 +717,11 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
       setAiStart({ x, y });
       setAiCurrent({ x, y });
     } else if (activeTool === 'text' || activeTool === 'sticky-note') {
+      if (selectedAnnotationId) {
+        onSelectAnnotation?.(null);
+        onSelectTool?.('select');
+        return;
+      }
       const newNote: TextNoteAnnotation = {
         id: `note_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
         pageNumber,
@@ -892,30 +899,36 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
       setSnipStart(null);
       setSnipCurrent(null);
     } else if (activeTool === 'ai-box' && aiStart && aiCurrent) {
-      const x = Math.min(aiStart.x, aiCurrent.x);
-      const y = Math.min(aiStart.y, aiCurrent.y);
-      const width = Math.abs(aiCurrent.x - aiStart.x);
-      const height = Math.abs(aiCurrent.y - aiStart.y);
-      if (width * pageWidth > 12 && height * pageHeight > 12) {
-        const now = Date.now();
-        const annotation: AiExplanationAnnotation = {
-          id: `ai_box_${now}_${Math.random().toString(36).slice(2, 7)}`,
-          pageNumber,
-          type: 'ai-explanation',
-          x,
-          y,
-          width,
-          height,
-          prompt: '',
-          response: '',
-          provider: 'codex',
-          isOpen: true,
-          createdAt: now,
-          updatedAt: now,
-        };
-        onAddAnnotation(annotation);
-        onAiBoxCreated?.(annotation.id);
+      let x = Math.min(aiStart.x, aiCurrent.x);
+      let y = Math.min(aiStart.y, aiCurrent.y);
+      let width = Math.abs(aiCurrent.x - aiStart.x);
+      let height = Math.abs(aiCurrent.y - aiStart.y);
+      if (width * pageWidth <= 12 || height * pageHeight <= 12) {
+        const defaultW = Math.min(0.35, 240 / pageWidth);
+        const defaultH = Math.min(0.20, 140 / pageHeight);
+        x = Math.max(0.01, Math.min(aiStart.x - defaultW / 2, 0.99 - defaultW));
+        y = Math.max(0.01, Math.min(aiStart.y - defaultH / 2, 0.99 - defaultH));
+        width = defaultW;
+        height = defaultH;
       }
+      const now = Date.now();
+      const annotation: AiExplanationAnnotation = {
+        id: `ai_box_${now}_${Math.random().toString(36).slice(2, 7)}`,
+        pageNumber,
+        type: 'ai-explanation',
+        x,
+        y,
+        width,
+        height,
+        prompt: '',
+        response: '',
+        provider: 'codex',
+        isOpen: true,
+        createdAt: now,
+        updatedAt: now,
+      };
+      onAddAnnotation(annotation);
+      onAiBoxCreated?.(annotation.id);
       setAiStart(null);
       setAiCurrent(null);
     }

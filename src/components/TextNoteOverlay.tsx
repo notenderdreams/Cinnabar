@@ -16,6 +16,7 @@ interface TextNoteOverlayProps {
   onSelect: (id: string) => void;
   onUpdate: (id: string, updates: Partial<TextNoteAnnotation>) => void;
   onDelete: (id: string) => void;
+  onSelectTool?: (tool: ToolType) => void;
 }
 
 const NOTE_COLORS = [
@@ -40,6 +41,7 @@ export const TextNoteOverlay: React.FC<TextNoteOverlayProps> = ({
   onSelect,
   onUpdate,
   onDelete,
+  onSelectTool,
 }) => {
   const zoomScale = Math.max(0.1, scale ?? 1);
   const [isEditing, setIsEditing] = useState(annotation.text === '');
@@ -179,6 +181,9 @@ export const TextNoteOverlay: React.FC<TextNoteOverlayProps> = ({
     }
     setIsEditing(false);
     setShowColorPicker(false);
+    if (activeTool === 'text' || activeTool === 'sticky-note') {
+      onSelectTool?.('select');
+    }
   };
 
   const handleCancelEdit = (element: HTMLElement) => {
@@ -190,7 +195,17 @@ export const TextNoteOverlay: React.FC<TextNoteOverlayProps> = ({
       }
       setIsEditing(false);
       setShowColorPicker(false);
+      if (activeTool === 'text' || activeTool === 'sticky-note') {
+        onSelectTool?.('select');
+      }
     });
+  };
+
+  const handleDeleteNote = () => {
+    onDelete(annotation.id);
+    if (activeTool === 'text' || activeTool === 'sticky-note') {
+      onSelectTool?.('select');
+    }
   };
 
   const handleClick = (e: React.MouseEvent) => {
@@ -269,7 +284,7 @@ export const TextNoteOverlay: React.FC<TextNoteOverlayProps> = ({
             colors={highlightColors}
             color={annotation.color || '#000000'}
             onChangeColor={(color) => onUpdate(annotation.id, { color })}
-            onDelete={() => onDelete(annotation.id)}
+            onDelete={handleDeleteNote}
             onDone={isEditing ? handleSaveEdit : undefined}
           />
         )}
@@ -433,7 +448,7 @@ export const TextNoteOverlay: React.FC<TextNoteOverlayProps> = ({
 
             {/* Delete Button */}
             <button
-              onClick={() => onDelete(annotation.id)}
+              onClick={handleDeleteNote}
               style={{ padding: `${Math.max(0.5, Math.round(1 * zoomScale))}px` }}
               className="rounded hover:bg-red-500/20 text-red-700 hover:text-red-900 transition-colors"
               title="Delete note (Delete key)"

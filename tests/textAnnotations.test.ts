@@ -98,4 +98,23 @@ describe('plain text and sticky note tools', () => {
     expect(overlay).toContain('<TextFormattingToolbar');
     expect(overlay).toContain('colors={highlightColors}');
   });
+
+  test('switches back to selection tool after single use of text, sticky note, or area explanation', async () => {
+    const [canvas, viewer, app, overlay] = await Promise.all([
+      source('src/components/AnnotationCanvas.tsx'),
+      source('src/components/PDFViewer.tsx'),
+      source('src/App.tsx'),
+      source('src/components/TextNoteOverlay.tsx'),
+    ]);
+
+    // Note overlay resets to select when editing is off or note deleted
+    expect(overlay).toContain("onSelectTool?.('select')");
+    // Canvas and Viewer allow resetting tool to select when clicking away
+    expect(canvas).toContain("onSelectTool?.('select')");
+    expect(viewer).toContain("onSelectTool?.('select')");
+    // App wires onSelectTool into PDFViewer
+    expect(app).toContain('onSelectTool={handleSelectTool}');
+    // App keeps tool until AI prompt is submitted, cancelled, or closed
+    expect(app).toContain("if (activeTool === 'ai-box') {\n                    setActiveTool('select');");
+  });
 });
