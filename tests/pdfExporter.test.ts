@@ -284,9 +284,9 @@ describe('exportAnnotatedPDF baking and highlights', () => {
     expect(loaded.getPageCount()).toBe(1);
   });
 
-  test('bakes text and sticky notes relative to page dimensions, with option to exclude', async () => {
+  test('bakes plain text into PDF while excluding sticky notes from the renderer by default', async () => {
     const original = await createSamplePdf();
-    const annotations: Annotation[] = [
+    const plainTextOnly: Annotation[] = [
       {
         id: 'plain_note_1',
         pageNumber: 1,
@@ -302,6 +302,9 @@ describe('exportAnnotatedPDF baking and highlights', () => {
         align: 'left',
         createdAt: Date.now(),
       } as TextNoteAnnotation,
+    ];
+
+    const stickyNoteOnly: Annotation[] = [
       {
         id: 'sticky_note_1',
         pageNumber: 1,
@@ -317,16 +320,23 @@ describe('exportAnnotatedPDF baking and highlights', () => {
       } as TextNoteAnnotation,
     ];
 
-    // By default: relative text notes are baked into the PDF
-    const defaultResultBytes = await exportAnnotatedPDF(original, annotations);
-    const defaultLoaded = await PDFDocument.load(defaultResultBytes);
-    expect(defaultLoaded.getPageCount()).toBe(1);
-    expect(defaultResultBytes.length).toBeGreaterThan(original.length);
+    // 1. Plain text is baked by default
+    const plainResultBytes = await exportAnnotatedPDF(original, plainTextOnly);
+    expect(plainResultBytes.length).toBeGreaterThan(original.length);
 
-    // Can exclude text notes if explicitly requested
-    const excludedResultBytes = await exportAnnotatedPDF(original, annotations, { includeTextNotes: false });
-    const excludedLoaded = await PDFDocument.load(excludedResultBytes);
-    expect(excludedLoaded.getPageCount()).toBe(1);
+    // 2. Sticky note is excluded from renderer by default
+    const stickyDefaultBytes = await exportAnnotatedPDF(original, stickyNoteOnly);
+    // Because the only annotation was a sticky note, output matches clean PDF without added note raster
+    const loadedSticky = await PDFDocument.load(stickyDefaultBytes);
+    expect(loadedSticky.getPageCount()).toBe(1);
+
+    // 3. Optional inclusion of sticky note when explicitly requested
+    const stickyIncludedBytes = await exportAnnotatedPDF(original, stickyNoteOnly, { includeStickyNotes: true });
+    expect(stickyIncludedBytes.length).toBeGreaterThan(stickyDefaultBytes.length);
+
+    // 4. Disabling text notes completely
+    const excludedResultBytes = await exportAnnotatedPDF(original, plainTextOnly, { includeTextNotes: false });
+    expect(excludedResultBytes.length).toBeLessThan(plainResultBytes.length);
   });
 
   test('skips ai-explanation annotations as they are interactive windows', async () => {

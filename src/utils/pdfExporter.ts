@@ -137,6 +137,7 @@ async function dataUrlToPngBytes(dataUrl: string, invertColors: boolean = false)
 
 export interface ExportPdfOptions {
   includeTextNotes?: boolean;
+  includeStickyNotes?: boolean;
 }
 
 /**
@@ -341,16 +342,19 @@ export async function exportAnnotatedPDF(
         }
       }
 
-      // 7. Text Notes (Plain Text and Sticky Notes)
+      // 7. Text Notes (Include text, not the sticky note)
       else if (ann.type === 'text-note') {
         const textAnn = ann as TextNoteAnnotation;
         const isPlainText = textAnn.kind === 'plain';
 
-        // Include relative text notes by default unless explicitly excluded
-        if (options?.includeTextNotes === false) {
-          if (!isPlainText) {
-            // Sticky notes excluded
+        // Include the text not the sticky note
+        if (!isPlainText) {
+          if (!options?.includeStickyNotes) {
+            continue;
           }
+        }
+
+        if (options?.includeTextNotes === false) {
           continue;
         }
 
@@ -397,7 +401,7 @@ export async function exportAnnotatedPDF(
         const fontSize = Math.max(6, Math.round((textAnn.fontSize || (isPlainText ? 14 : 11)) * relScale));
         const lines = textAnn.text.split('\n');
         const lineHeight = fontSize * 1.35;
-        const boxPadding = Math.max(3, Math.round(6 * relScale));
+        const boxPadding = isPlainText ? 0 : Math.max(3, Math.round(6 * relScale));
 
         let maxLineWidth = 0;
         for (const line of lines) {
@@ -411,7 +415,7 @@ export async function exportAnnotatedPDF(
 
         const boxWidth = textAnn.width
           ? textAnn.width * pageWidth
-          : Math.max(maxLineWidth + boxPadding * 2, Math.round(60 * relScale));
+          : Math.max(maxLineWidth + boxPadding * 2, Math.round(40 * relScale));
         const boxHeight = lines.length * lineHeight + boxPadding * 2;
         const x = textAnn.x * pageWidth;
         const yTop = pageHeight - textAnn.y * pageHeight;
@@ -434,7 +438,7 @@ export async function exportAnnotatedPDF(
           });
         }
 
-        const textColor = parseColorToRgb(isPlainText ? (textAnn.color || '#18181b') : '#18181b');
+        const textColor = parseColorToRgb(isPlainText ? (textAnn.color || '#000000') : '#18181b');
 
         // Draw text lines with WinAnsi sanitization
         for (let l = 0; l < lines.length; l++) {
@@ -443,7 +447,7 @@ export async function exportAnnotatedPDF(
           try {
             page.drawText(safeText, {
               x: x + (isPlainText ? 0 : boxPadding),
-              y: yTop - (isPlainText ? 0 : boxPadding) - (l + 0.8) * lineHeight,
+              y: yTop - (isPlainText ? 0 : boxPadding) - (l + 0.82) * lineHeight,
               size: fontSize,
               font: fontHelvetica,
               color: rgb(textColor.r, textColor.g, textColor.b),
