@@ -727,7 +727,7 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
         fontSize: 14,
         fontFamily: 'sans',
         align: 'left',
-        width: activeTool === 'sticky-note' ? 0.28 : undefined,
+        width: activeTool === 'sticky-note' ? 0.20 : undefined,
         createdAt: Date.now(),
       };
       onAddAnnotation(newNote);

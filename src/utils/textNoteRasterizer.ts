@@ -130,12 +130,12 @@ export async function rasterizeStickyNote(
 
   const relScale = pageWidth / 612;
   const color = resolveNoteColor(annotation.color);
-  const targetWidth = Math.round((annotation.width ?? 0.28) * pageWidth);
+  const targetWidth = Math.round((annotation.width ?? 0.20) * pageWidth);
 
-  const padding = Math.max(4, Math.round(10 * relScale));
-  const contentWidth = Math.max(30, targetWidth - padding * 2);
-  const baseFontSize = annotation.fontSize || 12;
-  const fontSize = Math.max(6, Math.round(baseFontSize * relScale));
+  const padding = Math.max(3, Math.round(6 * relScale));
+  const contentWidth = Math.max(20, targetWidth - padding * 2);
+  const baseFontSize = annotation.fontSize ? annotation.fontSize * 0.65 : 8.5;
+  const fontSize = Math.max(5.5, Math.round(baseFontSize * relScale));
   const fontStack = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
 
   const measureCanvas = document.createElement('canvas');
@@ -144,10 +144,10 @@ export async function rasterizeStickyNote(
   mctx.font = `${fontSize}px ${fontStack}`;
 
   const lines = wrapTextLines(annotation.text || '', contentWidth, (s) => mctx.measureText(s).width);
-  const lineHeight = Math.round(fontSize * 1.45);
-  const headerHeight = Math.max(14, Math.round(22 * relScale));
+  const lineHeight = Math.round(fontSize * 1.35);
+  const headerHeight = Math.max(10, Math.round(16 * relScale));
   const bodyHeight = lines.length * lineHeight;
-  const targetHeight = Math.max(Math.round(40 * relScale), padding * 2 + headerHeight + bodyHeight);
+  const targetHeight = Math.max(Math.round(26 * relScale), padding * 2 + headerHeight + bodyHeight);
 
   const dpr = 2;
   const canvas = document.createElement('canvas');
@@ -160,7 +160,7 @@ export async function rasterizeStickyNote(
   ctx.clearRect(0, 0, targetWidth, targetHeight);
 
   // Background card with rounded corners
-  const radius = Math.max(3, Math.round(8 * relScale));
+  const radius = Math.max(2.5, Math.round(5 * relScale));
   ctx.beginPath();
   if (typeof ctx.roundRect === 'function') {
     ctx.roundRect(0, 0, targetWidth, targetHeight, radius);
@@ -178,29 +178,29 @@ export async function rasterizeStickyNote(
   }
   ctx.fillStyle = color.bg;
   ctx.fill();
-  ctx.lineWidth = Math.max(1, Math.round(1 * relScale));
+  ctx.lineWidth = Math.max(0.75, Math.round(0.75 * relScale));
   ctx.strokeStyle = color.border;
   ctx.stroke();
 
   // Header separator line
   const isDarkSlate = color.bg.toLowerCase() === '#272730';
-  const sepY = Math.round(24 * relScale);
+  const sepY = Math.round(18 * relScale);
   ctx.beginPath();
   ctx.moveTo(padding, sepY);
   ctx.lineTo(targetWidth - padding, sepY);
   ctx.strokeStyle = isDarkSlate ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.1)';
-  ctx.lineWidth = Math.max(1, Math.round(1 * relScale));
+  ctx.lineWidth = Math.max(0.75, Math.round(0.75 * relScale));
   ctx.stroke();
 
   // "NOTE" header label
-  ctx.font = `600 ${Math.max(6, Math.round(10 * relScale))}px ${fontStack}`;
+  ctx.font = `600 ${Math.max(5.5, Math.round(7.5 * relScale))}px ${fontStack}`;
   ctx.fillStyle = isDarkSlate ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.55)';
-  ctx.fillText('NOTE', padding + 2, Math.round(17 * relScale));
+  ctx.fillText('NOTE', padding + 1, Math.round(13 * relScale));
 
   // Text body
   ctx.font = `${fontSize}px ${fontStack}`;
   ctx.fillStyle = color.text;
-  const bodyStartY = Math.round(30 * relScale);
+  const bodyStartY = Math.round(23 * relScale);
   for (let i = 0; i < lines.length; i++) {
     const y = bodyStartY + (i + 0.8) * lineHeight;
     ctx.fillText(lines[i], padding, y);

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Trash2, GripHorizontal, Edit3, Check, Palette } from 'lucide-react';
+import { Trash2, GripHorizontal, Edit3, Palette } from 'lucide-react';
 import type { TextNoteAnnotation, ReadingTheme, ToolType } from '../utils/types';
 import { focusWithoutMovingViewer, keepViewerPositionAfter } from '../utils/viewerPosition';
 import { TextFormattingToolbar } from './TextFormattingToolbar';
@@ -134,7 +134,7 @@ export const TextNoteOverlay: React.FC<TextNoteOverlayProps> = ({
   const isResizingRef = useRef(false);
   const resizeStartPosRef = useRef({ startX: 0, initialWidthPx: 0 });
 
-  const defaultStickyWidthRatio = 0.28;
+  const defaultStickyWidthRatio = 0.20;
 
   const handleResizeStart = (e: React.PointerEvent) => {
     e.stopPropagation();
@@ -154,7 +154,7 @@ export const TextNoteOverlay: React.FC<TextNoteOverlayProps> = ({
     const handlePointerMove = (moveEvt: PointerEvent) => {
       if (!isResizingRef.current) return;
       const dx = moveEvt.clientX - resizeStartPosRef.current.startX;
-      const minW = annotation.kind === 'plain' ? Math.round(40 * zoomScale) : Math.round(80 * zoomScale);
+      const minW = annotation.kind === 'plain' ? Math.round(40 * zoomScale) : Math.round(55 * zoomScale);
       const nextWidthPx = Math.max(minW, Math.min(pageWidth * 1.5, resizeStartPosRef.current.initialWidthPx + dx));
       onUpdate(annotation.id, { width: nextWidthPx / pageWidth });
     };
@@ -183,12 +183,13 @@ export const TextNoteOverlay: React.FC<TextNoteOverlayProps> = ({
 
   const handleCancelEdit = (element: HTMLElement) => {
     keepViewerPositionAfter(element, () => {
-      if (!annotation.text) {
-        onDelete(annotation.id);
+      if (editText.trim()) {
+        onUpdate(annotation.id, { text: editText.trim() });
       } else {
-        setEditText(annotation.text);
-        setIsEditing(false);
+        onDelete(annotation.id);
       }
+      setIsEditing(false);
+      setShowColorPicker(false);
     });
   };
 
@@ -336,10 +337,10 @@ export const TextNoteOverlay: React.FC<TextNoteOverlayProps> = ({
 
   // Relative sticky note width scaling with page width, matching relative highlights
   const stickyWidthPx = annotation.width
-    ? Math.max(Math.round(60 * zoomScale), Math.round(annotation.width * pageWidth))
+    ? Math.max(Math.round(45 * zoomScale), Math.round(annotation.width * pageWidth))
     : Math.round(pageWidth * defaultStickyWidthRatio);
 
-  const scaledStickyFontSize = Math.max(6, Math.round((annotation.fontSize || 12) * zoomScale));
+  const scaledStickyFontSize = Math.max(5.5, Math.round((annotation.fontSize ? annotation.fontSize * 0.65 : 8.5) * zoomScale));
 
   // Baseline invariant expression preserved for test compatibility: fontSize: `${annotation.fontSize || 12}px`
   const fallbackStickyFontSizeStyle = { fontSize: `${annotation.fontSize || 12}px` };
@@ -354,11 +355,11 @@ export const TextNoteOverlay: React.FC<TextNoteOverlayProps> = ({
         left: `${leftPx}px`,
         top: `${topPx}px`,
         width: `${stickyWidthPx}px`,
-        minWidth: `${Math.round(80 * zoomScale)}px`,
+        minWidth: `${Math.round(55 * zoomScale)}px`,
       }}
-      className={`absolute z-30 select-none group transition-shadow rounded-lg shadow-lg ${
+      className={`absolute z-30 select-none group transition-shadow rounded-md shadow-md ${
         isSelected
-          ? 'ring-2 ring-blue-500 shadow-2xl'
+          ? 'ring-1.5 ring-blue-500 shadow-lg'
           : 'hover:ring-1 hover:ring-zinc-400/60'
       }`}
     >
@@ -368,47 +369,47 @@ export const TextNoteOverlay: React.FC<TextNoteOverlayProps> = ({
           backgroundColor: currentColor.bg,
           color: currentColor.text,
           borderColor: currentColor.border,
-          padding: `${Math.max(4, Math.round(10 * zoomScale))}px`,
-          borderRadius: `${Math.max(4, Math.round(8 * zoomScale))}px`,
-          gap: `${Math.max(2, Math.round(6 * zoomScale))}px`,
+          padding: `${Math.max(2.5, Math.round(5 * zoomScale))}px ${Math.max(3.5, Math.round(7 * zoomScale))}px`,
+          borderRadius: `${Math.max(3, Math.round(5 * zoomScale))}px`,
+          gap: `${Math.max(1, Math.round(2.5 * zoomScale))}px`,
         }}
-        className="relative rounded-lg border flex flex-col shadow-xs font-sans"
+        className="relative rounded-md border flex flex-col shadow-2xs font-sans"
       >
         {/* Header Drag Handle & Controls (Visible on hover or when selected) */}
         <div
           onMouseDown={handleMouseDownDrag}
           style={{
-            paddingBottom: `${Math.max(2, Math.round(4 * zoomScale))}px`,
+            paddingBottom: `${Math.max(1, Math.round(2 * zoomScale))}px`,
           }}
           className="flex items-center justify-between cursor-grab active:cursor-grabbing border-b border-black/10 text-black/60 hover:text-black"
         >
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5">
             <GripHorizontal
               style={{
-                width: `${Math.max(10, Math.round(14 * zoomScale))}px`,
-                height: `${Math.max(10, Math.round(14 * zoomScale))}px`,
+                width: `${Math.max(7, Math.round(10 * zoomScale))}px`,
+                height: `${Math.max(7, Math.round(10 * zoomScale))}px`,
               }}
             />
             <span
-              style={{ fontSize: `${Math.max(7, Math.round(10 * zoomScale))}px` }}
-              className="font-medium uppercase tracking-wider opacity-75"
+              style={{ fontSize: `${Math.max(5.5, Math.round(7.5 * zoomScale))}px` }}
+              className="font-semibold uppercase tracking-wider opacity-70"
             >
               Note
             </span>
           </div>
 
-          <div className="flex items-center gap-1" onMouseDown={(e) => e.stopPropagation()}>
+          <div className="flex items-center gap-0.5" onMouseDown={(e) => e.stopPropagation()}>
             {/* Palette Color Picker */}
             <button
               onClick={() => setShowColorPicker((prev) => !prev)}
-              style={{ padding: `${Math.max(1, Math.round(2 * zoomScale))}px` }}
+              style={{ padding: `${Math.max(0.5, Math.round(1 * zoomScale))}px` }}
               className="rounded hover:bg-black/10 text-black/70 hover:text-black transition-colors"
               title="Change note color"
             >
               <Palette
                 style={{
-                  width: `${Math.max(9, Math.round(12 * zoomScale))}px`,
-                  height: `${Math.max(9, Math.round(12 * zoomScale))}px`,
+                  width: `${Math.max(6.5, Math.round(9 * zoomScale))}px`,
+                  height: `${Math.max(6.5, Math.round(9 * zoomScale))}px`,
                 }}
               />
             </button>
@@ -417,14 +418,14 @@ export const TextNoteOverlay: React.FC<TextNoteOverlayProps> = ({
             {!isEditing && (
               <button
                 onClick={() => setIsEditing(true)}
-                style={{ padding: `${Math.max(1, Math.round(2 * zoomScale))}px` }}
+                style={{ padding: `${Math.max(0.5, Math.round(1 * zoomScale))}px` }}
                 className="rounded hover:bg-black/10 text-black/70 hover:text-black transition-colors"
                 title="Edit note text"
               >
                 <Edit3
                   style={{
-                    width: `${Math.max(9, Math.round(12 * zoomScale))}px`,
-                    height: `${Math.max(9, Math.round(12 * zoomScale))}px`,
+                    width: `${Math.max(6.5, Math.round(9 * zoomScale))}px`,
+                    height: `${Math.max(6.5, Math.round(9 * zoomScale))}px`,
                   }}
                 />
               </button>
@@ -433,14 +434,14 @@ export const TextNoteOverlay: React.FC<TextNoteOverlayProps> = ({
             {/* Delete Button */}
             <button
               onClick={() => onDelete(annotation.id)}
-              style={{ padding: `${Math.max(1, Math.round(2 * zoomScale))}px` }}
+              style={{ padding: `${Math.max(0.5, Math.round(1 * zoomScale))}px` }}
               className="rounded hover:bg-red-500/20 text-red-700 hover:text-red-900 transition-colors"
               title="Delete note (Delete key)"
             >
               <Trash2
                 style={{
-                  width: `${Math.max(9, Math.round(12 * zoomScale))}px`,
-                  height: `${Math.max(9, Math.round(12 * zoomScale))}px`,
+                  width: `${Math.max(6.5, Math.round(9 * zoomScale))}px`,
+                  height: `${Math.max(6.5, Math.round(9 * zoomScale))}px`,
                 }}
               />
             </button>
@@ -450,13 +451,20 @@ export const TextNoteOverlay: React.FC<TextNoteOverlayProps> = ({
         {/* Color Picker Swatches Dropdown */}
         {showColorPicker && (
           <div
-            className="flex items-center gap-1 bg-black/15 rounded-md justify-between"
-            style={{ padding: `${Math.max(2, Math.round(4 * zoomScale))}px` }}
-            onMouseDown={(e) => e.stopPropagation()}
+            className="flex items-center gap-0.5 bg-black/15 rounded justify-between"
+            style={{ padding: `${Math.max(1, Math.round(2 * zoomScale))}px` }}
+            onMouseDown={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
           >
             {NOTE_COLORS.map((c) => (
               <button
                 key={c.name}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
                 onClick={() => {
                   onUpdate(annotation.id, { color: c.bg });
                   setShowColorPicker(false);
@@ -464,8 +472,8 @@ export const TextNoteOverlay: React.FC<TextNoteOverlayProps> = ({
                 style={{
                   backgroundColor: c.bg,
                   borderColor: c.border,
-                  width: `${Math.max(10, Math.round(16 * zoomScale))}px`,
-                  height: `${Math.max(10, Math.round(16 * zoomScale))}px`,
+                  width: `${Math.max(7, Math.round(11 * zoomScale))}px`,
+                  height: `${Math.max(7, Math.round(11 * zoomScale))}px`,
                 }}
                 className="rounded-full border shadow-xs hover:scale-115 transition-transform"
                 title={c.name}
@@ -474,81 +482,57 @@ export const TextNoteOverlay: React.FC<TextNoteOverlayProps> = ({
           </div>
         )}
 
-        {/* Note Content (Editing vs Viewing) */}
+        {/* Note Content (Seamless WYSIWYG between Editing and Viewing) */}
         {isEditing ? (
-          <div
-            className="flex flex-col pt-0.5"
-            style={{ gap: `${Math.max(2, Math.round(6 * zoomScale))}px` }}
-            onMouseDown={(e) => e.stopPropagation()}
-          >
-            <textarea
-              ref={textareaRef}
-              rows={3}
-              value={editText}
-              onChange={(e) => {
-                setEditText(e.target.value);
-                e.target.style.height = 'auto';
-                e.target.style.height = `${Math.max(Math.round(48 * zoomScale), e.target.scrollHeight)}px`;
-              }}
-              placeholder="Write your note..."
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-                  handleSaveEdit();
-                } else if (e.key === 'Escape') {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  handleSaveEdit();
-                }
-              }}
-              style={{
-                backgroundColor: 'rgba(255, 255, 255, 0.4)',
-                color: currentColor.text,
-                fontSize: `${scaledStickyFontSize}px`,
-                lineHeight: 1.4,
-                padding: `${Math.max(3, Math.round(6 * zoomScale))}px`,
-                minHeight: `${Math.max(28, Math.round(48 * zoomScale))}px`,
-                borderRadius: `${Math.max(2, Math.round(4 * zoomScale))}px`,
-              }}
-              className="w-full font-sans focus:outline-none focus:ring-1 focus:ring-black/30 resize-none leading-relaxed"
-            />
-            <div className="flex justify-end gap-1">
-              <button
-                onClick={(e) => handleCancelEdit(e.currentTarget)}
-                style={{
-                  padding: `${Math.max(1, Math.round(2 * zoomScale))}px ${Math.max(4, Math.round(8 * zoomScale))}px`,
-                  fontSize: `${Math.max(8, Math.round(11 * zoomScale))}px`,
-                }}
-                className="rounded opacity-75 hover:opacity-100"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSaveEdit}
-                style={{
-                  padding: `${Math.max(1, Math.round(2 * zoomScale))}px ${Math.max(6, Math.round(10 * zoomScale))}px`,
-                  fontSize: `${Math.max(8, Math.round(11 * zoomScale))}px`,
-                }}
-                className="flex items-center gap-1 rounded bg-black/80 hover:bg-black text-white font-medium shadow-xs"
-              >
-                <Check
-                  style={{
-                    width: `${Math.max(9, Math.round(12 * zoomScale))}px`,
-                    height: `${Math.max(9, Math.round(12 * zoomScale))}px`,
-                  }}
-                />
-                <span>Save</span>
-              </button>
-            </div>
-          </div>
+          <textarea
+            ref={textareaRef}
+            rows={1}
+            value={editText}
+            onChange={(e) => {
+              setEditText(e.target.value);
+              e.target.style.height = '0px';
+              const minH = Math.max(14, Math.round(20 * zoomScale));
+              e.target.style.height = `${Math.max(minH, e.target.scrollHeight)}px`;
+            }}
+            onBlur={handleSaveEdit}
+            placeholder="Write a note..."
+            aria-label="Edit sticky note"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                e.preventDefault();
+                handleSaveEdit();
+              } else if (e.key === 'Escape') {
+                e.preventDefault();
+                e.stopPropagation();
+                handleCancelEdit(e.currentTarget);
+              }
+            }}
+            style={{
+              backgroundColor: 'transparent',
+              color: currentColor.text,
+              fontSize: `${scaledStickyFontSize}px`,
+              lineHeight: 1.35,
+              minHeight: `${Math.max(14, Math.round(20 * zoomScale))}px`,
+            }}
+            className="w-full bg-transparent border-0 outline-none ring-0 p-0 m-0 py-0.5 px-0 font-sans font-normal resize-none leading-normal block placeholder:opacity-40 placeholder:italic focus:outline-none focus:ring-0 focus:border-0"
+          />
         ) : (
           <div
-            className="whitespace-pre-wrap break-words leading-relaxed py-0.5 font-normal"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (activeTool !== 'eraser') {
+                setIsEditing(true);
+              }
+            }}
+            className="cursor-text whitespace-pre-wrap break-words leading-normal py-0.5 px-0 font-normal font-sans select-text"
             style={{
+              color: currentColor.text,
               fontSize: `${scaledStickyFontSize}px`,
-              lineHeight: 1.4,
+              lineHeight: 1.35,
+              minHeight: `${Math.max(14, Math.round(20 * zoomScale))}px`,
             }}
           >
-            {annotation.text}
+            {annotation.text || <span className="opacity-40 italic">Write a note...</span>}
           </div>
         )}
 
@@ -556,8 +540,8 @@ export const TextNoteOverlay: React.FC<TextNoteOverlayProps> = ({
         <div
           onPointerDown={handleResizeStart}
           style={{
-            width: `${Math.max(12, Math.round(16 * zoomScale))}px`,
-            height: `${Math.max(12, Math.round(16 * zoomScale))}px`,
+            width: `${Math.max(8, Math.round(11 * zoomScale))}px`,
+            height: `${Math.max(8, Math.round(11 * zoomScale))}px`,
           }}
           className="absolute -bottom-1 -right-1 cursor-nwse-resize select-none touch-none z-20"
           aria-label="Resize note width"
@@ -565,9 +549,9 @@ export const TextNoteOverlay: React.FC<TextNoteOverlayProps> = ({
         <div
           onPointerDown={handleResizeStart}
           style={{
-            width: `${Math.max(8, Math.round(10 * zoomScale))}px`,
+            width: `${Math.max(5, Math.round(7 * zoomScale))}px`,
           }}
-          className="absolute top-2 right-0 bottom-3 cursor-ew-resize select-none touch-none z-20"
+          className="absolute top-1 right-0 bottom-2 cursor-ew-resize select-none touch-none z-20"
           aria-label="Resize note width"
         />
       </div>
