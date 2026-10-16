@@ -60,6 +60,7 @@ interface PDFPageProps {
   onCopyPageImage: (pageNumber: number) => void;
   onAskAiAboutPage: (pageNumber: number) => void;
   onCopySelectedText?: (text: string) => void;
+  onAttachTextToAi?: (text: string, pageNumber: number) => void;
   showToast?: (text: string, isError?: boolean) => void;
   onSelectTool?: (tool: ToolType) => void;
   isFlush?: boolean;
@@ -103,6 +104,7 @@ export const PDFPageComponent: React.FC<PDFPageProps> = ({
   onCopyPageImage,
   onAskAiAboutPage,
   onCopySelectedText,
+  onAttachTextToAi,
   showToast,
   onSelectTool,
   isFlush = false,
@@ -505,6 +507,7 @@ export const PDFPageComponent: React.FC<PDFPageProps> = ({
           onCopyPageText={() => onCopyPageText(pageNumber)}
           onCopyPageImage={() => onCopyPageImage(pageNumber)}
           onAskAi={() => onAskAiAboutPage(pageNumber)}
+          onAttachTextToAi={onAttachTextToAi ? (text) => onAttachTextToAi(text, pageNumber) : undefined}
         />
       )}
       {/* Visual Page Number Badge in Margin */}

@@ -12,6 +12,7 @@ import {
   Rows,
   Square,
   Columns2,
+  Sparkles,
 } from 'lucide-react';
 import type { DocumentInfo, ReadingTheme, ViewMode } from '../utils/types';
 import { isTauri, handleTitlebarMouseDown } from '../utils/tauriBridge';
@@ -27,10 +28,12 @@ interface HeaderProps {
   theme: ReadingTheme;
   isZenMode: boolean;
   isSearchOpen: boolean;
+  isAiPanelOpen?: boolean;
   annotationCount?: number;
   saveStatus?: 'saved' | 'saving' | 'error';
   onOpenDashboard?: () => void;
   onToggleSearch: () => void;
+  onToggleAiPanel?: () => void;
   onToggleInvert: () => void;
   onOpenThemeModal: () => void;
   onToggleZen: () => void;
@@ -54,8 +57,10 @@ export const Header: React.FC<HeaderProps> = ({
   theme,
   isZenMode,
   isSearchOpen,
+  isAiPanelOpen = false,
   onOpenDashboard,
   onToggleSearch,
+  onToggleAiPanel,
   onToggleInvert,
   onOpenThemeModal,
   onToggleZen,
@@ -229,6 +234,15 @@ export const Header: React.FC<HeaderProps> = ({
           >
             <SlidersHorizontal className="w-3.5 h-3.5" />
           </button>
+          {onToggleAiPanel && (
+            <button
+              onClick={onToggleAiPanel}
+              className={`macos-topbar-icon ${isAiPanelOpen ? 'text-blue-500 bg-blue-500/10 dark:bg-blue-500/20' : ''}`}
+              title="AI Reading Assistant & Chat (Cmd+J)"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
 
         {/* View Mode Segmented Controls with Smooth Sliding Highlighter Box */}

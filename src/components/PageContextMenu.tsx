@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { Copy, FilePlus, FileText, Image, Trash2 } from 'lucide-react';
 import { SparkleIcon } from './icons/SparkleIcon';
 import type { Annotation } from '../utils/types';
+import { getAnnotationCoveredText } from '../utils/annotationPresentation';
 
 interface PageContextMenuProps {
   position: { x: number; y: number };
@@ -12,6 +13,7 @@ interface PageContextMenuProps {
   onCopyPageImage: () => void;
   onAskAi: () => void;
   onCopySelectedText?: () => void;
+  onAttachTextToAi?: (text: string) => void;
   hasSelectedText?: boolean;
   hitAnnotation?: Annotation | null;
   onCopyAnnotationText?: (ann: Annotation) => void;
@@ -28,6 +30,7 @@ export const PageContextMenu: React.FC<PageContextMenuProps> = ({
   onCopyPageImage,
   onAskAi,
   onCopySelectedText,
+  onAttachTextToAi,
   hasSelectedText = false,
   hitAnnotation = null,
   onCopyAnnotationText,
@@ -130,6 +133,22 @@ export const PageContextMenu: React.FC<PageContextMenuProps> = ({
               <span>{getDeleteAnnotationLabel()}</span>
             </button>
           )}
+          {onAttachTextToAi && (
+            <button
+              type="button"
+              role="menuitem"
+              className={itemClass}
+              onClick={run(() => {
+                const text = getAnnotationCoveredText(hitAnnotation);
+                if (text) onAttachTextToAi(text);
+              })}
+            >
+              <span className="page-context-menu__icon" aria-hidden="true">
+                <SparkleIcon />
+              </span>
+              <span>Attach highlight to AI prompt</span>
+            </button>
+          )}
           <div className="page-context-menu__separator" role="separator" />
         </>
       )}
@@ -147,6 +166,23 @@ export const PageContextMenu: React.FC<PageContextMenuProps> = ({
         </span>
         <span>Copy text</span>
       </button>
+      {hasSelectedText && onAttachTextToAi && (
+        <button
+          type="button"
+          role="menuitem"
+          className={itemClass}
+          onClick={run(() => {
+            const sel = window.getSelection();
+            const text = sel ? sel.toString().trim() : '';
+            if (text) onAttachTextToAi(text);
+          })}
+        >
+          <span className="page-context-menu__icon" aria-hidden="true">
+            <SparkleIcon />
+          </span>
+          <span>Attach selection to AI prompt</span>
+        </button>
+      )}
 
       {/* 3. Page level actions */}
       <button type="button" role="menuitem" className={itemClass} onClick={run(onCopyPageText)}>

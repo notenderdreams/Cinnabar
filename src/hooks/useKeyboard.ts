@@ -22,6 +22,7 @@ export interface KeyboardShortcutOptions {
   onToggleFullscreen?: () => void;
   onEscape?: () => void;
   onToggleSidebar?: () => void;
+  onToggleAiPanel?: () => void;
   onToggleShortcuts: () => void;
   onToggleSettings?: () => void;
   onChangeViewMode?: (mode: ViewMode) => void;
@@ -122,6 +123,9 @@ export function handleKeyboardShortcut(
     } else if (e.shiftKey && e.key.toLowerCase() === 'j') {
       e.preventDefault();
       options.onCopyPageJpg?.();
+    } else if (!e.shiftKey && e.key.toLowerCase() === 'j') {
+      e.preventDefault();
+      options.onToggleAiPanel?.();
     } else if (e.key.toLowerCase() === 'o') {
       e.preventDefault();
       options.onOpenPdf();

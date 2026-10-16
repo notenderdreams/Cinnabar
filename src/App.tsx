@@ -11,7 +11,8 @@ import { KeyboardShortcutsModal } from './components/KeyboardShortcutsModal';
 import { SettingsModal } from './components/SettingsModal';
 import { ExportModal } from './components/ExportModal';
 import { DeletePageConfirmationDialog } from './components/DeletePageConfirmationDialog';
-import { Check, Info, LoaderCircle, Sidebar as SidebarIcon } from 'lucide-react';
+import { AiChatPanel } from './components/ai';
+import { Check, Info, LoaderCircle, Sidebar as SidebarIcon, Sparkles } from 'lucide-react';
 
 import { usePDFDocument } from './hooks/usePDFDocument';
 import { useAnnotations } from './hooks/useAnnotations';
@@ -76,7 +77,7 @@ import {
   copyStitchedSnippetsToClipboard,
   downloadStitchedSnippets,
 } from './utils/snippetExtractor';
-import type { AiExplanationAnnotation, Annotation, AppScreen, HighlightStyle, LineHighlightStyle, ToolType, ViewMode, StitchOptions } from './utils/types';
+import type { AiChatAttachment, AiExplanationAnnotation, Annotation, AppScreen, HighlightStyle, LineHighlightStyle, ToolType, ViewMode, StitchOptions } from './utils/types';
 import type { SidebarTabType } from './components/Sidebar';
 
 export function App() {
@@ -88,6 +89,9 @@ export function App() {
   const [fitPageRequest, setFitPageRequest] = useState<{ id: number; page: number } | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>(() => loadViewMode());
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
+  const [isAiPanelOpen, setIsAiPanelOpen] = useState<boolean>(false);
+  const [pendingAiAttachments, setPendingAiAttachments] = useState<AiChatAttachment[]>([]);
+  const [snipTarget, setSnipTarget] = useState<'snippets' | 'ai-prompt'>('snippets');
   const [sidebarTab, setSidebarTab] = useState<SidebarTabType>('thumbnails');
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
   const [isZenMode, setIsZenMode] = useState<boolean>(false);
@@ -545,10 +549,14 @@ export function App() {
   const handleSelectTool = useCallback((tool: ToolType) => {
     setActiveTool(tool);
     if (tool === 'snip') {
-      setIsSidebarOpen(true);
-      setSidebarTab('snippets');
+      if (snipTarget !== 'ai-prompt') {
+        setIsSidebarOpen(true);
+        setSidebarTab('snippets');
+      }
+    } else {
+      setSnipTarget('snippets');
     }
-  }, []);
+  }, [snipTarget]);
 
   // Snippet capture handler from canvas
   const handleCaptureSnippet = useCallback(
@@ -556,18 +564,65 @@ export function App() {
       try {
         const entry = await cropCanvasRegion(pageNumber, rect, pdfDoc);
         if (entry) {
-          addSnippet(entry);
-          setIsSidebarOpen(true);
-          setSidebarTab('snippets');
-          showToast(`Captured snippet from Page ${pageNumber}!`);
+          if (snipTarget === 'ai-prompt') {
+            const newAttachment: AiChatAttachment = {
+              id: `snip_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+              type: 'image',
+              dataUrl: entry.dataUrl,
+              pageNumber,
+              width: entry.width,
+              height: entry.height,
+            };
+            setPendingAiAttachments((prev) => [...prev, newAttachment]);
+            setSnipTarget('snippets');
+            setActiveTool('select');
+            setIsAiPanelOpen(true);
+            showToast(`Attached Page ${pageNumber} snippet to AI prompt!`);
+          } else {
+            addSnippet(entry);
+            setIsSidebarOpen(true);
+            setSidebarTab('snippets');
+            showToast(`Captured snippet from Page ${pageNumber}!`);
+          }
         }
       } catch (err) {
         console.error('Failed to capture snippet:', err);
         showToast('Failed to capture snippet', true);
       }
     },
-    [pdfDoc, addSnippet, showToast]
+    [pdfDoc, snipTarget, addSnippet, showToast]
   );
+
+  const handleStartSnipCaptureForAi = useCallback(() => {
+    setSnipTarget('ai-prompt');
+    setActiveTool('snip');
+    showToast('Drag a box on the PDF to attach snippet to AI prompt');
+  }, [showToast]);
+
+  const handleAttachSelectedTextToAi = useCallback((text?: unknown, pageNumber?: number) => {
+    let textToAttach = typeof text === 'string' && text.trim().length > 0 ? text.trim() : '';
+    if (!textToAttach) {
+      const sel = window.getSelection();
+      textToAttach = sel ? sel.toString().trim() : '';
+    }
+    if (!textToAttach) {
+      showToast('Select text on the PDF to attach', true);
+      return;
+    }
+    const newAttachment: AiChatAttachment = {
+      id: `quote_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      type: 'text',
+      text: textToAttach,
+      pageNumber: typeof pageNumber === 'number' ? pageNumber : currentPage,
+    };
+    setPendingAiAttachments((prev) => [...prev, newAttachment]);
+    setIsAiPanelOpen(true);
+    showToast('Attached selected text to AI prompt!');
+  }, [currentPage, showToast]);
+
+  const handleRemoveAiAttachment = useCallback((id: string) => {
+    setPendingAiAttachments((prev) => prev.filter((a) => a.id !== id));
+  }, []);
 
   const handleCopyStitchedSnippets = useCallback(
     async (options?: StitchOptions) => {
@@ -1116,6 +1171,10 @@ export function App() {
         setIsSearchOpen(false);
         return;
       }
+      if (isAiPanelOpen) {
+        setIsAiPanelOpen(false);
+        return;
+      }
       if (selectedAnnotationId) {
         const selectedAnn = annotations.find((a) => a.id === selectedAnnotationId);
         if (selectedAnn && selectedAnn.type === 'ai-explanation') {
@@ -1137,6 +1196,11 @@ export function App() {
     onToggleSidebar: () => {
       if (currentScreen === 'reader') {
         setIsSidebarOpen((prev) => !prev);
+      }
+    },
+    onToggleAiPanel: () => {
+      if (currentScreen === 'reader') {
+        setIsAiPanelOpen((prev) => !prev);
       }
     },
     onToggleShortcuts: () => setIsShortcutsModalOpen((prev) => !prev),
@@ -1369,10 +1433,12 @@ export function App() {
             theme={themeSettings.theme}
             isZenMode={isZenMode}
             isSearchOpen={isSearchOpen}
+            isAiPanelOpen={isAiPanelOpen}
             annotationCount={annotations.length}
             saveStatus={saveStatus}
             onOpenDashboard={() => setCurrentScreen('dashboard')}
             onToggleSearch={() => setIsSearchOpen((prev) => !prev)}
+            onToggleAiPanel={() => setIsAiPanelOpen((prev) => !prev)}
             onToggleInvert={toggleInvert}
             onOpenThemeModal={() => setIsThemeModalOpen(true)}
             onToggleZen={() => setIsZenMode((prev) => !prev)}
@@ -1528,6 +1594,7 @@ export function App() {
                 onCopyPageText={(pageNumber) => void handleCopyPageText(pageNumber)}
                 onCopyPageImage={(pageNumber) => void handleCopyPageJpg(pageNumber)}
                 onAskAiAboutPage={handleAskAiAboutPage}
+                onAttachTextToAi={handleAttachSelectedTextToAi}
                 onPdfFileDrop={(file) => {
                   const reader = new FileReader();
                   reader.onload = async () => {
@@ -1570,6 +1637,34 @@ export function App() {
                 </div>
               )}
             </div>
+
+            {!isZenMode && (
+              <button
+                onClick={() => setIsAiPanelOpen(true)}
+                className={`macos-sidebar-collapse-control canvas-ai-toggle transition-all duration-200 ease-out ${
+                  !isAiPanelOpen
+                    ? 'opacity-100 translate-x-0 pointer-events-auto'
+                    : 'opacity-0 translate-x-3 pointer-events-none'
+                }`}
+                title="Show AI Assistant & Chat (Cmd+J)"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+              </button>
+            )}
+
+            {/* AI Assistant & Chat Panel */}
+            <AiChatPanel
+              isOpen={isAiPanelOpen && !isZenMode}
+              onClose={() => setIsAiPanelOpen(false)}
+              pdfDoc={pdfDoc}
+              docInfo={docInfo}
+              currentPage={currentPage}
+              isSnipCapturing={activeTool === 'snip' && snipTarget === 'ai-prompt'}
+              pendingAttachments={pendingAiAttachments}
+              onStartSnipCapture={handleStartSnipCaptureForAi}
+              onAttachSelectedText={handleAttachSelectedTextToAi}
+              onRemoveAttachment={handleRemoveAiAttachment}
+            />
           </div>
 
           {/* Floating Tool Dock */}

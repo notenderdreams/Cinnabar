@@ -3,3 +3,4 @@ export * from './pdf';
 export * from './theme';
 export * from './snippets';
 export * from './dashboard';
+export * from './aiChat';

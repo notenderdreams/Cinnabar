@@ -1044,6 +1044,17 @@
   box-shadow: var(--shadow-soft);
 }
 
+.canvas-ai-toggle {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.75rem;
+  z-index: 40;
+  background: color-mix(in srgb, var(--card) 88%, transparent);
+  border: 0.5px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--shadow-soft);
+}
+
 .reader-progress {
   position: fixed;
   right: 0;
