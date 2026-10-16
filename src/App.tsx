@@ -1045,28 +1045,35 @@ export function App() {
     return () => window.removeEventListener('paste', handlePaste);
   }, [currentPage, handleAddImage, showToast]);
 
-  const addHighlightsFromSelection = useCallback((style: HighlightStyle, showEmptyToast: boolean) => {
-    const selection = window.getSelection();
-    const highlights = createTextHighlightsFromSelection(
-      selection,
-      selectedColor,
-      opacity,
-      style
-    );
+  const addHighlightsFromSelection = useCallback(
+    (style: HighlightStyle = 'box', showEmptyToast = true, color?: string) => {
+      const selection = window.getSelection();
+      const targetColor = color || selectedColor;
+      const highlights = createTextHighlightsFromSelection(
+        selection,
+        targetColor,
+        opacity,
+        style
+      );
 
-    if (highlights.length === 0) {
-      if (showEmptyToast) showToast('Select PDF text first', true);
-      return false;
-    }
+      if (highlights.length === 0) {
+        if (showEmptyToast) showToast('Select PDF text first', true);
+        return false;
+      }
 
-    highlights.forEach(addAnnotation);
-    selection?.removeAllRanges();
-    const location = highlights.length === 1
-      ? `Page ${highlights[0].pageNumber}`
-      : `${highlights.length} pages`;
-    showToast(`${style === 'underline' ? 'Underlined' : 'Highlighted'} selected text on ${location}`);
-    return true;
-  }, [addAnnotation, opacity, selectedColor, showToast]);
+      highlights.forEach(addAnnotation);
+      selection?.removeAllRanges();
+      const location =
+        highlights.length === 1
+          ? `Page ${highlights[0].pageNumber}`
+          : `${highlights.length} pages`;
+      showToast(
+        `${style === 'underline' ? 'Underlined' : style === 'stroke' ? 'Boxed' : 'Highlighted'} selected text on ${location}`
+      );
+      return true;
+    },
+    [addAnnotation, opacity, selectedColor, showToast]
+  );
 
   const handleHighlightSelectedText = useCallback(() => {
     addHighlightsFromSelection(highlightStyle, true);
@@ -1595,6 +1602,7 @@ export function App() {
                 onCopyPageImage={(pageNumber) => void handleCopyPageJpg(pageNumber)}
                 onAskAiAboutPage={handleAskAiAboutPage}
                 onAttachTextToAi={handleAttachSelectedTextToAi}
+                onHighlightSelection={(style, color) => addHighlightsFromSelection(style || 'box', false, color)}
                 onPdfFileDrop={(file) => {
                   const reader = new FileReader();
                   reader.onload = async () => {

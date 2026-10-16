@@ -1920,6 +1920,14 @@
   color: transparent !important;
 }
 
+.textLayer .endOfContent::selection {
+  background: transparent !important;
+}
+
+.textLayer .endOfContent::-moz-selection {
+  background: transparent !important;
+}
+
 @keyframes slideDown {
   from {
     opacity: 0;

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Copy, FilePlus, FileText, Image, Trash2 } from 'lucide-react';
+import { Copy, FilePlus, FileText, Image, Trash2, Highlighter, Underline } from 'lucide-react';
 import { SparkleIcon } from './icons/SparkleIcon';
 import type { Annotation } from '../utils/types';
 import { getAnnotationCoveredText } from '../utils/annotationPresentation';
@@ -13,6 +13,8 @@ interface PageContextMenuProps {
   onCopyPageImage: () => void;
   onAskAi: () => void;
   onCopySelectedText?: () => void;
+  onHighlightSelectedText?: () => void;
+  onUnderlineSelectedText?: () => void;
   onAttachTextToAi?: (text: string) => void;
   hasSelectedText?: boolean;
   hitAnnotation?: Annotation | null;
@@ -30,6 +32,8 @@ export const PageContextMenu: React.FC<PageContextMenuProps> = ({
   onCopyPageImage,
   onAskAi,
   onCopySelectedText,
+  onHighlightSelectedText,
+  onUnderlineSelectedText,
   onAttachTextToAi,
   hasSelectedText = false,
   hitAnnotation = null,
@@ -154,6 +158,32 @@ export const PageContextMenu: React.FC<PageContextMenuProps> = ({
       )}
 
       {/* 2. Text selection action */}
+      {hasSelectedText && onHighlightSelectedText && (
+        <button
+          type="button"
+          role="menuitem"
+          className={itemClass}
+          onClick={run(onHighlightSelectedText)}
+        >
+          <span className="page-context-menu__icon" aria-hidden="true">
+            <Highlighter />
+          </span>
+          <span>Highlight selection</span>
+        </button>
+      )}
+      {hasSelectedText && onUnderlineSelectedText && (
+        <button
+          type="button"
+          role="menuitem"
+          className={itemClass}
+          onClick={run(onUnderlineSelectedText)}
+        >
+          <span className="page-context-menu__icon" aria-hidden="true">
+            <Underline />
+          </span>
+          <span>Underline selection</span>
+        </button>
+      )}
       <button
         type="button"
         role="menuitem"

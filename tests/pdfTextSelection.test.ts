@@ -49,15 +49,19 @@ describe('PDF text selection', () => {
     expect(pageSource).toContain('selectFullLineAtTarget');
     expect(pageSource).toContain('e.detail >= 3');
 
-    // Highlight tool double-click and triple-click toggling with staged selection rectangle
+    // Highlight tool double-click and triple-click toggles highlight directly without middle selection state, only after clicks complete
     expect(canvasSource).toContain('getTextLineBoundsAtPoint');
     expect(canvasSource).toContain('getWordBoundsAtPoint');
     expect(canvasSource).toContain('findHighlightAnnotationsCoveringLine');
     expect(canvasSource).toContain('findHighlightAnnotationsCoveringWord');
+    expect(canvasSource).toContain('selectWordAtTarget');
+    expect(canvasSource).toContain('selectFullLineAtTarget');
     expect(canvasSource).toContain('doubleClickTimerRef');
-    expect(canvasSource).toContain('pendingSelection');
-    expect(canvasSource).toContain('commitPendingSelection');
-    expect(canvasSource).toContain('data-pdf-selection-rectangle');
+    expect(canvasSource).toContain('applyHighlightAtBounds');
+    expect(canvasSource).not.toContain('pendingSelection');
+    expect(canvasSource).not.toContain('commitPendingSelection');
+    expect(canvasSource).not.toContain('data-pdf-selection-rectangle');
+    expect(canvasSource).toContain('isClick');
 
     // Discoverable in shortcuts and settings
     expect(shortcutsSource).toContain('Double Click');
@@ -69,5 +73,19 @@ describe('PDF text selection', () => {
     expect(settingsSource).toContain('Highlight / Remove Word Highlight');
     expect(settingsSource).toContain('Triple Click');
     expect(settingsSource).toContain('Highlight / Remove Line Highlight');
+  });
+
+  test('binds textLayer endOfContent selection synchronization to prevent WebKit backwards selection', async () => {
+    const [pageSource, managerSource, styles] = await Promise.all([
+      projectFile('src/components/PDFPage.tsx'),
+      projectFile('src/utils/pdfTextLayerManager.ts'),
+      projectFile('src/index.css'),
+    ]);
+
+    expect(pageSource).toContain('bindTextLayerSelection');
+    expect(managerSource).toContain('endOfContent');
+    expect(managerSource).toContain('selectionchange');
+    expect(managerSource).toContain('insertBefore');
+    expect(styles).toContain('.textLayer .endOfContent::selection');
   });
 });

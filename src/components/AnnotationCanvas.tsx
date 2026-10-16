@@ -27,19 +27,6 @@ import {
 } from '../utils/textHighlight';
 import { focusWithoutMovingViewer, keepViewerPositionAfter } from '../utils/viewerPosition';
 
-interface PendingHighlightSelection {
-  type: 'add' | 'remove';
-  pageNumber: number;
-  bounds: TextLineBounds;
-  targetAnnIds?: string[];
-  replaceAnnIds?: string[];
-  tool: ToolType;
-  color: string;
-  opacity: number;
-  rectHighlightStyle: 'box' | 'stroke';
-  lineHighlightStyle: 'highlight' | 'underline';
-}
-
 const DEFAULT_UNDERLINE_WIDTH = 1.5;
 const DEFAULT_RECT_STROKE_WIDTH = 1.5;
 
@@ -113,9 +100,6 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
   const [snipCurrent, setSnipCurrent] = useState<StrokePoint | null>(null);
   const [aiStart, setAiStart] = useState<StrokePoint | null>(null);
   const [aiCurrent, setAiCurrent] = useState<StrokePoint | null>(null);
-  const [pendingSelection, setPendingSelection] = useState<PendingHighlightSelection | null>(null);
-  const pendingSelectionRef = useRef<PendingHighlightSelection | null>(null);
-  pendingSelectionRef.current = pendingSelection;
 
   const isMouseDownRef = useRef(false);
   const isInteractingRef = useRef(false);
@@ -135,101 +119,98 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
     };
   }, []);
 
-  const commitPendingSelection = useCallback(() => {
-    const pending = pendingSelectionRef.current;
-    if (!pending) return;
-    pendingSelectionRef.current = null;
-    setPendingSelection(null);
+  const colorFilterClass = isInvertedColorMode ? 'annotation-color-preview-invert' : undefined;
+  const rectHighlightStyle = highlightStyle === 'stroke' ? 'stroke' : 'box';
+  const isHighlightTool =
+    activeTool === 'highlight-line' ||
+    activeTool === 'highlight-rect' ||
+    activeTool === 'highlight-pen' ||
+    activeTool === 'highlight-text';
 
-    if (pending.type === 'remove') {
-      if (pending.targetAnnIds && pending.targetAnnIds.length > 0) {
-        pending.targetAnnIds.forEach((id) => onDeleteAnnotation(id));
-      }
-      onSelectAnnotation?.(null);
-    } else if (pending.type === 'add') {
-      if (pending.replaceAnnIds && pending.replaceAnnIds.length > 0) {
-        pending.replaceAnnIds.forEach((id) => onDeleteAnnotation(id));
-      }
+  const applyHighlightAtBounds = useCallback(
+    (bounds: TextLineBounds, isLine: boolean) => {
+      const existingHighlights = isLine
+        ? findHighlightAnnotationsCoveringLine(
+            annotations,
+            pageNumber,
+            bounds,
+            pageWidth,
+            pageHeight
+          )
+        : findHighlightAnnotationsCoveringWord(
+            annotations,
+            pageNumber,
+            bounds,
+            pageWidth,
+            pageHeight
+          );
 
-      if (pending.tool === 'highlight-line' && pending.lineHighlightStyle === 'underline') {
-        const newLine: LineHighlightAnnotation = {
-          id: `line_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-          pageNumber: pending.pageNumber,
-          type: 'highlight-line',
-          startX: pending.bounds.startX,
-          startY: pending.bounds.y + pending.bounds.height,
-          endX: pending.bounds.endX,
-          endY: pending.bounds.y + pending.bounds.height,
-          color: pending.color,
-          strokeWidth: DEFAULT_UNDERLINE_WIDTH,
-          opacity: 1,
-          style: 'underline',
-          text: pending.bounds.text || undefined,
-          createdAt: Date.now(),
-        };
-        onAddAnnotation(newLine);
+      const coverage = isLine ? computeLineHighlightCoverage(bounds, existingHighlights) : 1;
+      const shouldRemove = isLine ? existingHighlights.length > 0 && coverage >= 0.75 : existingHighlights.length > 0;
+
+      if (shouldRemove) {
+        existingHighlights.forEach((a) => onDeleteAnnotation(a.id));
+        onSelectAnnotation?.(null);
       } else {
-        const newRect: RectHighlightAnnotation = {
-          id: `rect_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-          pageNumber: pending.pageNumber,
-          type: 'highlight-rect',
-          x: pending.bounds.x,
-          y: pending.bounds.y,
-          width: pending.bounds.width,
-          height: pending.bounds.height,
-          color: pending.color,
-          opacity: resolveHighlightOpacity(pending.rectHighlightStyle, pending.opacity),
-          style: pending.rectHighlightStyle,
-          text: pending.bounds.text || undefined,
-          createdAt: Date.now(),
-        };
-        onAddAnnotation(newRect);
-      }
-    }
-    if (typeof window !== 'undefined') {
-      window.getSelection()?.removeAllRanges();
-    }
-  }, [onAddAnnotation, onDeleteAnnotation, onSelectAnnotation]);
+        if (existingHighlights.length > 0) {
+          existingHighlights.forEach((a) => onDeleteAnnotation(a.id));
+        }
 
-  // Global pointerdown listener to commit pending selection when clicking outside
-  useEffect(() => {
-    if (!pendingSelection) return;
-
-    const handleGlobalPointerDown = (e: PointerEvent) => {
-      const pending = pendingSelectionRef.current;
-      if (!pending) return;
-
-      const container = containerRef.current;
-      if (container && container.contains(e.target as Node)) {
-        const rect = container.getBoundingClientRect();
-        const clientX = e.clientX;
-        const clientY = e.clientY;
-        const selLeft = rect.left + pending.bounds.x * rect.width;
-        const selRight = selLeft + pending.bounds.width * rect.width;
-        const selTop = rect.top + pending.bounds.y * rect.height;
-        const selBottom = selTop + pending.bounds.height * rect.height;
-
-        if (
-          clientX >= selLeft - 4 &&
-          clientX <= selRight + 4 &&
-          clientY >= selTop - 4 &&
-          clientY <= selBottom + 4
-        ) {
-          return;
+        if (activeTool === 'highlight-line' && lineHighlightStyle === 'underline') {
+          const newLine: LineHighlightAnnotation = {
+            id: `line_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+            pageNumber,
+            type: 'highlight-line',
+            startX: bounds.startX,
+            startY: bounds.y + bounds.height,
+            endX: bounds.endX,
+            endY: bounds.y + bounds.height,
+            color: selectedColor,
+            strokeWidth: DEFAULT_UNDERLINE_WIDTH,
+            opacity: 1,
+            style: 'underline',
+            text: bounds.text || undefined,
+            createdAt: Date.now(),
+          };
+          onAddAnnotation(newLine);
+        } else {
+          const newRect: RectHighlightAnnotation = {
+            id: `rect_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+            pageNumber,
+            type: 'highlight-rect',
+            x: bounds.x,
+            y: bounds.y,
+            width: bounds.width,
+            height: bounds.height,
+            color: selectedColor,
+            opacity: resolveHighlightOpacity(rectHighlightStyle, opacity),
+            style: rectHighlightStyle,
+            text: bounds.text || undefined,
+            createdAt: Date.now(),
+          };
+          onAddAnnotation(newRect);
         }
       }
 
-      commitPendingSelection();
-    };
-
-    window.addEventListener('pointerdown', handleGlobalPointerDown, true);
-    return () => {
-      window.removeEventListener('pointerdown', handleGlobalPointerDown, true);
-    };
-  }, [pendingSelection, commitPendingSelection]);
-
-  const colorFilterClass = isInvertedColorMode ? 'annotation-color-preview-invert' : undefined;
-  const rectHighlightStyle = highlightStyle === 'stroke' ? 'stroke' : 'box';
+      if (typeof window !== 'undefined') {
+        window.getSelection()?.removeAllRanges();
+      }
+    },
+    [
+      activeTool,
+      annotations,
+      lineHighlightStyle,
+      onAddAnnotation,
+      onDeleteAnnotation,
+      onSelectAnnotation,
+      opacity,
+      pageHeight,
+      pageNumber,
+      pageWidth,
+      rectHighlightStyle,
+      selectedColor,
+    ]
+  );
 
   const pageAnnotations = annotations.filter((a) => a.pageNumber === pageNumber);
 
@@ -589,112 +570,26 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
     tracker.lastX = e.clientX;
     tracker.lastY = e.clientY;
 
-    const isHighlightTool =
-      activeTool === 'highlight-line' ||
-      activeTool === 'highlight-rect' ||
-      activeTool === 'highlight-pen' ||
-      activeTool === 'highlight-text';
-
-    // If clicking outside an active pending selection, commit it immediately
-    if (pendingSelectionRef.current) {
-      const pending = pendingSelectionRef.current;
-      const isInsidePending =
-        x >= pending.bounds.x - 0.005 &&
-        x <= pending.bounds.x + pending.bounds.width + 0.005 &&
-        y >= pending.bounds.y - 0.005 &&
-        y <= pending.bounds.y + pending.bounds.height + 0.005;
-
-      if (!isInsidePending) {
-        commitPendingSelection();
-      }
-    }
-
     if (isHighlightTool && (e.detail >= 3 || tracker.count >= 3)) {
       if (doubleClickTimerRef.current !== null) {
         clearTimeout(doubleClickTimerRef.current);
         doubleClickTimerRef.current = null;
       }
-      tracker.count = 0;
-      const lineBounds = getTextLineBoundsAtPoint(pageNumber, x, y);
-      if (lineBounds) {
-        // Trigger DOM text layer full line selection feedback
-        const pageElem =
-          document.querySelector<HTMLElement>(`[data-pdf-page-number="${pageNumber}"]`) ||
-          document.getElementById(`pdf-page-${pageNumber}`);
-        const textLayer = pageElem?.querySelector<HTMLElement>('[data-pdf-text-layer]');
-        if (textLayer) {
-          selectFullLineAtTarget(null, textLayer, e.clientX, e.clientY);
-        }
-
-        const existingHighlights = findHighlightAnnotationsCoveringLine(
-          annotations,
-          pageNumber,
-          lineBounds,
-          pageWidth,
-          pageHeight
-        );
-
-        const coverage = computeLineHighlightCoverage(lineBounds, existingHighlights);
-        const isFullyCovered = existingHighlights.length > 0 && coverage >= 0.75;
-
-        const newPending: PendingHighlightSelection = {
-          type: isFullyCovered ? 'remove' : 'add',
-          pageNumber,
-          bounds: lineBounds,
-          targetAnnIds: isFullyCovered ? existingHighlights.map((a) => a.id) : undefined,
-          replaceAnnIds: !isFullyCovered && existingHighlights.length > 0 ? existingHighlights.map((a) => a.id) : undefined,
-          tool: activeTool,
-          color: selectedColor,
-          opacity,
-          rectHighlightStyle,
-          lineHighlightStyle,
-        };
-        pendingSelectionRef.current = newPending;
-        setPendingSelection(newPending);
-        return;
+      const pageElem =
+        document.querySelector<HTMLElement>(`[data-pdf-page-number="${pageNumber}"]`) ||
+        document.getElementById(`pdf-page-${pageNumber}`);
+      const textLayer = pageElem?.querySelector<HTMLElement>('[data-pdf-text-layer]');
+      if (textLayer) {
+        selectFullLineAtTarget(null, textLayer, e.clientX, e.clientY);
       }
-    }
-
-    if (isHighlightTool && (e.detail === 2 || tracker.count === 2)) {
-      if (doubleClickTimerRef.current !== null) {
-        clearTimeout(doubleClickTimerRef.current);
+    } else if (isHighlightTool && (e.detail === 2 || tracker.count === 2)) {
+      const pageElem =
+        document.querySelector<HTMLElement>(`[data-pdf-page-number="${pageNumber}"]`) ||
+        document.getElementById(`pdf-page-${pageNumber}`);
+      const textLayer = pageElem?.querySelector<HTMLElement>('[data-pdf-text-layer]');
+      if (textLayer) {
+        selectWordAtTarget(null, textLayer, e.clientX, e.clientY);
       }
-      doubleClickTimerRef.current = window.setTimeout(() => {
-        doubleClickTimerRef.current = null;
-        const wordBounds = getWordBoundsAtPoint(pageNumber, x, y);
-        if (!wordBounds) return;
-
-        // Trigger DOM text layer word selection feedback
-        const pageElem =
-          document.querySelector<HTMLElement>(`[data-pdf-page-number="${pageNumber}"]`) ||
-          document.getElementById(`pdf-page-${pageNumber}`);
-        const textLayer = pageElem?.querySelector<HTMLElement>('[data-pdf-text-layer]');
-        if (textLayer) {
-          selectWordAtTarget(null, textLayer, e.clientX, e.clientY);
-        }
-
-        const existingHighlights = findHighlightAnnotationsCoveringWord(
-          annotations,
-          pageNumber,
-          wordBounds,
-          pageWidth,
-          pageHeight
-        );
-
-        const newPending: PendingHighlightSelection = {
-          type: existingHighlights.length > 0 ? 'remove' : 'add',
-          pageNumber,
-          bounds: wordBounds,
-          targetAnnIds: existingHighlights.length > 0 ? existingHighlights.map((a) => a.id) : undefined,
-          tool: activeTool,
-          color: selectedColor,
-          opacity,
-          rectHighlightStyle,
-          lineHighlightStyle,
-        };
-        pendingSelectionRef.current = newPending;
-        setPendingSelection(newPending);
-      }, 240);
     }
 
     if (activeTool === 'highlight-line') {
@@ -788,6 +683,37 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
 
     if (!isInteractingRef.current) return;
     isInteractingRef.current = false;
+
+    const { x, y } = getNormalizedCoords(e);
+    const startPoint = lineStart || rectStart || (currentStroke && currentStroke[0]) || { x, y };
+    const moveDistPx = Math.hypot((x - startPoint.x) * pageWidth, (y - startPoint.y) * pageHeight);
+    const isClick = moveDistPx <= 6;
+
+    if (isHighlightTool && isClick) {
+      const tracker = clickTrackerRef.current;
+      if (e.detail >= 3 || tracker.count >= 3) {
+        if (doubleClickTimerRef.current !== null) {
+          clearTimeout(doubleClickTimerRef.current);
+          doubleClickTimerRef.current = null;
+        }
+        tracker.count = 0;
+        const lineBounds = getTextLineBoundsAtPoint(pageNumber, x, y);
+        if (lineBounds) {
+          applyHighlightAtBounds(lineBounds, true);
+        }
+      } else if (e.detail === 2 || tracker.count === 2) {
+        if (doubleClickTimerRef.current !== null) {
+          clearTimeout(doubleClickTimerRef.current);
+        }
+        doubleClickTimerRef.current = window.setTimeout(() => {
+          doubleClickTimerRef.current = null;
+          const wordBounds = getWordBoundsAtPoint(pageNumber, x, y);
+          if (wordBounds) {
+            applyHighlightAtBounds(wordBounds, false);
+          }
+        }, 240);
+      }
+    }
 
     if (activeTool === 'highlight-line' && lineStart && lineCurrent) {
       let endX = lineCurrent.x;
@@ -1072,7 +998,10 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
           })}
 
         {/* Active Straight Line Highlight in progress */}
-        {activeTool === 'highlight-line' && lineStart && lineCurrent && (
+        {activeTool === 'highlight-line' &&
+          lineStart &&
+          lineCurrent &&
+          Math.hypot((lineCurrent.x - lineStart.x) * pageWidth, (lineCurrent.y - lineStart.y) * pageHeight) > 3 && (
           <line
             className={colorFilterClass}
             x1={lineStart.x * pageWidth}
@@ -1091,7 +1020,7 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
         )}
 
         {/* Active Freehand Highlight Pen in progress */}
-        {activeTool === 'highlight-pen' && currentStroke && (
+        {activeTool === 'highlight-pen' && currentStroke && currentStroke.length > 1 && (
           <path
             className={colorFilterClass}
             d={pointsToSvgPath(currentStroke)}
@@ -1105,7 +1034,12 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
         )}
 
         {/* Active Rectangle Highlight in progress */}
-        {activeTool === 'highlight-rect' && rectHighlightStyle === 'box' && rectStart && rectCurrent && (
+        {activeTool === 'highlight-rect' &&
+          rectHighlightStyle === 'box' &&
+          rectStart &&
+          rectCurrent &&
+          (Math.abs(rectCurrent.x - rectStart.x) * pageWidth > 3 ||
+            Math.abs(rectCurrent.y - rectStart.y) * pageHeight > 3) && (
           <rect
             className={colorFilterClass}
             x={Math.min(rectStart.x, rectCurrent.x) * pageWidth}
@@ -1189,7 +1123,12 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
           })}
 
         {/* Active opaque stroke preview for new area highlights */}
-        {activeTool === 'highlight-rect' && rectHighlightStyle === 'stroke' && rectStart && rectCurrent && (
+        {activeTool === 'highlight-rect' &&
+          rectHighlightStyle === 'stroke' &&
+          rectStart &&
+          rectCurrent &&
+          (Math.abs(rectCurrent.x - rectStart.x) * pageWidth > 3 ||
+            Math.abs(rectCurrent.y - rectStart.y) * pageHeight > 3) && (
           <rect
             className={colorFilterClass}
             x={Math.min(rectStart.x, rectCurrent.x) * pageWidth}
@@ -1281,20 +1220,6 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
           />
         )}
 
-        {/* Render Pending Selection Rectangle (when double-clicked or triple-clicked) */}
-        {pendingSelection && pendingSelection.pageNumber === pageNumber && (
-          <g data-pdf-selection-rectangle>
-            <rect
-              className="pointer-events-none"
-              x={pendingSelection.bounds.x * pageWidth}
-              y={pendingSelection.bounds.y * pageHeight}
-              width={pendingSelection.bounds.width * pageWidth}
-              height={pendingSelection.bounds.height * pageHeight}
-              fill="rgba(0, 122, 255, 0.38)"
-            />
-          </g>
-        )}
-
         {/* Interactive Hit Targets & Selection Feedback when activeTool === 'select' */}
         {/* 1. Hit targets and selection for Text Highlights */}
         {pageAnnotations
@@ -1305,7 +1230,7 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
             return (
               <g
                 key={`hit_th_${textHighlight.id}`}
-                className={activeTool === 'select' ? 'pointer-events-auto cursor-pointer' : undefined}
+                className={activeTool === 'select' && isSelected ? 'pointer-events-auto cursor-pointer' : undefined}
                 onClick={(e) => {
                   if (activeTool === 'select') {
                     e.stopPropagation();
@@ -1350,7 +1275,7 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
             return (
               <g
                 key={`hit_rect_${rect.id}`}
-                className={activeTool === 'select' ? 'pointer-events-auto cursor-pointer' : undefined}
+                className={activeTool === 'select' && isSelected ? 'pointer-events-auto cursor-pointer' : undefined}
                 onClick={(e) => {
                   if (activeTool === 'select') {
                     e.stopPropagation();

@@ -7,7 +7,6 @@ import {
   History,
   X,
   FileText,
-  RotateCcw,
   Loader2,
   BookOpen,
   Sidebar as SidebarIcon,
@@ -125,15 +124,6 @@ export const AiChatPanel: React.FC<AiChatPanelProps> = ({
           >
             <History className="w-3.5 h-3.5" />
           </button>
-          {activeSession && activeSession.messages.length > 0 && (
-            <button
-              onClick={clearCurrentSession}
-              className="p-1.5 rounded-md text-zinc-400 hover:text-red-400 hover:bg-[var(--hover)] transition-colors"
-              title="Clear current chat"
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-            </button>
-          )}
           <span className="w-px h-3.5 bg-[var(--border)] mx-0.5" />
           <button
             onClick={onClose}

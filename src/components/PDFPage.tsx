@@ -12,6 +12,7 @@ import { copyTextToClipboard, copyRegionImageToClipboard } from '../utils/pageEx
 import { isAnnotationHitByEraser } from '../utils/eraserUtils';
 import { getAnnotationBoundingBox, getAnnotationCoveredText } from '../utils/annotationPresentation';
 import { selectFullLineAtTarget } from '../utils/textHighlight';
+import { bindTextLayerSelection } from '../utils/pdfTextLayerManager';
 import 'pdfjs-dist/web/pdf_viewer.css';
 import type {
   Annotation,
@@ -61,6 +62,7 @@ interface PDFPageProps {
   onAskAiAboutPage: (pageNumber: number) => void;
   onCopySelectedText?: (text: string) => void;
   onAttachTextToAi?: (text: string, pageNumber: number) => void;
+  onHighlightSelection?: (style?: HighlightStyle, color?: string) => void;
   showToast?: (text: string, isError?: boolean) => void;
   onSelectTool?: (tool: ToolType) => void;
   isFlush?: boolean;
@@ -105,6 +107,7 @@ export const PDFPageComponent: React.FC<PDFPageProps> = ({
   onAskAiAboutPage,
   onCopySelectedText,
   onAttachTextToAi,
+  onHighlightSelection,
   showToast,
   onSelectTool,
   isFlush = false,
@@ -123,6 +126,7 @@ export const PDFPageComponent: React.FC<PDFPageProps> = ({
   const [isDragOver, setIsDragOver] = useState(false);
   const [contextMenuPosition, setContextMenuPosition] = useState<{ x: number; y: number } | null>(null);
   const renderTaskRef = useRef<unknown>(null);
+  const unbindSelectionRef = useRef<(() => void) | null>(null);
 
   const [isVisible, setIsVisible] = useState(
     typeof IntersectionObserver === 'undefined'
@@ -265,6 +269,10 @@ export const PDFPageComponent: React.FC<PDFPageProps> = ({
           });
 
           await textLayer.render();
+          if (isCancelled) return;
+
+          unbindSelectionRef.current?.();
+          unbindSelectionRef.current = bindTextLayerSelection(textLayerDiv);
         }
       } catch (err: unknown) {
         if (err && typeof err === 'object' && 'name' in err && (err as { name: string }).name !== 'RenderingCancelledException') {
@@ -277,6 +285,8 @@ export const PDFPageComponent: React.FC<PDFPageProps> = ({
 
     return () => {
       isCancelled = true;
+      unbindSelectionRef.current?.();
+      unbindSelectionRef.current = null;
       if (renderTaskRef.current) {
         try {
           (renderTaskRef.current as { cancel: () => void }).cancel();
@@ -338,30 +348,10 @@ export const PDFPageComponent: React.FC<PDFPageProps> = ({
   };
 
   // Handle triple-click text selection across fragmented PDF.js text layer spans
-  const clickTrackerRef = useRef<{ count: number; lastTime: number; lastX: number; lastY: number }>({
-    count: 0,
-    lastTime: 0,
-    lastX: 0,
-    lastY: 0,
-  });
-
   const handleTextLayerMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.button !== 0 || activeTool !== 'select') return;
 
-    const now = Date.now();
-    const tracker = clickTrackerRef.current;
-    const dist = Math.hypot(e.clientX - tracker.lastX, e.clientY - tracker.lastY);
-
-    if (now - tracker.lastTime < 450 && dist < 15) {
-      tracker.count += 1;
-    } else {
-      tracker.count = 1;
-    }
-    tracker.lastTime = now;
-    tracker.lastX = e.clientX;
-    tracker.lastY = e.clientY;
-
-    if (e.detail >= 3 || tracker.count >= 3) {
+    if (e.detail >= 3) {
       e.preventDefault();
       selectFullLineAtTarget(
         e.target as HTMLElement,
@@ -374,7 +364,7 @@ export const PDFPageComponent: React.FC<PDFPageProps> = ({
 
   const handleTextLayerClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.button !== 0 || activeTool !== 'select') return;
-    if (e.detail >= 3 || clickTrackerRef.current.count >= 3) {
+    if (e.detail >= 3) {
       e.preventDefault();
       selectFullLineAtTarget(
         e.target as HTMLElement,
@@ -382,6 +372,26 @@ export const PDFPageComponent: React.FC<PDFPageProps> = ({
         e.clientX,
         e.clientY
       );
+      return;
+    }
+
+    // If click was a simple click without selecting text, check if an existing annotation was clicked
+    const sel = window.getSelection();
+    if (!sel || sel.isCollapsed || !sel.toString().trim()) {
+      if (containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        const px = e.clientX - rect.left;
+        const py = e.clientY - rect.top;
+        const thisPageAnns = annotations.filter((a) => a.pageNumber === pageNumber);
+        const hitAnn = [...thisPageAnns].reverse().find((a) =>
+          isAnnotationHitByEraser(a, px, py, pageDimensions.width, pageDimensions.height, 8, scale)
+        );
+        if (hitAnn) {
+          e.stopPropagation();
+          onSelectAnnotation(hitAnn.id);
+          return;
+        }
+      }
     }
   };
 
@@ -508,6 +518,8 @@ export const PDFPageComponent: React.FC<PDFPageProps> = ({
           onCopyPageImage={() => onCopyPageImage(pageNumber)}
           onAskAi={() => onAskAiAboutPage(pageNumber)}
           onAttachTextToAi={onAttachTextToAi ? (text) => onAttachTextToAi(text, pageNumber) : undefined}
+          onHighlightSelectedText={onHighlightSelection ? () => onHighlightSelection('box') : undefined}
+          onUnderlineSelectedText={onHighlightSelection ? () => onHighlightSelection('underline') : undefined}
         />
       )}
       {/* Visual Page Number Badge in Margin */}

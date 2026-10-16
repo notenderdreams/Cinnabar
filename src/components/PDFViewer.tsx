@@ -79,6 +79,7 @@ interface PDFViewerProps {
   onAskAiAboutPage: (pageNumber: number) => void;
   onCopySelectedText?: (text: string) => void;
   onAttachTextToAi?: (text: string, pageNumber: number) => void;
+  onHighlightSelection?: (style?: HighlightStyle, color?: string) => void;
   showToast?: (text: string, isError?: boolean) => void;
   onSelectTool?: (tool: ToolType) => void;
 }
@@ -137,6 +138,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
   onAskAiAboutPage,
   onCopySelectedText,
   onAttachTextToAi,
+  onHighlightSelection,
   showToast,
   onSelectTool,
 }) => {
@@ -1232,6 +1234,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
                     onAskAiAboutPage={onAskAiAboutPage}
                     onCopySelectedText={onCopySelectedText}
                     onAttachTextToAi={onAttachTextToAi}
+                    onHighlightSelection={onHighlightSelection}
                     onSelectTool={onSelectTool}
                     showToast={showToast}
                     isFlush
@@ -1358,6 +1361,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
                 onAskAiAboutPage={onAskAiAboutPage}
                 onCopySelectedText={onCopySelectedText}
                 onAttachTextToAi={onAttachTextToAi}
+                onHighlightSelection={onHighlightSelection}
                 onSelectTool={onSelectTool}
                 showToast={showToast}
                 isFlush
@@ -1457,6 +1461,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
                 onAskAiAboutPage={onAskAiAboutPage}
                 onCopySelectedText={onCopySelectedText}
                 onAttachTextToAi={onAttachTextToAi}
+                onHighlightSelection={onHighlightSelection}
                 onSelectTool={onSelectTool}
                 showToast={showToast}
               />
