@@ -1,6 +1,12 @@
 import type { PDFDocumentProxy } from 'pdfjs-dist';
 import { PDFDocument } from 'pdf-lib';
-import { isTauri, tauriCopyImageToClipboard, tauriCopyTextToClipboard } from './tauriBridge';
+import {
+  isTauri,
+  tauriCopyImageToClipboard,
+  tauriCopyTextToClipboard,
+  tauriDeletePdfPage,
+  tauriAddBlankPageBelow,
+} from './tauriBridge';
 
 /**
  * Universal clipboard text writer with native desktop bridge and browser fallback
@@ -407,6 +413,15 @@ export async function deletePageFromPdf(
   pdfBytes: Uint8Array,
   pageNumber: number
 ): Promise<Uint8Array> {
+  if (isTauri()) {
+    try {
+      const nativeBytes = await tauriDeletePdfPage(pdfBytes, pageNumber);
+      if (nativeBytes) return nativeBytes;
+    } catch (err) {
+      console.warn('Native delete page failed, falling back to pdf-lib:', err);
+    }
+  }
+
   const document = await PDFDocument.load(pdfBytes, { ignoreEncryption: true });
   const pageCount = document.getPageCount();
   if (pageCount <= 1) throw new Error('A PDF must keep at least one page.');
@@ -423,6 +438,15 @@ export async function addBlankPageBelow(
   pdfBytes: Uint8Array,
   pageNumber: number
 ): Promise<Uint8Array> {
+  if (isTauri()) {
+    try {
+      const nativeBytes = await tauriAddBlankPageBelow(pdfBytes, pageNumber);
+      if (nativeBytes) return nativeBytes;
+    } catch (err) {
+      console.warn('Native add blank page failed, falling back to pdf-lib:', err);
+    }
+  }
+
   const document = await PDFDocument.load(pdfBytes, { ignoreEncryption: true });
   const pageCount = document.getPageCount();
   if (!Number.isInteger(pageNumber) || pageNumber < 1 || pageNumber > pageCount) {

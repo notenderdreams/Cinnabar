@@ -28,7 +28,7 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 *.tsbuildinfo
 
 # generated native bindings
-src/libs/bindings.ts
+src/lib/bindings.ts
 
 # local graphify output
 graphify-out/

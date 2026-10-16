@@ -3,7 +3,9 @@ mod clipboard;
 mod documents;
 mod error;
 mod library;
+mod pdf_ops;
 mod platform;
+mod shortcuts;
 
 pub use ai::AiRunnerState;
 
@@ -40,5 +42,11 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
         platform::open_url,
         platform::toggle_fullscreen_window,
         platform::exit_fullscreen_window,
+        shortcuts::get_registered_shortcuts,
+        shortcuts::trigger_shortcut_action,
+        pdf_ops::delete_pdf_page_native,
+        pdf_ops::add_blank_page_below_native,
+        pdf_ops::compute_pdf_fingerprint,
+        pdf_ops::compress_image_native,
     ])
 }

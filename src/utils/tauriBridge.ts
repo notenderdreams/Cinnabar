@@ -1,5 +1,5 @@
-import { commands } from '../libs/bindings';
-import type { LibrarySnapshot as NativeLibrarySnapshot } from '../libs/bindings';
+import { commands } from '../lib/bindings';
+import type { LibrarySnapshot as NativeLibrarySnapshot } from '../lib/bindings';
 import type { DashboardPdfItem, SavedDirectory } from './types';
 
 export interface ScannedPdfResult {
@@ -674,4 +674,95 @@ export function listenToNativeMenuEvents(
   return () => {
     nativeMenuHandlers.delete(handler);
   };
+}
+
+export async function tauriGetRegisteredShortcuts(): Promise<import('../lib/bindings').ShortcutBinding[]> {
+  if (!isTauri()) return [];
+  try {
+    return await commands.getRegisteredShortcuts();
+  } catch (err) {
+    console.error('Failed to get registered shortcuts:', err);
+    return [];
+  }
+}
+
+export async function tauriTriggerShortcutAction(id: string): Promise<boolean> {
+  if (!isTauri()) return false;
+  try {
+    const res = await commands.triggerShortcutAction(id);
+    return res.status === 'ok';
+  } catch (err) {
+    console.error('Failed to trigger shortcut action:', err);
+    return false;
+  }
+}
+
+export async function tauriDeletePdfPage(
+  pdfBytes: Uint8Array,
+  pageNumber: number
+): Promise<Uint8Array | null> {
+  if (!isTauri()) return null;
+  try {
+    const res = await commands.deletePdfPageNative(Array.from(pdfBytes), pageNumber);
+    if (res.status === 'ok') {
+      return new Uint8Array(res.data);
+    }
+    console.warn('Native delete page returned error:', res.error);
+    return null;
+  } catch (err) {
+    console.warn('Native delete page failed:', err);
+    return null;
+  }
+}
+
+export async function tauriAddBlankPageBelow(
+  pdfBytes: Uint8Array,
+  pageNumber: number
+): Promise<Uint8Array | null> {
+  if (!isTauri()) return null;
+  try {
+    const res = await commands.addBlankPageBelowNative(Array.from(pdfBytes), pageNumber);
+    if (res.status === 'ok') {
+      return new Uint8Array(res.data);
+    }
+    console.warn('Native add blank page returned error:', res.error);
+    return null;
+  } catch (err) {
+    console.warn('Native add blank page failed:', err);
+    return null;
+  }
+}
+
+export async function tauriComputePdfFingerprint(
+  pdfBytes: Uint8Array
+): Promise<string | null> {
+  if (!isTauri()) return null;
+  try {
+    const res = await commands.computePdfFingerprint(Array.from(pdfBytes));
+    if (res.status === 'ok') {
+      return res.data;
+    }
+    return null;
+  } catch (err) {
+    console.warn('Native compute fingerprint failed:', err);
+    return null;
+  }
+}
+
+export async function tauriCompressImage(
+  dataUrl: string,
+  maxWidth = 1920,
+  quality = 85
+): Promise<string | null> {
+  if (!isTauri()) return null;
+  try {
+    const res = await commands.compressImageNative(dataUrl, maxWidth, quality);
+    if (res.status === 'ok') {
+      return res.data;
+    }
+    return null;
+  } catch (err) {
+    console.warn('Native compress image failed:', err);
+    return null;
+  }
 }

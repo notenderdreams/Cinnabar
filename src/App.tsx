@@ -18,6 +18,8 @@ import { useAnnotations } from './hooks/useAnnotations';
 import { useSnippets } from './hooks/useSnippets';
 import { useColorTheme } from './hooks/useColorTheme';
 import { useAiExplanations } from './hooks/useAiExplanations';
+import { useToast } from './hooks/useToast';
+import { useCompanionPDF } from './hooks/useCompanionPDF';
 import { usesInvertedColorSpace } from './utils/readingTheme';
 import {
   mergeAnnotations,
@@ -83,9 +85,6 @@ export function App() {
 
   // View & UI State
   const [zoom, setZoom] = useState<number>(1.15);
-  const [companionZoom, setCompanionZoom] = useState<number>(1.15);
-  const [companionCurrentPage, setCompanionCurrentPage] = useState<number>(1);
-  const [activeReaderPane, setActiveReaderPane] = useState<'primary' | 'companion'>('primary');
   const [fitPageRequest, setFitPageRequest] = useState<{ id: number; page: number } | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>(() => loadViewMode());
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
@@ -100,14 +99,7 @@ export function App() {
   const [isDeletingPage, setIsDeletingPage] = useState<boolean>(false);
 
   // Active Toast Feedback
-  const [toastMessage, setToastMessage] = useState<{ text: string; isError?: boolean } | null>(null);
-
-  const showToast = useCallback((text: string, isError = false) => {
-    setToastMessage({ text, isError });
-    setTimeout(() => {
-      setToastMessage((prev) => (prev?.text === text ? null : prev));
-    }, 2400);
-  }, []);
+  const { toastMessage, showToast } = useToast();
 
   // Active Tool & Style State
   const [activeTool, setActiveTool] = useState<ToolType>('select');
@@ -136,10 +128,6 @@ export function App() {
   // Hidden File Inputs for Browser fallback
   const pdfInputRef = useRef<HTMLInputElement | null>(null);
   const imageInputRef = useRef<HTMLInputElement | null>(null);
-  const companionLoadingTaskRef = useRef<PDFDocumentLoadingTask | null>(null);
-  const companionPdfRef = useRef<PDFDocumentProxy | null>(null);
-  const [companionPdfDoc, setCompanionPdfDoc] = useState<PDFDocumentProxy | null>(null);
-  const [companionFileName, setCompanionFileName] = useState<string | null>(null);
 
   // Active Cursor coordinates over PDF pages for precise cursor pasting
   const cursorPosRef = useRef<{ pageNumber: number; x: number; y: number } | null>(null);
@@ -163,55 +151,25 @@ export function App() {
     prevSearchResult,
   } = usePDFDocument();
 
-  const closeCompanionPdf = useCallback(() => {
-    void companionLoadingTaskRef.current?.destroy();
-    companionLoadingTaskRef.current = null;
-    void companionPdfRef.current?.destroy();
-    companionPdfRef.current = null;
-    setCompanionPdfDoc(null);
-    setCompanionFileName(null);
-    setCompanionCurrentPage(1);
-    setCompanionZoom(1.15);
-    setActiveReaderPane('primary');
-  }, []);
-
-  const loadCompanionPdf = useCallback(async (data: Uint8Array, fileName: string): Promise<boolean> => {
-    void companionLoadingTaskRef.current?.destroy();
-    const loadingTask = pdfjsLib.getDocument({
-      data: data.slice(),
-      cMapUrl: 'https://unpkg.com/pdfjs-dist@4.0.379/cmaps/',
-      cMapPacked: true,
-    });
-    companionLoadingTaskRef.current = loadingTask;
-
-    try {
-      const loadedDoc = await loadingTask.promise;
-      if (companionLoadingTaskRef.current !== loadingTask) {
-        void loadedDoc.destroy();
-        return false;
-      }
-
-      void companionPdfRef.current?.destroy();
-      companionPdfRef.current = loadedDoc;
-      companionLoadingTaskRef.current = null;
-      setCompanionPdfDoc(loadedDoc);
-      setCompanionFileName(fileName);
-      setCompanionCurrentPage(1);
-      setCompanionZoom(1.15);
-      setActiveReaderPane('primary');
+  const {
+    companionPdfDoc,
+    companionFileName,
+    companionCurrentPage,
+    companionZoom,
+    activeReaderPane,
+    setCompanionCurrentPage,
+    setCompanionZoom,
+    setActiveReaderPane,
+    closeCompanionPdf,
+    loadCompanionPdf,
+  } = useCompanionPDF({
+    primaryFileName: docInfo?.fileName,
+    onOpenCompanion: () => {
       setViewMode('continuous');
       saveViewMode('continuous');
-      showToast(`Reading ${docInfo?.fileName || 'PDF'} with ${fileName}`);
-      return true;
-    } catch (error) {
-      if (companionLoadingTaskRef.current === loadingTask) {
-        companionLoadingTaskRef.current = null;
-        console.error('Failed to load companion PDF:', error);
-        showToast(`Could not open ${fileName}.`, true);
-      }
-      return false;
-    }
-  }, [docInfo?.fileName, showToast]);
+    },
+    showToast,
+  });
 
   useEffect(() => closeCompanionPdf, [closeCompanionPdf]);
 

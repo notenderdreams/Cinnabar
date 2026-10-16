@@ -4,11 +4,11 @@ use anyhow::{Context, Result};
 #[cfg(any(debug_assertions, test))]
 use std::path::PathBuf;
 use tauri::menu::{Menu, MenuItem, PredefinedMenuItem, Submenu};
-use tauri::{Emitter, Manager};
+use tauri::Manager;
 
 #[cfg(any(debug_assertions, test))]
 fn bindings_path() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../src/libs/bindings.ts")
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../src/lib/bindings.ts")
 }
 
 #[cfg(any(debug_assertions, test))]
@@ -243,7 +243,8 @@ pub fn run() -> Result<()> {
 
             app.on_menu_event(|app_handle, event| {
                 let id = event.id().as_ref();
-                let _ = app_handle.emit("native-menu-action", id);
+                let _ = crate::shortcuts::ShortcutManager::dispatch(app_handle, id);
+                // Dispatches native-menu-action to frontend
             });
 
             if cfg!(debug_assertions) {

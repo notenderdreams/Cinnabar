@@ -24,7 +24,7 @@ cargo fmt --manifest-path src-tauri/Cargo.toml -- --check
 cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
 ```
 
-`bun run generate:bindings` regenerates the ignored `src/libs/bindings.ts` file. `dev:web` and `build:web` already run it.
+`bun run generate:bindings` regenerates the ignored `src/lib/bindings.ts` file. `dev:web` and `build:web` already run it.
 
 See `DEVELOPMENT.md` when setup, build prerequisites, or release output details are needed.
 
@@ -51,7 +51,7 @@ When adding or changing a Rust command:
 1. Put it in the matching `src-tauri/src/commands/` module.
 2. Derive Specta types for command inputs and outputs.
 3. Register it once in `commands::specta_builder()`.
-4. Regenerate bindings; never hand-edit `src/libs/bindings.ts`.
+4. Regenerate bindings; never hand-edit `src/lib/bindings.ts`.
 5. Adapt the generated command in `tauriBridge.ts` if the UI needs normalization or a browser fallback.
 
 Use `anyhow` with context for internal Rust failures. Keep Tauri boundary errors serializable. Treat expected outcomes such as a closed dialog, missing optional tool, or user cancellation as normal domain results rather than unexpected errors.

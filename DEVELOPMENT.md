@@ -110,7 +110,7 @@ The compiled platform-native installer/executable will be placed in `src-tauri/t
 ├── src/
 │   ├── components/       # React UI components (Viewer, Toolbar, Modals, Overlays)
 │   ├── hooks/            # Custom hooks (PDF loading, search, AI explanations)
-│   ├── libs/             # Generated native command bindings (not committed)
+│   ├── lib/              # Generated native bindings, domain types, and constants
 │   ├── utils/            # Bridge helpers, PDF workers, themes, export logic
 │   ├── App.tsx           # Main application entry
 │   └── index.css         # Design system tokens and styles
@@ -127,7 +127,7 @@ The compiled platform-native installer/executable will be placed in `src-tauri/t
 ### Native Tauri Bridge
 All desktop-specific operations (file dialogs, folder scanning, file reading/writing, clipboard access, external URL opening) must route through [`src/utils/tauriBridge.ts`](src/utils/tauriBridge.ts). Always maintain a safe fallback for the browser build when applicable.
 
-Native commands are registered once in [`src-tauri/src/commands/mod.rs`](src-tauri/src/commands/mod.rs). Specta generates their TypeScript interface at `src/libs/bindings.ts`. The generated file is ignored by Git and refreshed automatically by `bun run dev:web` and `bun run build:web`. Run it directly when needed:
+Native commands are registered once in [`src-tauri/src/commands/mod.rs`](src-tauri/src/commands/mod.rs). Specta generates their TypeScript interface at `src/lib/bindings.ts`. The generated file is ignored by Git and refreshed automatically by `bun run dev:web` and `bun run build:web`. Run it directly when needed:
 
 ```bash
 bun run generate:bindings
