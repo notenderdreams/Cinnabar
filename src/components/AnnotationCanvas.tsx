@@ -151,6 +151,9 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
       if (shouldRemove) {
         existingHighlights.forEach((a) => onDeleteAnnotation(a.id));
         onSelectAnnotation?.(null);
+        if (activeTool === 'highlight-rect') {
+          onSelectTool?.('select');
+        }
       } else {
         if (existingHighlights.length > 0) {
           existingHighlights.forEach((a) => onDeleteAnnotation(a.id));
@@ -189,6 +192,9 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
             createdAt: Date.now(),
           };
           onAddAnnotation(newRect);
+          if (activeTool === 'highlight-rect') {
+            onSelectTool?.('select');
+          }
         }
       }
 
@@ -634,6 +640,7 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
       };
       onAddAnnotation(newNote);
       onSelectAnnotation?.(newNote.id);
+      onSelectTool?.('select');
     }
   };
 
@@ -807,6 +814,7 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
           createdAt: Date.now(),
         };
         onAddAnnotation(newRect);
+        onSelectTool?.('select');
       }
       setRectStart(null);
       setRectCurrent(null);
@@ -821,6 +829,7 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
         setCapturedFlashRect(captureRect);
         setTimeout(() => setCapturedFlashRect(null), 800);
         onCaptureSnippet?.(pageNumber, captureRect);
+        onSelectTool?.('select');
       }
       setSnipStart(null);
       setSnipCurrent(null);
@@ -857,6 +866,7 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
       onAiBoxCreated?.(annotation.id);
       setAiStart(null);
       setAiCurrent(null);
+      onSelectTool?.('select');
     }
   };
 

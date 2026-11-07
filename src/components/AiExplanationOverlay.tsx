@@ -35,6 +35,7 @@ interface Props {
   onAddAnnotation: (ann: Annotation) => void;
   selectedAnnotationId?: string | null;
   onSelectAnnotation?: (id: string | null) => void;
+  onSelectTool?: (tool: ToolType) => void;
 }
 
 const DEFAULT_PROMPT = 'Explain this clearly and concisely';
@@ -758,6 +759,7 @@ interface BadgeItemProps {
   onDragEnd: (e: React.PointerEvent, annotation: AiExplanationAnnotation) => void;
   onOpen: (id: string) => void;
   onDelete: (id: string) => void;
+  onSelectTool?: (tool: ToolType) => void;
   onSelectAnnotation?: (id: string | null) => void;
   onHover?: (id: string | null) => void;
 }
@@ -776,6 +778,7 @@ const AiCollapsedBadge: React.FC<BadgeItemProps> = React.memo(
     onDragEnd,
     onOpen,
     onDelete,
+    onSelectTool,
     onHover,
   }) => {
     const isRunning = job?.phase === 'running';
@@ -803,6 +806,7 @@ const AiCollapsedBadge: React.FC<BadgeItemProps> = React.memo(
       e.stopPropagation();
       if (activeTool === 'eraser') {
         onDelete(annotation.id);
+        onSelectTool?.('select');
         return;
       }
       hasMovedRef.current = false;
@@ -858,6 +862,7 @@ const AiCollapsedBadge: React.FC<BadgeItemProps> = React.memo(
           e.stopPropagation();
           if (activeTool === 'eraser') {
             onDelete(annotation.id);
+            onSelectTool?.('select');
           }
         }}
         onKeyDown={(e) => {
@@ -895,6 +900,7 @@ export const AiExplanationOverlay: React.FC<Props> = ({
   onAddAnnotation,
   selectedAnnotationId,
   onSelectAnnotation,
+  onSelectTool,
 }) => {
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const [hoveredAnnotationId, setHoveredAnnotationId] = useState<string | null>(null);
@@ -1035,6 +1041,7 @@ export const AiExplanationOverlay: React.FC<Props> = ({
               if (activeTool === 'eraser') {
                 event.stopPropagation();
                 onDelete(annotation.id);
+                onSelectTool?.('select');
               }
             }}
             role={activeTool === 'eraser' ? 'button' : undefined}
@@ -1095,6 +1102,7 @@ export const AiExplanationOverlay: React.FC<Props> = ({
               onSelectAnnotation?.(id);
             }}
             onDelete={onDelete}
+            onSelectTool={onSelectTool}
             onSelectAnnotation={onSelectAnnotation}
             onHover={setHoveredAnnotationId}
           />

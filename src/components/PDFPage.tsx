@@ -630,6 +630,7 @@ export const PDFPageComponent: React.FC<PDFPageProps> = ({
         onAddAnnotation={onAddAnnotation}
         selectedAnnotationId={selectedAnnotationId}
         onSelectAnnotation={onSelectAnnotation}
+        onSelectTool={onSelectTool}
       />}
 
       {/* Attached Images Layer */}
@@ -645,6 +646,7 @@ export const PDFPageComponent: React.FC<PDFPageProps> = ({
           onSelect={onSelectAnnotation}
           onUpdate={onUpdateAnnotation}
           onDelete={onDeleteAnnotation}
+          onSelectTool={onSelectTool}
         />
       ))}
 

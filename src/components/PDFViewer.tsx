@@ -277,7 +277,10 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
     }
 
     const handleGlobalPointerUp = () => {
-      isErasingRef.current = false;
+      if (isErasingRef.current) {
+        isErasingRef.current = false;
+        onSelectTool?.('select');
+      }
     };
 
     const handleGlobalPointerMove = (e: PointerEvent) => {
@@ -296,7 +299,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
       window.removeEventListener('pointercancel', handleGlobalPointerUp);
       window.removeEventListener('pointermove', handleGlobalPointerMove);
     };
-  }, [activeTool, performGlobalEraseAt]);
+  }, [activeTool, performGlobalEraseAt, onSelectTool]);
 
   // Track Spacebar for Space+Drag Panning (Hand Tool mode)
   useEffect(() => {
@@ -1146,6 +1149,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
           };
           onAddAnnotation(newNote);
           onSelectAnnotation(newNote.id);
+          onSelectTool?.('select');
         }
       }
     }

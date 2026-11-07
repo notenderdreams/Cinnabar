@@ -104,6 +104,7 @@ export const TextNoteOverlay: React.FC<TextNoteOverlayProps> = ({
     e.stopPropagation();
     if (activeTool === 'eraser') {
       onDelete(annotation.id);
+      onSelectTool?.('select');
       return;
     }
     onSelect(annotation.id);
@@ -212,6 +213,7 @@ export const TextNoteOverlay: React.FC<TextNoteOverlayProps> = ({
     e.stopPropagation();
     if (activeTool === 'eraser') {
       onDelete(annotation.id);
+      onSelectTool?.('select');
       return;
     }
     onSelect(annotation.id);

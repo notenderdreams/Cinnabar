@@ -14,6 +14,7 @@ interface ImageOverlayProps {
   onSelect: (id: string) => void;
   onUpdate: (id: string, updates: Partial<AttachedImageAnnotation>) => void;
   onDelete: (id: string) => void;
+  onSelectTool?: (tool: ToolType) => void;
 }
 
 export const ImageOverlay: React.FC<ImageOverlayProps> = ({
@@ -26,6 +27,7 @@ export const ImageOverlay: React.FC<ImageOverlayProps> = ({
   onSelect,
   onUpdate,
   onDelete,
+  onSelectTool,
 }) => {
   const [copiedText, setCopiedText] = useState(false);
   const isDraggingRef = useRef(false);
@@ -187,6 +189,7 @@ export const ImageOverlay: React.FC<ImageOverlayProps> = ({
         e.stopPropagation();
         if (activeTool === 'eraser') {
           onDelete(annotation.id);
+          onSelectTool?.('select');
         } else {
           onSelect(annotation.id);
         }
@@ -195,6 +198,7 @@ export const ImageOverlay: React.FC<ImageOverlayProps> = ({
         if (activeTool === 'eraser') {
           e.stopPropagation();
           onDelete(annotation.id);
+          onSelectTool?.('select');
         } else {
           handleMouseDownDrag(e);
         }

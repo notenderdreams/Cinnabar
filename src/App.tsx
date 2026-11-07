@@ -582,6 +582,7 @@ export function App() {
             addSnippet(entry);
             setIsSidebarOpen(true);
             setSidebarTab('snippets');
+            setActiveTool('select');
             showToast(`Captured snippet from Page ${pageNumber}!`);
           }
         }
@@ -1223,6 +1224,10 @@ export function App() {
           }
         }
         setSelectedAnnotationId(null);
+        return;
+      }
+      if (activeTool !== 'select') {
+        setActiveTool('select');
         return;
       }
       if (isZenMode) {
