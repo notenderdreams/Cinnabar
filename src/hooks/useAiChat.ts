@@ -229,7 +229,7 @@ export function useAiChat({ pdfDoc, docInfo, currentPage }: UseAiChatOptions) {
           pageTextContext || null,
           historyText ? `\nRecent Conversation:\n${historyText}` : null,
           `\nUser: ${trimmed || 'Please analyze this attached snippet.'}`,
-          `\nAssistant: Respond clearly with structured markdown, formulas using $...$ or $$...$$ where appropriate, and concise explanations.`,
+          `\nAssistant: Respond clearly with structured Markdown and concise explanations. Separate paragraphs, headings, and lists with blank lines. Use bullets or tables for descriptive comparisons. Reserve LaTeX for mathematical expressions: use $...$ inline, and put each $$ display delimiter on its own line with the formula between them.`,
         ]
           .filter(Boolean)
           .join('\n');

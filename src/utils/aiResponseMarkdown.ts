@@ -57,8 +57,19 @@ export function normalizeAiResponseMarkdown(markdown: string): string {
       text = text.replace(/\\\(([\s\S]*?)\\\)/g, (_, math) => `$${math.trim()}$`);
 
       // 7. Standalone \boxed{...} lines outside math blocks
-      text = text.replace(/(?:^|\n)[ \t]*(\\boxed\{[\s\S]*?\})[ \t]*(?=\n|$)/g, (_, math) => {
-        return `\n$$\n${math.trim()}\n$$\n`;
+      text = text.split(/(\$\$[\s\S]*?\$\$)/g).map((segment, mathIndex) => {
+        if (mathIndex % 2 === 1) return segment;
+        return segment.replace(/(?:^|\n)[ \t]*(\\boxed\{[\s\S]*?\})[ \t]*(?=\n|$)/g, (_, math) => {
+          return `\n$$\n${math.trim()}\n$$\n`;
+        });
+      }).join('');
+
+      // remark-math requires display fences on their own lines. Otherwise the
+      // formula can become fence metadata and the following prose stays in math.
+      text = text.replace(/\$\$([\s\S]*?)\$\$/g, (match, math: string, offset: number, source: string) => {
+        const before = offset > 0 && source[offset - 1] !== '\n' ? '\n' : '';
+        const after = source[offset + match.length] === '\n' ? '' : '\n';
+        return `${before}$$\n${math.trim()}\n$$${after}`;
       });
 
       return text;
