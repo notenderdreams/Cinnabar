@@ -1,1 +1,1 @@
-export * from '../../utils/snippetExtractor';
+export * from './snippetExtractor';

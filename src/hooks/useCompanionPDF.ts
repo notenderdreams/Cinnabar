@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef } from 'react';
 import type { PDFDocumentLoadingTask, PDFDocumentProxy } from 'pdfjs-dist';
-import { pdfjsLib } from '../utils/pdfWorker';
+import { pdfjsLib } from '../lib/pdf/pdfWorker';
 
 export interface UseCompanionPDFOptions {
   primaryFileName?: string;

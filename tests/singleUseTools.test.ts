@@ -6,7 +6,7 @@ async function source(path: string) {
 
 describe('single-use tools returning to selection mode', () => {
   test('rectangle highlight tool resets to selection mode after drawing or bounding a box', async () => {
-    const canvas = await source('src/components/AnnotationCanvas.tsx');
+    const canvas = await source('src/components/annotations/AnnotationCanvas.tsx');
     // On pointer up after dragging a rectangle highlight
     expect(canvas).toContain(
       "onAddAnnotation(newRect);\n        onSelectTool?.('select');\n      }\n      setRectStart(null);"
@@ -19,7 +19,7 @@ describe('single-use tools returning to selection mode', () => {
 
   test('snip to AI tool resets to selection mode after capture', async () => {
     const [canvas, app] = await Promise.all([
-      source('src/components/AnnotationCanvas.tsx'),
+      source('src/components/annotations/AnnotationCanvas.tsx'),
       source('src/App.tsx'),
     ]);
     // Canvas triggers onSelectTool('select') after snipping
@@ -33,7 +33,7 @@ describe('single-use tools returning to selection mode', () => {
   });
 
   test('explain region (ai-box) tool resets to selection mode after creating the region', async () => {
-    const canvas = await source('src/components/AnnotationCanvas.tsx');
+    const canvas = await source('src/components/annotations/AnnotationCanvas.tsx');
     // On pointer up after creating the AI box
     expect(canvas).toContain(
       "onAddAnnotation(annotation);\n      onAiBoxCreated?.(annotation.id);\n      setAiStart(null);\n      setAiCurrent(null);\n      onSelectTool?.('select');"
@@ -42,8 +42,8 @@ describe('single-use tools returning to selection mode', () => {
 
   test('plain text and sticky note tools reset to selection mode upon placement', async () => {
     const [canvas, viewer] = await Promise.all([
-      source('src/components/AnnotationCanvas.tsx'),
-      source('src/components/PDFViewer.tsx'),
+      source('src/components/annotations/AnnotationCanvas.tsx'),
+      source('src/components/viewer/PDFViewer.tsx'),
     ]);
     // Canvas resets to select immediately when note is added
     expect(canvas).toContain(
@@ -57,10 +57,10 @@ describe('single-use tools returning to selection mode', () => {
 
   test('eraser tool resets to selection mode after global stroke or overlay deletion', async () => {
     const [viewer, textOverlay, imageOverlay, aiOverlay] = await Promise.all([
-      source('src/components/PDFViewer.tsx'),
-      source('src/components/TextNoteOverlay.tsx'),
-      source('src/components/ImageOverlay.tsx'),
-      source('src/components/AiExplanationOverlay.tsx'),
+      source('src/components/viewer/PDFViewer.tsx'),
+      source('src/components/annotations/TextNoteOverlay.tsx'),
+      source('src/components/annotations/ImageOverlay.tsx'),
+      source('src/components/annotations/AiExplanationOverlay.tsx'),
     ]);
     // Global eraser pointer up resets to select
     expect(viewer).toContain(

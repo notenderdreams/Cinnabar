@@ -3,7 +3,7 @@ import { PDFDocument } from 'pdf-lib';
 import {
   deletePageFromPdf,
   reindexAfterPageDeletion,
-} from '../src/utils/pageExtractor';
+} from '../src/lib/pdf/pageExtractor';
 
 describe('page deletion', () => {
   test('removes the requested PDF page', async () => {

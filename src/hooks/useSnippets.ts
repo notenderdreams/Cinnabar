@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import type { SnippetDividerEntry, SnippetEntry, SnippetImageEntry } from '../utils/types';
+import type { SnippetDividerEntry, SnippetEntry, SnippetImageEntry } from '../lib/types/index';
 
 const STORAGE_PREFIX = 'pdfuck_snippets_';
 

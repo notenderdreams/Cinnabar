@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Plus, Trash2, Edit2, Check, X, MessageSquare, Clock } from 'lucide-react';
-import type { AiChatSession } from '../../utils/types';
+import type { AiChatSession } from '../../lib/types/index';
 
 interface AiSessionDrawerProps {
   isOpen: boolean;

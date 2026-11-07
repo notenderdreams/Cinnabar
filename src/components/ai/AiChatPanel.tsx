@@ -6,17 +6,15 @@ import {
   Plus,
   History,
   X,
-  FileText,
   Loader2,
   BookOpen,
-  Sidebar as SidebarIcon,
 } from 'lucide-react';
-import type { AiChatAttachment, DocumentInfo } from '../../utils/types';
+import type { AiChatAttachment, DocumentInfo } from '../../lib/types/index';
 import { useAiChat } from '../../hooks/useAiChat';
 import { AiChatMessageItem } from './AiChatMessageItem';
 import { AiChatPromptInput } from './AiChatPromptInput';
 import { AiSessionDrawer } from './AiSessionDrawer';
-import { findOriginatingPrompt } from '../../utils/aiResponseDrag';
+import { findOriginatingPrompt } from '../../lib/ai/aiResponseDrag';
 
 interface AiChatPanelProps {
   isOpen: boolean;
@@ -62,7 +60,6 @@ export const AiChatPanel: React.FC<AiChatPanelProps> = ({
     selectSession,
     deleteSession,
     renameSession,
-    clearCurrentSession,
     sendMessage,
     cancelActiveRequest,
   } = useAiChat({ pdfDoc, docInfo, currentPage });

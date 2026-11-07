@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
-import type { SnippetEntry } from '../src/utils/types';
-import { computeStitchLayout, stitchSnippetsToCanvas } from '../src/utils/snippetExtractor';
+import type { SnippetEntry } from '../src/lib/types/index';
+import { computeStitchLayout, stitchSnippetsToCanvas } from '../src/lib/snippets/snippetExtractor';
 
 describe('computeStitchLayout', () => {
   test('calculates correct dimensions for snippets and dividers', () => {

@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
-import { transitionAiJob } from '../src/utils/aiJobState';
-import type { AiExplanationAnnotation, Annotation } from '../src/utils/types';
+import { transitionAiJob } from '../src/lib/ai/aiJobState';
+import type { AiExplanationAnnotation, Annotation } from '../src/lib/types/index';
 
 describe('AI explanation state and persistence', () => {
   test('transitions compose, running, error, and settled state without changing annotations', () => {
@@ -37,7 +37,7 @@ describe('AI explanation state and persistence', () => {
   });
 
   test('persists every annotation, including unanswered and answered AI boxes', async () => {
-    const { filterPersistableAnnotations } = await import('../src/utils/storage');
+    const { filterPersistableAnnotations } = await import('../src/lib/storage/storage');
     const unansweredAi: AiExplanationAnnotation = {
       id: 'ai_empty', pageNumber: 1, type: 'ai-explanation', x: 0.1, y: 0.2, width: 0.3, height: 0.1,
       prompt: 'Explain this', response: '', provider: 'codex', createdAt: 1, updatedAt: 2,
@@ -56,7 +56,7 @@ describe('AI explanation state and persistence', () => {
   });
 
   test('loads legacy annotation arrays and selects the newest versioned record', async () => {
-    const { parseStoredAnnotationRecord, selectNewestAnnotationRecord } = await import('../src/utils/storage');
+    const { parseStoredAnnotationRecord, selectNewestAnnotationRecord } = await import('../src/lib/storage/storage');
     const older: Annotation = {
       id: 'old', pageNumber: 1, type: 'highlight-rect', x: 0, y: 0, width: 0.1, height: 0.1,
       color: '#ffff00', opacity: 0.4, createdAt: 1,
@@ -79,7 +79,7 @@ describe('AI explanation state and persistence', () => {
   });
 
   test('builds an AI response preview for the Highlights sidebar', async () => {
-    const { getAnnotationListPresentation } = await import('../src/utils/annotationPresentation');
+    const { getAnnotationListPresentation } = await import('../src/lib/annotations/annotationPresentation');
     const ai: AiExplanationAnnotation = {
       id: 'ai_sidebar',
       pageNumber: 4,
@@ -104,7 +104,7 @@ describe('AI explanation state and persistence', () => {
   });
 
   test('builds text highlight and note snippet previews for the Highlights sidebar', async () => {
-    const { getAnnotationListPresentation } = await import('../src/utils/annotationPresentation');
+    const { getAnnotationListPresentation } = await import('../src/lib/annotations/annotationPresentation');
 
     const textHighlight: Annotation = {
       id: 'hl_1',

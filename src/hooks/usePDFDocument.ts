@@ -1,13 +1,13 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import type { PDFDocumentProxy } from 'pdfjs-dist';
-import { pdfjsLib } from '../utils/pdfWorker';
-import type { DocumentInfo, PDFOutlineItem, SearchMatch } from '../utils/types';
+import { pdfjsLib } from '../lib/pdf/pdfWorker';
+import type { DocumentInfo, PDFOutlineItem, SearchMatch } from '../lib/types/index';
 import {
   loadLastPageForDoc,
   saveLastActiveDoc,
   saveLastPageForDoc,
   updateRecentDocPageCount,
-} from '../utils/storage';
+} from '../lib/storage/storage';
 
 export function usePDFDocument() {
   const [pdfDoc, setPdfDoc] = useState<PDFDocumentProxy | null>(null);

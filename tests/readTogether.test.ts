@@ -1,14 +1,14 @@
 import { describe, expect, test } from 'bun:test';
-import { getReadTogetherPageRows } from '../src/utils/readTogether';
+import { getReadTogetherPageRows } from '../src/lib/pdf/readTogether';
 
 describe('read together page rows', () => {
   test('wires a read-only companion PDF into the continuous viewer', async () => {
     const [appSource, viewerSource, pageSource, dashboardSource, headerSource] = await Promise.all([
       Bun.file(new URL('../src/App.tsx', import.meta.url)).text(),
-      Bun.file(new URL('../src/components/PDFViewer.tsx', import.meta.url)).text(),
-      Bun.file(new URL('../src/components/PDFPage.tsx', import.meta.url)).text(),
-      Bun.file(new URL('../src/components/Dashboard.tsx', import.meta.url)).text(),
-      Bun.file(new URL('../src/components/Header.tsx', import.meta.url)).text(),
+      Bun.file(new URL('../src/components/viewer/PDFViewer.tsx', import.meta.url)).text(),
+      Bun.file(new URL('../src/components/viewer/PDFPage.tsx', import.meta.url)).text(),
+      Bun.file(new URL('../src/components/dashboard/Dashboard.tsx', import.meta.url)).text(),
+      Bun.file(new URL('../src/components/layout/Header.tsx', import.meta.url)).text(),
     ]);
 
     expect(appSource).toContain('companionPdfDoc={companionPdfDoc}');
@@ -37,8 +37,8 @@ describe('read together page rows', () => {
 
   test('ensures companion pages have data-pdf-page-number and active side header has white text on blur', async () => {
     const [pageSource, viewerSource] = await Promise.all([
-      Bun.file(new URL('../src/components/PDFPage.tsx', import.meta.url)).text(),
-      Bun.file(new URL('../src/components/PDFViewer.tsx', import.meta.url)).text(),
+      Bun.file(new URL('../src/components/viewer/PDFPage.tsx', import.meta.url)).text(),
+      Bun.file(new URL('../src/components/viewer/PDFViewer.tsx', import.meta.url)).text(),
     ]);
 
     expect(pageSource).toContain('data-pdf-page-number={pageNumber}');

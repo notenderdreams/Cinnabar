@@ -3,7 +3,7 @@ import { degrees, PDFDocument } from 'pdf-lib';
 import {
   addBlankPageBelow,
   reindexAfterPageInsertion,
-} from '../src/utils/pageExtractor';
+} from '../src/lib/pdf/pageExtractor';
 
 const projectFile = (path: string) => Bun.file(new URL(`../${path}`, import.meta.url)).text();
 
@@ -136,9 +136,9 @@ describe('page insertion', () => {
 
   test('wires "Add page below" in context menu, PDFPage, and PDFViewer', async () => {
     const [contextMenuSource, pageSource, viewerSource, appSource] = await Promise.all([
-      projectFile('src/components/PageContextMenu.tsx'),
-      projectFile('src/components/PDFPage.tsx'),
-      projectFile('src/components/PDFViewer.tsx'),
+      projectFile('src/components/viewer/PageContextMenu.tsx'),
+      projectFile('src/components/viewer/PDFPage.tsx'),
+      projectFile('src/components/viewer/PDFViewer.tsx'),
       projectFile('src/App.tsx'),
     ]);
 
@@ -147,6 +147,8 @@ describe('page insertion', () => {
     expect(pageSource).toContain('onAddPageBelow');
     expect(viewerSource).toContain('onAddPageBelow');
     expect(appSource).toContain('handleAddPageBelow');
-    expect(appSource).toContain('addBlankPageBelow');
+    expect(appSource).toContain('usePdfPageMutations({');
+    const mutationSource = await projectFile('src/hooks/usePdfPageMutations.ts');
+    expect(mutationSource).toContain('addBlankPageBelow');
   });
 });

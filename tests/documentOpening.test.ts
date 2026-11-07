@@ -13,7 +13,12 @@ describe('document opening', () => {
   test('does not enter the reader until the selected PDF has loaded', async () => {
     const appSource = await projectFile('src/App.tsx');
 
-    expect(appSource).toContain('const loaded = await loadPdf(');
-    expect(appSource).toContain("if (loaded) setCurrentScreen('reader')");
+    const sessionSource = await projectFile('src/hooks/useDocumentSession.ts');
+    expect(appSource).toContain('useDocumentSession({');
+    expect(sessionSource).toContain('const loaded = await loadPdf(');
+    expect(sessionSource).toContain("if (loaded) {\n        void idbSaveActivePdf(bytes, fileName);\n        onScreenChange('reader');");
+    expect(sessionSource.indexOf('const loaded = await loadPdf(')).toBeLessThan(
+      sessionSource.indexOf('void idbSaveActivePdf(bytes, fileName)')
+    );
   });
 });

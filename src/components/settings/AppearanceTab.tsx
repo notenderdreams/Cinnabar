@@ -1,4 +1,3 @@
-import React from 'react';
 import { Check, RotateCcw } from 'lucide-react';
 import type { ReadingTheme, ThemeSettings } from '../../lib/types';
 import { READING_THEMES } from '../../lib/constants/themes';

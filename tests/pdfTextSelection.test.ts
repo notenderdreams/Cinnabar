@@ -5,7 +5,7 @@ const projectFile = (path: string) => Bun.file(new URL(`../${path}`, import.meta
 describe('PDF text selection', () => {
   test('keeps the PDF.js text layer selectable and gives selected text visible blue feedback', async () => {
     const [pageSource, styles] = await Promise.all([
-      projectFile('src/components/PDFPage.tsx'),
+      projectFile('src/components/viewer/PDFPage.tsx'),
       projectFile('src/index.css'),
     ]);
 
@@ -24,8 +24,8 @@ describe('PDF text selection', () => {
 
   test('offers "Copy text" in reader context menu to copy selected text', async () => {
     const [contextMenuSource, pageSource] = await Promise.all([
-      projectFile('src/components/PageContextMenu.tsx'),
-      projectFile('src/components/PDFPage.tsx'),
+      projectFile('src/components/viewer/PageContextMenu.tsx'),
+      projectFile('src/components/viewer/PDFPage.tsx'),
     ]);
 
     expect(contextMenuSource).toContain('Copy text');
@@ -37,10 +37,10 @@ describe('PDF text selection', () => {
 
   test('handles double click to toggle word highlight and triple click to toggle line highlight', async () => {
     const [pageSource, canvasSource, shortcutsSource, settingsSource] = await Promise.all([
-      projectFile('src/components/PDFPage.tsx'),
-      projectFile('src/components/AnnotationCanvas.tsx'),
-      projectFile('src/components/KeyboardShortcutsModal.tsx'),
-      projectFile('src/components/SettingsModal.tsx'),
+      projectFile('src/components/viewer/PDFPage.tsx'),
+      projectFile('src/components/annotations/AnnotationCanvas.tsx'),
+      projectFile('src/components/modals/KeyboardShortcutsModal.tsx'),
+      projectFile('src/components/modals/SettingsModal.tsx'),
     ]);
 
     // Text layer triple-click selection
@@ -77,8 +77,8 @@ describe('PDF text selection', () => {
 
   test('binds textLayer endOfContent selection synchronization to prevent WebKit backwards selection', async () => {
     const [pageSource, managerSource, styles] = await Promise.all([
-      projectFile('src/components/PDFPage.tsx'),
-      projectFile('src/utils/pdfTextLayerManager.ts'),
+      projectFile('src/components/viewer/PDFPage.tsx'),
+      projectFile('src/lib/pdf/pdfTextLayerManager.ts'),
       projectFile('src/index.css'),
     ]);
 

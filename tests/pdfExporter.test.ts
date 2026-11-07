@@ -4,12 +4,12 @@ import {
   exportAnnotatedPDF,
   parseColorToRgb,
   sanitizeWinAnsi,
-} from '../src/utils/pdfExporter';
+} from '../src/lib/pdf/pdfExporter';
 import {
   resolveNoteColor,
   wrapTextLines,
   NOTE_COLOR_PRESETS,
-} from '../src/utils/textNoteRasterizer';
+} from '../src/lib/annotations/textNoteRasterizer';
 import type {
   Annotation,
   RectHighlightAnnotation,
@@ -18,7 +18,7 @@ import type {
   DrawingAnnotation,
   TextNoteAnnotation,
   AiExplanationAnnotation,
-} from '../src/utils/types';
+} from '../src/lib/types/index';
 
 describe('pdfExporter color parsing and WinAnsi sanitization', () => {
   test('parses 3, 6, and 8 digit hex colors correctly', () => {

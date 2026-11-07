@@ -4,8 +4,8 @@ const projectFile = (path: string) => Bun.file(new URL(`../${path}`, import.meta
 
 describe('Highlight layer and line highlight selection', () => {
   test('renders highlights in a dedicated blend-mode layer so they render under text', async () => {
-    const canvasSource = await projectFile('src/components/AnnotationCanvas.tsx');
-    const pageSource = await projectFile('src/components/PDFPage.tsx');
+    const canvasSource = await projectFile('src/components/annotations/AnnotationCanvas.tsx');
+    const pageSource = await projectFile('src/components/viewer/PDFPage.tsx');
 
     expect(canvasSource).toContain('data-pdf-highlight-layer');
     expect(canvasSource).toContain("mixBlendMode: isInvertedColorMode ? 'screen' : 'multiply'");
@@ -26,7 +26,7 @@ describe('Highlight layer and line highlight selection', () => {
   });
 
   test('makes straight line highlights selectable, draggable, and resizable with endpoint handles', async () => {
-    const canvasSource = await projectFile('src/components/AnnotationCanvas.tsx');
+    const canvasSource = await projectFile('src/components/annotations/AnnotationCanvas.tsx');
 
     // Selected highlight supports highlight-line
     expect(canvasSource).toContain("a.type === 'highlight-line'");
@@ -41,8 +41,8 @@ describe('Highlight layer and line highlight selection', () => {
 
   test('offers Copy highlight text and Copy region as image in right-click context menu', async () => {
     const [contextMenuSource, pageSource] = await Promise.all([
-      projectFile('src/components/PageContextMenu.tsx'),
-      projectFile('src/components/PDFPage.tsx'),
+      projectFile('src/components/viewer/PageContextMenu.tsx'),
+      projectFile('src/components/viewer/PDFPage.tsx'),
     ]);
 
     expect(contextMenuSource).toContain('hitAnnotation');
@@ -57,8 +57,8 @@ describe('Highlight layer and line highlight selection', () => {
 
   test('scales stroke widths and underlines proportionally with zoom level', async () => {
     const [canvasSource, pageSource] = await Promise.all([
-      projectFile('src/components/AnnotationCanvas.tsx'),
-      projectFile('src/components/PDFPage.tsx'),
+      projectFile('src/components/annotations/AnnotationCanvas.tsx'),
+      projectFile('src/components/viewer/PDFPage.tsx'),
     ]);
 
     expect(canvasSource).toContain('scale?: number;');

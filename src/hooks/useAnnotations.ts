@@ -1,12 +1,12 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
-import type { Annotation, AttachedImageAnnotation, DocumentInfo } from '../utils/types';
+import type { Annotation, AttachedImageAnnotation, DocumentInfo } from '../lib/types/index';
 import {
   loadAnnotationRecordForDocAsync,
   loadAnnotationRecordForDocSync,
   saveAnnotationsForDoc,
-} from '../utils/storage';
+} from '../lib/storage/storage';
 
-import { calculateImagePlacement, type ImagePlacementOptions } from '../utils/imageUtils';
+import { calculateImagePlacement } from '../lib/media/imageUtils';
 
 export function useAnnotations(docKey: string, docInfo?: DocumentInfo | null) {
   const [activeDocKey, setActiveDocKey] = useState<string>(docKey);

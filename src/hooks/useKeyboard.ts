@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import type { ToolType, ViewMode } from '../utils/types';
+import type { ToolType, ViewMode } from '../lib/types/index';
 
 export interface KeyboardShortcutOptions {
   onOpenPdf: () => void;

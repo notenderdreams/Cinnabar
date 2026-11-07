@@ -7,9 +7,9 @@ async function source(path: string) {
 describe('plain text and sticky note tools', () => {
   test('offers separate toolbar tools and keyboard shortcuts', async () => {
     const [toolbar, keyboard, shortcuts] = await Promise.all([
-      source('src/components/Toolbar.tsx'),
+      source('src/components/layout/Toolbar.tsx'),
       source('src/hooks/useKeyboard.ts'),
-      source('src/components/KeyboardShortcutsModal.tsx'),
+      source('src/components/modals/KeyboardShortcutsModal.tsx'),
     ]);
 
     expect(toolbar).toContain("{ id: 'text', icon: Type, label: 'Plain Text', shortcut: 'T' }");
@@ -21,9 +21,9 @@ describe('plain text and sticky note tools', () => {
 
   test('stores a presentation kind while treating legacy notes as sticky', async () => {
     const [canvas, overlay, exporter] = await Promise.all([
-      source('src/components/AnnotationCanvas.tsx'),
-      source('src/components/TextNoteOverlay.tsx'),
-      source('src/utils/pdfExporter.ts'),
+      source('src/components/annotations/AnnotationCanvas.tsx'),
+      source('src/components/annotations/TextNoteOverlay.tsx'),
+      source('src/lib/pdf/pdfExporter.ts'),
     ]);
 
     expect(canvas).toContain("kind: activeTool === 'text' ? 'plain' : 'sticky'");
@@ -42,7 +42,7 @@ describe('plain text and sticky note tools', () => {
   });
 
   test('allows text notes to be positioned outside PDF boundaries into margins', async () => {
-    const overlay = await source('src/components/TextNoteOverlay.tsx');
+    const overlay = await source('src/components/annotations/TextNoteOverlay.tsx');
     expect(overlay).toContain('const newX = initialAnnPosRef.current.x + dx;');
     expect(overlay).toContain('const newY = initialAnnPosRef.current.y + dy;');
     expect(overlay).not.toContain('Math.min(initialAnnPosRef.current.x + dx, 0.92)');
@@ -50,8 +50,8 @@ describe('plain text and sticky note tools', () => {
 
   test('makes sticky notes resizable via invisible corner and edge zones without changing text size', async () => {
     const [overlay, types] = await Promise.all([
-      source('src/components/TextNoteOverlay.tsx'),
-      source('src/utils/types.ts'),
+      source('src/components/annotations/TextNoteOverlay.tsx'),
+      source('src/lib/types/annotations.ts'),
     ]);
 
     expect(types).toContain('width?: number;');
@@ -65,8 +65,8 @@ describe('plain text and sticky note tools', () => {
 
   test('allows text notes to be created directly in workspace margins outside PDF', async () => {
     const [viewer, overlay] = await Promise.all([
-      source('src/components/PDFViewer.tsx'),
-      source('src/components/TextNoteOverlay.tsx'),
+      source('src/components/viewer/PDFViewer.tsx'),
+      source('src/components/annotations/TextNoteOverlay.tsx'),
     ]);
 
     expect(viewer).toContain("const isNoteCreationTool = (activeTool === 'text' || activeTool === 'sticky-note')");
@@ -77,8 +77,8 @@ describe('plain text and sticky note tools', () => {
 
   test('provides icon-only text formatting toolbar for alignment, font, size, and color', async () => {
     const [toolbar, overlay] = await Promise.all([
-      source('src/components/TextFormattingToolbar.tsx'),
-      source('src/components/TextNoteOverlay.tsx'),
+      source('src/components/annotations/TextFormattingToolbar.tsx'),
+      source('src/components/annotations/TextNoteOverlay.tsx'),
     ]);
 
     // Alignment icons
@@ -101,10 +101,10 @@ describe('plain text and sticky note tools', () => {
 
   test('switches back to selection tool after single use of text, sticky note, or area explanation', async () => {
     const [canvas, viewer, app, overlay] = await Promise.all([
-      source('src/components/AnnotationCanvas.tsx'),
-      source('src/components/PDFViewer.tsx'),
+      source('src/components/annotations/AnnotationCanvas.tsx'),
+      source('src/components/viewer/PDFViewer.tsx'),
       source('src/App.tsx'),
-      source('src/components/TextNoteOverlay.tsx'),
+      source('src/components/annotations/TextNoteOverlay.tsx'),
     ]);
 
     // Note overlay resets to select when editing is off or note deleted

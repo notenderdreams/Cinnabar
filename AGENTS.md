@@ -35,13 +35,19 @@ See `DEVELOPMENT.md` when setup, build prerequisites, or release output details 
 ## Code map
 
 - `src/App.tsx`: application orchestration and top-level reader state.
-- `src/components/`: reader, dashboard, annotation, toolbar, sidebar, settings, and AI UI.
-- `src/hooks/`: stateful PDF, annotation, snippet, keyboard, theme, and AI behavior.
-- `src/utils/`: PDF operations, persistence, rendering helpers, shared types, and the Tauri bridge.
+- `src/components/`: UI implementations grouped into viewer, annotations, dashboard, layout, modals, settings, AI, and shared UI folders.
+- `src/hooks/`: stateful PDF, document session, page mutation, annotation, snippet, keyboard, theme, and AI behavior.
+- `src/lib/`: domain implementations for PDF operations, annotations, AI, storage, snippets, media, and themes; shared types and generated bindings.
+- `src/utils/tauriBridge.ts`: public desktop interface; `src/utils/tauri/` owns native calls and browser fallbacks grouped by capability.
 - `tests/`: Bun tests for PDF behavior, persistence, rendering helpers, and state transitions.
 - `src-tauri/src/app.rs`: Tauri setup and Specta export.
-- `src-tauri/src/commands/`: native commands grouped by domain.
+- `src-tauri/src/app/menu.rs`: native application menu definitions.
+- `src-tauri/src/commands/`: Tauri command adapters grouped by domain.
 - `src-tauri/src/commands/mod.rs`: the complete native command inventory.
+- `src-tauri/src/ai/`: provider discovery, CLI protocol, request execution, temporary workspace cleanup, and AI data types.
+- `src-tauri/src/documents/`: file reads and writes, data types, and bounded directory scanning.
+- `src-tauri/src/pdf/` and `src-tauri/src/media.rs`: PDF page processing, fingerprints, and image encoding.
+- `src-tauri/src/library/`: library state, database setup, migrations, queries, and file reconciliation.
 - `src-tauri/capabilities/`: desktop permissions.
 
 Use `src/index.css` as the source of truth when changing UI styles. Preserve accessibility, keyboard focus, and equivalent light/dark behavior; avoid duplicating a second styling system in components.
@@ -58,6 +64,8 @@ When adding or changing a Rust command:
 4. Regenerate bindings; never hand-edit `src/lib/bindings.ts`.
 5. Adapt the generated command in `tauriBridge.ts` if the UI needs normalization or a browser fallback.
 
+Keep command adapters focused on Tauri inputs and outputs. Put document processing and persistence in the matching native domain module, use borrowed inputs when ownership is unnecessary, and expose only the visibility needed by callers.
+
 Use `anyhow` with context for internal Rust failures. Keep Tauri boundary errors serializable. Treat expected outcomes such as a closed dialog, missing optional tool, or user cancellation as normal domain results rather than unexpected errors.
 
 Keep package, Cargo, and Tauri versions aligned when changing the application version.
@@ -68,7 +76,7 @@ Preserve macOS, Windows, and Linux support in native changes. Prefer Tauri APIs 
 
 ## PDF and persistence invariants
 
-- Reuse the configured PDF.js worker from `src/utils/pdfWorker.ts`.
+- Reuse the configured PDF.js worker from `src/lib/pdf/pdfWorker.ts`.
 - Keep expensive PDF loading and rendering lazy and cancelable. Clean up PDF.js loading tasks, render tasks, observers, timers, object URLs, and event listeners.
 - Avoid eagerly rendering every page or every library cover. Library and thumbnail work must remain bounded for large documents and directories.
 - Keep app chrome styling separate from rendered PDF content and preserve existing PDF page filter behavior.
@@ -80,7 +88,7 @@ Preserve macOS, Windows, and Linux support in native changes. Prefer Tauri APIs 
 
 AI explanations currently use a locally installed Codex CLI from the desktop app; this is a preview boundary, not the final provider architecture.
 
-Preserve the current safety properties when changing it: prompts go through stdin, temporary files are cleaned up, requests can be cancelled, execution has a timeout, structured output is validated, and Codex runs with the restricted non-interactive arguments defined in `src-tauri/src/commands/ai.rs`.
+Preserve the current safety properties when changing it: Codex prompts go through stdin, temporary files are cleaned up, requests can be cancelled, execution has a timeout, structured output is validated, and Codex runs with the restricted non-interactive arguments defined in `src-tauri/src/ai/protocol.rs`. Request execution and cleanup live in `src-tauri/src/ai/runner.rs` and `src-tauri/src/ai/workspace.rs`.
 
 ## Verification
 

@@ -23,8 +23,8 @@ const mockStorage = createLocalStorageMock();
 import {
   loadAnnotationRecordForDocSync,
   saveAnnotationsForDoc,
-} from '../src/utils/storage';
-import type { Annotation, RectHighlightAnnotation } from '../src/utils/types';
+} from '../src/lib/storage/storage';
+import type { Annotation, RectHighlightAnnotation } from '../src/lib/types/index';
 
 const projectFile = (path: string) => Bun.file(new URL(`../${path}`, import.meta.url)).text();
 

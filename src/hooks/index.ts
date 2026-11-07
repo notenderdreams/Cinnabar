@@ -6,3 +6,6 @@ export { useKeyboard } from './useKeyboard';
 export { usePDFDocument } from './usePDFDocument';
 export { useSnippets } from './useSnippets';
 export { useToast } from './useToast';
+export { useDocumentSession } from './useDocumentSession';
+export { usePdfPageMutations } from './usePdfPageMutations';
+export { useAiChat } from './useAiChat';

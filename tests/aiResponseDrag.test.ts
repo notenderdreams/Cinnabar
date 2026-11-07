@@ -12,7 +12,7 @@ import {
   extractPlainTextPreview,
   createAiResponseDragGhost,
   getTransparentDragImage,
-} from '../src/utils/aiResponseDrag';
+} from '../src/lib/ai/aiResponseDrag';
 
 describe('aiResponseDrag', () => {
   test('extractAiResponseDragPayload extracts valid JSON payload', () => {

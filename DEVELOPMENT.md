@@ -108,15 +108,31 @@ The compiled platform-native installer/executable will be placed in `src-tauri/t
 
 ```
 ├── src/
-│   ├── components/       # React UI components (Viewer, Toolbar, Modals, Overlays)
-│   ├── hooks/            # Custom hooks (PDF loading, search, AI explanations)
-│   ├── lib/              # Generated native bindings, domain types, and constants
-│   ├── utils/            # Bridge helpers, PDF workers, themes, export logic
+│   ├── components/       # UI grouped by viewer, annotations, dashboard, layout, modals, settings, AI
+│   ├── hooks/            # PDF loading, sessions, page mutations, annotations, search, AI
+│   ├── lib/              # Domain implementations, types, constants, generated bindings
+│   │   ├── ai/           # Prompts, response formatting, drag state, region context
+│   │   ├── annotations/  # Selection, annotation transfer, presentation, rasterization
+│   │   ├── pdf/          # PDF.js worker, page processing, export, viewer geometry
+│   │   ├── storage/      # Existing localStorage and IndexedDB persistence formats
+│   │   ├── snippets/     # Snippet capture and stitching
+│   │   ├── media/        # Image geometry and processing helpers
+│   │   └── theme/        # Reading theme behavior
+│   ├── utils/tauriBridge.ts # Public desktop interface
+│   ├── utils/tauri/      # Capability modules with native calls and browser fallbacks
 │   ├── App.tsx           # Main application entry
 │   └── index.css         # Design system tokens and styles
 ├── src-tauri/
 │   ├── src/app.rs        # Tauri setup and binding generation
-│   ├── src/commands/     # Native commands grouped by responsibility
+│   ├── src/app/menu.rs   # Native menu definitions
+│   ├── src/commands/     # Tauri command adapters and their single registration point
+│   ├── src/ai/           # Providers, protocol, runner, workspace cleanup, data types
+│   ├── src/documents/    # File IO, scan limits, document data types
+│   ├── src/pdf/          # PDF mutations and fingerprinting
+│   ├── src/media.rs      # Image compression and encoding
+│   ├── src/library/      # Library state, database setup, migrations, queries, scanner
+│   ├── src/platform.rs  # Shared desktop environment helpers
+│   ├── src/shortcuts/    # Shortcut definitions and dispatch
 │   ├── src/lib.rs        # Small native library entry point
 │   ├── capabilities/     # Tauri 2 security permissions & capabilities
 │   └── Cargo.toml        # Rust dependencies
@@ -127,6 +143,8 @@ The compiled platform-native installer/executable will be placed in `src-tauri/t
 ### Native Tauri Bridge
 All desktop-specific operations (file dialogs, folder scanning, file reading/writing, clipboard access, external URL opening) must route through [`src/utils/tauriBridge.ts`](src/utils/tauriBridge.ts). Always maintain a safe fallback for the browser build when applicable.
 
+The bridge re-exports capability modules in `src/utils/tauri/`. UI and domain callers use the public bridge; capability modules share runtime detection and result handling without importing the public bridge back into themselves. Domain types live in `src/lib/types/`; avoid adding compatibility re-exports in unrelated folders.
+
 Native commands are registered once in [`src-tauri/src/commands/mod.rs`](src-tauri/src/commands/mod.rs). Specta generates their TypeScript interface at `src/lib/bindings.ts`. The generated file is ignored by Git and refreshed automatically by `bun run dev:web` and `bun run build:web`. Run it directly when needed:
 
 ```bash
@@ -134,6 +152,8 @@ bun run generate:bindings
 ```
 
 Keep command failures serializable at the Tauri boundary. Use `anyhow` with context inside Rust modules, then convert unexpected failures to a frontend-safe message. Expected outcomes such as closing a dialog or cancelling an AI request should remain normal return values.
+
+Native domain modules own processing and persistence; command adapters own Tauri arguments, dialogs, and serialized results. Tests for native implementations sit alongside their domain modules. `useDocumentSession` owns opening and resuming documents, while `usePdfPageMutations` coordinates PDF persistence, reload, annotation/snippet reindexing, and navigation.
 
 Cinnabar currently targets desktop platforms only. Do not add mobile-specific entry points or configuration unless mobile support becomes an explicit project goal.
 

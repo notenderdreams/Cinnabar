@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { ThumbnailRenderQueue } from '../src/utils/thumbnailRenderQueue';
+import { ThumbnailRenderQueue } from '../src/lib/pdf/thumbnailRenderQueue';
 
 describe('ThumbnailRenderQueue', () => {
   test('starts one thumbnail at a time and only after an idle turn', async () => {

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import type { PDFDocumentProxy } from 'pdfjs-dist';
-import type { AiChatAttachment, AiChatMessage, AiChatSession, DocumentInfo } from '../utils/types';
-import { extractPageText } from '../utils/pageExtractor';
+import type { AiChatAttachment, AiChatMessage, AiChatSession, DocumentInfo } from '../lib/types/index';
+import { extractPageText } from '../lib/pdf/pageExtractor';
 import { runAiExplanation, cancelAiExplanation, isTauri } from '../utils/tauriBridge';
 
 const STORAGE_KEY = 'cinnabar_ai_chat_sessions';

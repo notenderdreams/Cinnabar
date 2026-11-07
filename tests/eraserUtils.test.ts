@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { distToSegment, isAnnotationHitByEraser } from '../src/utils/eraserUtils';
+import { distToSegment, isAnnotationHitByEraser } from '../src/lib/annotations/eraserUtils';
 import type {
   DrawingAnnotation,
   LineHighlightAnnotation,
@@ -8,7 +8,7 @@ import type {
   TextNoteAnnotation,
   AiExplanationAnnotation,
   AttachedImageAnnotation,
-} from '../src/utils/types';
+} from '../src/lib/types/index';
 
 describe('eraserUtils', () => {
   const pageWidth = 600;

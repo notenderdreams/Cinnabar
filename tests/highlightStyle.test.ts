@@ -5,7 +5,7 @@ import {
   replaceHighlightPaletteColor,
   resolveHighlightOpacity,
   toggleHighlightStyle,
-} from '../src/utils/highlightStyle';
+} from '../src/lib/annotations/highlightStyle';
 
 describe('session highlight style', () => {
   test('toggles stroke and underline modes back to the default box style', () => {
@@ -24,8 +24,8 @@ describe('session highlight style', () => {
 
   test('does not offer or apply underline mode to rectangle highlights', async () => {
     const [toolbarSource, canvasSource] = await Promise.all([
-      Bun.file(new URL('../src/components/Toolbar.tsx', import.meta.url)).text(),
-      Bun.file(new URL('../src/components/AnnotationCanvas.tsx', import.meta.url)).text(),
+      Bun.file(new URL('../src/components/layout/Toolbar.tsx', import.meta.url)).text(),
+      Bun.file(new URL('../src/components/annotations/AnnotationCanvas.tsx', import.meta.url)).text(),
     ]);
 
     expect(toolbarSource).toContain("activeTool !== 'highlight-rect'");
@@ -58,7 +58,7 @@ describe('session highlight style', () => {
 
   test('shares the session palette with the selected-highlight toolbar', async () => {
     const canvasSource = await Bun.file(
-      new URL('../src/components/AnnotationCanvas.tsx', import.meta.url)
+      new URL('../src/components/annotations/AnnotationCanvas.tsx', import.meta.url)
     ).text();
 
     expect(canvasSource).toContain('highlightColors.map((c) =>');

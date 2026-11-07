@@ -6,11 +6,8 @@ import {
   Crop,
   X,
   Quote,
-  Sparkles,
-  Camera,
-  Image as ImageIcon,
 } from 'lucide-react';
-import type { AiChatAttachment } from '../../utils/types';
+import type { AiChatAttachment } from '../../lib/types/index';
 
 interface AiChatPromptInputProps {
   isLoading: boolean;

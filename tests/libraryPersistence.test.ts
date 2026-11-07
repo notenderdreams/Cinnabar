@@ -33,8 +33,8 @@ import {
   saveLastActiveDoc,
   loadLastActiveDoc,
   clearLastActiveDoc,
-} from '../src/utils/storage';
-import { HIGHLIGHT_COLOR_PRESETS } from '../src/utils/highlightStyle';
+} from '../src/lib/storage/storage';
+import { HIGHLIGHT_COLOR_PRESETS } from '../src/lib/annotations/highlightStyle';
 
 describe('Library filter & folder selection persistence', () => {
   beforeEach(() => {

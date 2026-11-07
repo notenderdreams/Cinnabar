@@ -3,7 +3,7 @@ import {
   findFocalPageNumber,
   keepViewerPositionAfter,
   shouldRestoreViewerPosition,
-} from '../src/utils/viewerPosition';
+} from '../src/lib/pdf/viewerPosition';
 
 describe('PDF viewer position restoration', () => {
   test('does not restore or recenter when only the active page changes', () => {

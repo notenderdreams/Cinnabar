@@ -1,6 +1,6 @@
 use crate::commands::error::{command_error, CommandResult};
+use crate::platform::home_directory;
 use anyhow::{Context, Result};
-use std::path::PathBuf;
 use std::process::Command;
 
 #[tauri::command]
@@ -27,12 +27,6 @@ pub fn exit_fullscreen_window(window: tauri::Window) -> CommandResult<bool> {
             .map_err(|e| command_error(anyhow::anyhow!(e)))?;
     }
     Ok(false)
-}
-
-pub(super) fn home_directory() -> Option<PathBuf> {
-    std::env::var_os("HOME")
-        .or_else(|| std::env::var_os("USERPROFILE"))
-        .map(PathBuf::from)
 }
 
 #[tauri::command]

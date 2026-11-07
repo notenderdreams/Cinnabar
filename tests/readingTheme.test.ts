@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { usesInvertedColorSpace } from '../src/utils/readingTheme';
+import { usesInvertedColorSpace } from '../src/lib/theme/readingTheme';
 
 describe('usesInvertedColorSpace', () => {
   test('keeps annotation colors aligned with every dark PDF filter', () => {

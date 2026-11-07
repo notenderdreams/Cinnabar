@@ -2,8 +2,8 @@ import { describe, expect, test } from 'bun:test';
 import {
   parseAnnotationsJson,
   mergeAnnotations,
-} from '../src/utils/annotationTransfer';
-import type { Annotation, TextHighlightAnnotation, DrawingAnnotation } from '../src/utils/types';
+} from '../src/lib/annotations/annotationTransfer';
+import type { Annotation, TextHighlightAnnotation, DrawingAnnotation } from '../src/lib/types/index';
 
 const projectFile = (path: string) => Bun.file(new URL(`../${path}`, import.meta.url)).text();
 
@@ -202,10 +202,10 @@ describe('annotationTransfer - mergeAnnotations', () => {
 describe('annotation import/export UI and native menu wiring', () => {
   test('Native macOS Menu Bar and shortcuts expose Import / Export and ExportModal supports importing', async () => {
     const [tauriAppSource, modalSource, appSource, shortcutsSource] = await Promise.all([
-      projectFile('src-tauri/src/app.rs'),
-      projectFile('src/components/ExportModal.tsx'),
+      Promise.all([projectFile('src-tauri/src/app/menu.rs'), projectFile('src-tauri/src/app.rs')]).then(parts => parts.join('\n')),
+      projectFile('src/components/modals/ExportModal.tsx'),
       projectFile('src/App.tsx'),
-      projectFile('src/components/KeyboardShortcutsModal.tsx'),
+      projectFile('src/components/modals/KeyboardShortcutsModal.tsx'),
     ]);
 
     expect(tauriAppSource).toContain('import_annotations');

@@ -1,13 +1,12 @@
 mod ai;
 mod clipboard;
+mod dialog;
 mod documents;
 mod error;
 mod library;
 mod pdf_ops;
 mod platform;
 mod shortcuts;
-
-pub use ai::AiRunnerState;
 
 /// Builds the complete native command interface shared by Tauri and Specta.
 pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {

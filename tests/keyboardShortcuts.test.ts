@@ -59,8 +59,8 @@ describe('annotation keyboard shortcuts', () => {
     const [keyboardSource, appSource, headerSource, settingsSource] = await Promise.all([
       projectFile('src/hooks/useKeyboard.ts'),
       projectFile('src/App.tsx'),
-      projectFile('src/components/Header.tsx'),
-      projectFile('src/components/SettingsModal.tsx'),
+      projectFile('src/components/layout/Header.tsx'),
+      projectFile('src/components/modals/SettingsModal.tsx'),
     ]);
 
     expect(keyboardSource).toContain("options.onChangeViewMode?.('spread')");
@@ -74,7 +74,7 @@ describe('annotation keyboard shortcuts', () => {
     const [keyboardSource, appSource, modalSource] = await Promise.all([
       projectFile('src/hooks/useKeyboard.ts'),
       projectFile('src/App.tsx'),
-      projectFile('src/components/KeyboardShortcutsModal.tsx'),
+      projectFile('src/components/modals/KeyboardShortcutsModal.tsx'),
     ]);
 
     expect(keyboardSource).toContain("case 'u':");
@@ -91,7 +91,7 @@ describe('annotation keyboard shortcuts', () => {
     const [keyboardSource, appSource, toolbarSource] = await Promise.all([
       projectFile('src/hooks/useKeyboard.ts'),
       projectFile('src/App.tsx'),
-      projectFile('src/components/Toolbar.tsx'),
+      projectFile('src/components/layout/Toolbar.tsx'),
     ]);
 
     expect(keyboardSource).toContain("if (/^[1-8]$/.test(e.key))");
@@ -119,8 +119,8 @@ describe('annotation keyboard shortcuts', () => {
     const [keyboardSource, appSource, modalSource, bridgeSource] = await Promise.all([
       projectFile('src/hooks/useKeyboard.ts'),
       projectFile('src/App.tsx'),
-      projectFile('src/components/KeyboardShortcutsModal.tsx'),
-      projectFile('src/utils/tauriBridge.ts'),
+      projectFile('src/components/modals/KeyboardShortcutsModal.tsx'),
+      projectFile('src/utils/tauri/window.ts'),
     ]);
 
     expect(keyboardSource).toContain("} else if (e.key === 'Enter') {");
@@ -135,10 +135,10 @@ describe('annotation keyboard shortcuts', () => {
       await Promise.all([
         projectFile('src/hooks/useKeyboard.ts'),
         projectFile('src/App.tsx'),
-        projectFile('src/components/AiExplanationOverlay.tsx'),
-        projectFile('src/components/AnnotationCanvas.tsx'),
-        projectFile('src/components/TextNoteOverlay.tsx'),
-        projectFile('src/utils/tauriBridge.ts'),
+        projectFile('src/components/annotations/AiExplanationOverlay.tsx'),
+        projectFile('src/components/annotations/AnnotationCanvas.tsx'),
+        projectFile('src/components/annotations/TextNoteOverlay.tsx'),
+        projectFile('src/utils/tauri/window.ts'),
       ]);
 
     // useKeyboard intercepts Escape inside inputs with preventDefault + stopPropagation
@@ -161,8 +161,8 @@ describe('annotation keyboard shortcuts', () => {
 
   test('PDFViewer anchors scroll position during window resize and fullscreen transitions', async () => {
     const [viewerSource, overlaySource] = await Promise.all([
-      projectFile('src/components/PDFViewer.tsx'),
-      projectFile('src/components/AiExplanationOverlay.tsx'),
+      projectFile('src/components/viewer/PDFViewer.tsx'),
+      projectFile('src/components/annotations/AiExplanationOverlay.tsx'),
     ]);
 
     // Viewer tracks active page and compensates for layout shifts on resize
@@ -375,7 +375,7 @@ describe('annotation keyboard shortcuts', () => {
 
     const [keyboardSource, modalSource, appSource] = await Promise.all([
       projectFile('src/hooks/useKeyboard.ts'),
-      projectFile('src/components/KeyboardShortcutsModal.tsx'),
+      projectFile('src/components/modals/KeyboardShortcutsModal.tsx'),
       projectFile('src/App.tsx'),
     ]);
 

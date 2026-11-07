@@ -1,8 +1,8 @@
 import { describe, expect, test } from 'bun:test';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { AiResponseRenderer } from '../src/components/AiResponseRenderer';
-import { normalizeAiResponseMarkdown } from '../src/utils/aiResponseMarkdown';
+import { AiResponseRenderer } from '../src/components/annotations/AiResponseRenderer';
+import { normalizeAiResponseMarkdown } from '../src/lib/ai/aiResponseMarkdown';
 
 describe('normalizeAiResponseMarkdown', () => {
   test('keeps prose after a display formula out of the math block', () => {

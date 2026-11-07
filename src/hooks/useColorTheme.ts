@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { CSSProperties } from 'react';
-import type { ReadingTheme, ThemeSettings } from '../utils/types';
-import { loadThemeSettings, saveThemeSettings } from '../utils/storage';
-import { usesInvertedColorSpace } from '../utils/readingTheme';
+import type { ReadingTheme, ThemeSettings } from '../lib/types/index';
+import { loadThemeSettings, saveThemeSettings } from '../lib/storage/storage';
+import { usesInvertedColorSpace } from '../lib/theme/readingTheme';
 
 const DEFAULT_THEME_SETTINGS: ThemeSettings = {
   theme: 'default',

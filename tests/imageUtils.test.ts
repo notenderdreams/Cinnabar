@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { calculateImagePlacement } from '../src/utils/imageUtils';
+import { calculateImagePlacement } from '../src/lib/media/imageUtils';
 
 describe('calculateImagePlacement', () => {
   test('guarantees rendered pixel aspect ratio matches image aspect ratio exactly', () => {

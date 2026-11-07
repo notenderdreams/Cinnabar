@@ -1,16 +1,15 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import type { PDFDocumentLoadingTask, PDFDocumentProxy } from 'pdfjs-dist';
-import { Header } from './components/Header';
-import { Sidebar } from './components/Sidebar';
-import { Toolbar } from './components/Toolbar';
-import { PDFViewer } from './components/PDFViewer';
-import { Dashboard } from './components/Dashboard';
-import { ColorThemeModal } from './components/ColorThemeModal';
-import { SearchBar } from './components/SearchBar';
-import { KeyboardShortcutsModal } from './components/KeyboardShortcutsModal';
-import { SettingsModal } from './components/SettingsModal';
-import { ExportModal } from './components/ExportModal';
-import { DeletePageConfirmationDialog } from './components/DeletePageConfirmationDialog';
+import { Header } from './components/layout/Header';
+import { Sidebar } from './components/layout/Sidebar';
+import { Toolbar } from './components/layout/Toolbar';
+import { PDFViewer } from './components/viewer/PDFViewer';
+import { Dashboard } from './components/dashboard/Dashboard';
+import { ColorThemeModal } from './components/modals/ColorThemeModal';
+import { SearchBar } from './components/layout/SearchBar';
+import { KeyboardShortcutsModal } from './components/modals/KeyboardShortcutsModal';
+import { SettingsModal } from './components/modals/SettingsModal';
+import { ExportModal } from './components/modals/ExportModal';
+import { DeletePageConfirmationDialog } from './components/modals/DeletePageConfirmationDialog';
 import { AiChatPanel } from './components/ai';
 import { Check, Info, LoaderCircle, Sidebar as SidebarIcon, Sparkles } from 'lucide-react';
 
@@ -20,38 +19,27 @@ import { useSnippets } from './hooks/useSnippets';
 import { useColorTheme } from './hooks/useColorTheme';
 import { useAiExplanations } from './hooks/useAiExplanations';
 import { useToast } from './hooks/useToast';
+import { useDocumentSession } from './hooks/useDocumentSession';
+import { usePdfPageMutations } from './hooks/usePdfPageMutations';
 import { useCompanionPDF } from './hooks/useCompanionPDF';
-import { usesInvertedColorSpace } from './utils/readingTheme';
+import { usesInvertedColorSpace } from './lib/theme/readingTheme';
 import {
   mergeAnnotations,
   openAnnotationsJsonFile,
   parseAnnotationsJson,
   exportAnnotationsJson,
-} from './utils/annotationTransfer';
-import { pdfjsLib } from './utils/pdfWorker';
+} from './lib/annotations/annotationTransfer';
 import { useKeyboard } from './hooks/useKeyboard';
 import {
-  clearLastActiveDoc,
-  idbLoadActivePdf,
-  idbSaveActivePdf,
   loadHighlightPalette,
-  loadLastActiveDoc,
   loadViewMode,
-  recordRecentDoc,
   saveHighlightPalette,
-  saveLastActiveDoc,
   saveViewMode,
-  type LastActiveDocument,
-} from './utils/storage';
+} from './lib/storage/storage';
 import {
   isTauri,
-  tauriOpenPdf,
   tauriOpenImage,
-  tauriWritePdf,
   tauriUpdateLibraryDocumentState,
-  tauriImportLibraryPdf,
-  tauriTouchLibraryDocument,
-  tauriReadFile,
   toggleFullscreenWindow,
   exitFullscreenWindow,
   listenToNativeMenuEvents,
@@ -60,25 +48,20 @@ import {
   extractPageText,
   copyTextToClipboard,
   copyPageImageToClipboard,
-  addBlankPageBelow,
-  deletePageFromPdf,
-  reindexAfterPageInsertion,
-  reindexAfterPageDeletion,
-  downloadPageAsJpg,
-} from './utils/pageExtractor';
-import { getImageDimensions } from './utils/imageUtils';
-import { createTextHighlightsFromSelection } from './utils/textHighlight';
+} from './lib/pdf/pageExtractor';
+import { getImageDimensions } from './lib/media/imageUtils';
+import { createTextHighlightsFromSelection } from './lib/annotations/textHighlight';
 import {
   HIGHLIGHT_COLOR_PRESETS,
   replaceHighlightPaletteColor,
-} from './utils/highlightStyle';
+} from './lib/annotations/highlightStyle';
 import {
   cropCanvasRegion,
   copyStitchedSnippetsToClipboard,
   downloadStitchedSnippets,
-} from './utils/snippetExtractor';
-import type { AiChatAttachment, AiExplanationAnnotation, Annotation, AppScreen, HighlightStyle, LineHighlightStyle, ToolType, ViewMode, StitchOptions } from './utils/types';
-import type { SidebarTabType } from './components/Sidebar';
+} from './lib/snippets/snippetExtractor';
+import type { AiChatAttachment, AiExplanationAnnotation, Annotation, AppScreen, HighlightStyle, LineHighlightStyle, ToolType, ViewMode, StitchOptions } from './lib/types/index';
+import type { SidebarTabType } from './components/layout/Sidebar';
 
 export function App() {
   // Screen Routing: 'dashboard' (Library view) | 'reader' (PDF reader & annotation studio)
@@ -99,8 +82,6 @@ export function App() {
   const [isShortcutsModalOpen, setIsShortcutsModalOpen] = useState<boolean>(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState<boolean>(false);
-  const [pagePendingDeletion, setPagePendingDeletion] = useState<number | null>(null);
-  const [isDeletingPage, setIsDeletingPage] = useState<boolean>(false);
 
   // Active Toast Feedback
   const { toastMessage, showToast } = useToast();
@@ -130,7 +111,6 @@ export function App() {
   }, [highlightColors, selectedPaletteIndex]);
 
   // Hidden File Inputs for Browser fallback
-  const pdfInputRef = useRef<HTMLInputElement | null>(null);
   const imageInputRef = useRef<HTMLInputElement | null>(null);
 
   // Active Cursor coordinates over PDF pages for precise cursor pasting
@@ -312,154 +292,19 @@ export function App() {
     saveViewMode(mode);
   };
 
-  const [lastActiveDoc, setLastActiveDoc] = useState<LastActiveDocument | null>(() => loadLastActiveDoc());
-
-  useEffect(() => {
-    if (docInfo && pdfDoc) {
-      const active: LastActiveDocument = {
-        documentId: docInfo.libraryId,
-        fileName: docInfo.fileName,
-        filePath: docInfo.filePath,
-        lastReadPage: currentPage,
-        numPages: pdfDoc.numPages,
-        timestamp: Date.now(),
-      };
-      setLastActiveDoc(active);
-      saveLastActiveDoc(active);
-    }
-  }, [docInfo, pdfDoc, currentPage]);
-
-  const openPdfInReader = useCallback(
-    async (
-      data: Uint8Array | ArrayBuffer,
-      fileName: string,
-      filePath?: string,
-      initialPage?: number,
-      documentId?: string
-    ) => {
-      closeCompanionPdf();
-      const bytes = data instanceof Uint8Array ? data : new Uint8Array(data);
-      void idbSaveActivePdf(bytes, fileName);
-      const loaded = await loadPdf(data, fileName, filePath, initialPage, documentId);
-      if (loaded) setCurrentScreen('reader');
-      else showToast(`Could not open ${fileName}.`, true);
-      return loaded;
-    },
-    [closeCompanionPdf, loadPdf, showToast]
-  );
-
-  const handleResumeReading = useCallback(async () => {
-    if (pdfDoc) {
-      setCurrentScreen('reader');
-      return;
-    }
-    const targetDoc = lastActiveDoc || loadLastActiveDoc();
-    if (!targetDoc) return;
-
-    try {
-      if (isTauri() && targetDoc.filePath) {
-        const fileData = await tauriReadFile(targetDoc.filePath);
-        if (fileData) {
-          if (targetDoc.documentId) {
-            await tauriTouchLibraryDocument(targetDoc.documentId, targetDoc.lastReadPage);
-          }
-          const loaded = await openPdfInReader(
-            fileData.data,
-            fileData.fileName,
-            fileData.filePath,
-            targetDoc.lastReadPage,
-            targetDoc.documentId
-          );
-          if (loaded) return;
-        }
-        showToast(`Could not locate "${targetDoc.fileName}".`, true);
-      } else {
-        const cached = await idbLoadActivePdf();
-        if (cached && cached.data) {
-          const loaded = await openPdfInReader(
-            cached.data,
-            cached.fileName,
-            undefined,
-            targetDoc.lastReadPage,
-            targetDoc.documentId
-          );
-          if (loaded) return;
-        }
-        showToast('Please open a PDF to start reading.', true);
-      }
-    } catch (err) {
-      console.error('Failed to resume reading last document:', err);
-      showToast('Failed to reopen document.', true);
-    }
-  }, [pdfDoc, lastActiveDoc, openPdfInReader, showToast]);
-
-  const openPdfPairInReader = useCallback(
-    async (
-      primary: { data: Uint8Array; fileName: string; filePath?: string; initialPageNumber?: number; documentId?: string },
-      companion: { data: Uint8Array; fileName: string; filePath?: string }
-    ) => {
-      const primaryOpened = await openPdfInReader(
-        primary.data,
-        primary.fileName,
-        primary.filePath,
-        primary.initialPageNumber,
-        primary.documentId
-      );
-      if (!primaryOpened) return false;
-      return loadCompanionPdf(companion.data, companion.fileName);
-    },
-    [loadCompanionPdf, openPdfInReader]
-  );
-
-  // Open PDF File (Desktop native dialog or Browser File Input fallback)
-  const handleOpenPdf = async () => {
-    if (isTauri()) {
-      const imported = await tauriImportLibraryPdf();
-      if (imported && imported.filePath) {
-        const fileData = await tauriReadFile(imported.filePath);
-        if (fileData) {
-          await tauriTouchLibraryDocument(imported.id, imported.lastReadPage || 1);
-          recordRecentDoc({
-            fileName: fileData.fileName,
-            filePath: fileData.filePath,
-            fileSize: fileData.data.byteLength,
-            modifiedTimestamp: Date.now(),
-            lastReadPage: imported.lastReadPage || 1,
-          });
-          await openPdfInReader(
-            fileData.data,
-            fileData.fileName,
-            fileData.filePath,
-            imported.lastReadPage,
-            imported.id
-          );
-        }
-      }
-    } else {
-      pdfInputRef.current?.click();
-    }
-  };
-
-  const handlePdfInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = async () => {
-        if (reader.result instanceof ArrayBuffer) {
-          const bytes = new Uint8Array(reader.result);
-          recordRecentDoc({
-            fileName: file.name,
-            filePath: file.name,
-            fileSize: file.size,
-            modifiedTimestamp: file.lastModified || Date.now(),
-          });
-          await openPdfInReader(bytes, file.name);
-        }
-      };
-      reader.readAsArrayBuffer(file);
-    }
-    e.target.value = '';
-  };
+  const {
+    lastActiveDoc,
+    pdfInputRef,
+    openPdfInReader,
+    openPdfPairInReader,
+    handleResumeReading,
+    handleOpenPdf,
+    handlePdfInputChange,
+  } = useDocumentSession({
+    pdfDoc, docInfo, currentPage, loadPdf, closeCompanionPdf, loadCompanionPdf,
+    onScreenChange: setCurrentScreen,
+    showToast,
+  });
 
   // Unified image addition handler that measures natural dimensions and places image with exact aspect ratio
   const handleAddImage = useCallback(
@@ -892,159 +737,25 @@ export function App() {
     [addAnnotation, pdfDoc, setSelectedAnnotationId]
   );
 
-  const requestDeletePage = useCallback(
-    (pageNumber: number) => {
-      if (!pdfDoc || !rawPdfBytes || !docInfo) return;
-      if (pdfDoc.numPages <= 1) {
-        showToast('A PDF must keep at least one page.', true);
-        return;
-      }
-      setPagePendingDeletion(pageNumber);
-    },
-    [docInfo, pdfDoc, rawPdfBytes, showToast]
-  );
+  const handlePageMutation = useCallback((page: number) => {
+    setSelectedAnnotationId(null);
+    cursorPosRef.current = null;
+    setPageNavRequest({ page, timestamp: Date.now() });
+  }, []);
 
-  const handleDeletePage = useCallback(
-    async () => {
-      const pageNumber = pagePendingDeletion;
-      if (pageNumber === null) return;
-      if (!pdfDoc || !rawPdfBytes || !docInfo) return;
-      if (pdfDoc.numPages <= 1) {
-        showToast('A PDF must keep at least one page.', true);
-        setPagePendingDeletion(null);
-        return;
-      }
-
-      // Close the confirmation dialog immediately so the user can continue uninterrupted
-      setPagePendingDeletion(null);
-      setIsDeletingPage(true);
-      await new Promise((resolve) => setTimeout(resolve, 0));
-
-      try {
-        const updatedBytes = await deletePageFromPdf(rawPdfBytes, pageNumber);
-        const updatedAnnotations = reindexAfterPageDeletion(annotations, pageNumber);
-        const updatedSnippets = reindexAfterPageDeletion(snippets, pageNumber);
-        const nextPage = Math.min(pageNumber, pdfDoc.numPages - 1);
-
-        if (isTauri() && docInfo.filePath) {
-          const persisted = await tauriWritePdf(updatedBytes, docInfo.filePath);
-          if (!persisted) {
-            showToast('Could not save the page deletion to the PDF.', true);
-            return;
-          }
-        } else {
-          void idbSaveActivePdf(updatedBytes, docInfo.fileName);
-        }
-
-        const reloaded = await loadPdf(
-          updatedBytes,
-          docInfo.fileName,
-          docInfo.filePath,
-          nextPage,
-          docKey,
-          docInfo.fingerprint,
-          true
-        );
-        if (!reloaded) {
-          showToast('Could not reload the PDF after deleting the page.', true);
-          return;
-        }
-
-        replaceAnnotations(updatedAnnotations);
-        replaceSnippets(updatedSnippets);
-        setSelectedAnnotationId(null);
-        cursorPosRef.current = null;
-        setPageNavRequest({ page: nextPage, timestamp: Date.now() });
-        showToast(
-          isTauri() && docInfo.filePath
-            ? `Page ${pageNumber} deleted and changes saved`
-            : `Page ${pageNumber} deleted`
-        );
-      } catch (error) {
-        console.error('Failed to delete PDF page:', error);
-        showToast('Could not delete the page.', true);
-      } finally {
-        setIsDeletingPage(false);
-      }
-    },
-    [
-      annotations,
-      docInfo,
-      docKey,
-      loadPdf,
-      pagePendingDeletion,
-      pdfDoc,
-      rawPdfBytes,
-      replaceAnnotations,
-      replaceSnippets,
-      showToast,
-      snippets,
-    ]
-  );
-
-  const handleAddPageBelow = useCallback(
-    async (pageNumber: number) => {
-      if (!pdfDoc || !rawPdfBytes || !docInfo) return;
-
-      try {
-        const targetPage = pageNumber;
-        const newPageNumber = targetPage + 1;
-        const updatedBytes = await addBlankPageBelow(rawPdfBytes, targetPage);
-        const updatedAnnotations = reindexAfterPageInsertion(annotations, targetPage);
-        const updatedSnippets = reindexAfterPageInsertion(snippets, targetPage);
-
-        if (isTauri() && docInfo.filePath) {
-          const persisted = await tauriWritePdf(updatedBytes, docInfo.filePath);
-          if (!persisted) {
-            showToast('Could not save the new page to the PDF.', true);
-            return;
-          }
-        } else {
-          void idbSaveActivePdf(updatedBytes, docInfo.fileName);
-        }
-
-        const reloaded = await loadPdf(
-          updatedBytes,
-          docInfo.fileName,
-          docInfo.filePath,
-          newPageNumber,
-          docKey,
-          docInfo.fingerprint,
-          true
-        );
-        if (!reloaded) {
-          showToast('Could not reload the PDF after adding page.', true);
-          return;
-        }
-
-        replaceAnnotations(updatedAnnotations);
-        replaceSnippets(updatedSnippets);
-        setSelectedAnnotationId(null);
-        cursorPosRef.current = null;
-        setPageNavRequest({ page: newPageNumber, timestamp: Date.now() });
-        showToast(
-          isTauri() && docInfo.filePath
-            ? `Page ${newPageNumber} added and changes saved`
-            : `Page ${newPageNumber} added`
-        );
-      } catch (error) {
-        console.error('Failed to add PDF page:', error);
-        showToast('Could not add new page.', true);
-      }
-    },
-    [
-      annotations,
-      docInfo,
-      docKey,
-      loadPdf,
-      pdfDoc,
-      rawPdfBytes,
-      replaceAnnotations,
-      replaceSnippets,
-      showToast,
-      snippets,
-    ]
-  );
+  const {
+    pagePendingDeletion,
+    setPagePendingDeletion,
+    isDeletingPage,
+    requestDeletePage,
+    handleDeletePage,
+    handleAddPageBelow,
+  } = usePdfPageMutations({
+    pdfDoc, rawPdfBytes, docInfo, docKey, loadPdf,
+    annotations, replaceAnnotations, snippets, replaceSnippets,
+    onPageChanged: handlePageMutation,
+    showToast,
+  });
 
   // Cursor-aware Clipboard Paste: Pastes image at mouse cursor position on hovered page
   useEffect(() => {

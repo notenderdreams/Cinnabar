@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { buildAiPrompt, calculateCropSize, joinRegionText, rectanglesIntersect } from '../src/utils/regionContext';
+import { buildAiPrompt, calculateCropSize, joinRegionText, rectanglesIntersect } from '../src/lib/ai/regionContext';
 
 describe('regionContext', () => {
   test('uses strict rectangle intersection', () => {

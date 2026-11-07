@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Copy, Check, Sparkles, AlertCircle, FileText, Image as ImageIcon, Quote, GripVertical } from 'lucide-react';
-import type { AiChatMessage } from '../../utils/types';
-import { AiResponseRenderer } from '../AiResponseRenderer';
-import { copyTextToClipboard } from '../../utils/pageExtractor';
+import { Copy, Check, Sparkles, AlertCircle, FileText, Quote, GripVertical } from 'lucide-react';
+import type { AiChatMessage } from '../../lib/types/index';
+import { AiResponseRenderer } from '../annotations/AiResponseRenderer';
+import { copyTextToClipboard } from '../../lib/pdf/pageExtractor';
 import {
   AI_RESPONSE_DRAG_MIME,
   setAiResponseDragDroppable,
   subscribeAiResponseDragDroppable,
   setActiveAiResponseDrag,
   getTransparentDragImage,
-} from '../../utils/aiResponseDrag';
+} from '../../lib/ai/aiResponseDrag';
 
 interface AiChatMessageItemProps {
   message: AiChatMessage;

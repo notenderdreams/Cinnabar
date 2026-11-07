@@ -1,3 +1,4 @@
+use super::models::{LibraryAvailability, LibrarySource};
 use super::*;
 
 #[test]
@@ -85,7 +86,7 @@ fn deleting_folder_can_remove_contained_documents() {
 }
 
 #[test]
-fn version_mismatch_database_recovers_gracefully() {
+fn version_mismatch_preserves_existing_database() {
     let root = std::env::temp_dir().join(format!("cinnabar-library-{}", Uuid::new_v4()));
     fs::create_dir_all(&root).unwrap();
     let database = root.join("library.sqlite3");
@@ -93,13 +94,20 @@ fn version_mismatch_database_recovers_gracefully() {
     // Seed a database with a future user_version (e.g. version 99)
     {
         let connection = Connection::open(&database).unwrap();
+        connection.execute_batch("CREATE TABLE preserved_data (value TEXT); INSERT INTO preserved_data VALUES ('important');").unwrap();
         connection.pragma_update(None, "user_version", 99).unwrap();
     }
 
-    // LibraryState::open must recover automatically without returning an error or panicking
-    let state = LibraryState::open(&database).unwrap();
-    let snapshot = state.snapshot().unwrap();
-    assert!(snapshot.documents.is_empty());
-    assert!(snapshot.folders.is_empty());
+    assert!(LibraryState::open(&database).is_err());
+    let connection = Connection::open(&database).unwrap();
+    let version: i64 = connection
+        .pragma_query_value(None, "user_version", |row| row.get(0))
+        .unwrap();
+    assert_eq!(version, 99);
+    let value: String = connection
+        .query_row("SELECT value FROM preserved_data", [], |row| row.get(0))
+        .unwrap();
+    assert_eq!(value, "important");
+    drop(connection);
     let _ = fs::remove_dir_all(root);
 }

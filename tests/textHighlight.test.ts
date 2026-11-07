@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { normalizeSelectionRects } from '../src/utils/textHighlight';
+import { normalizeSelectionRects } from '../src/lib/annotations/textHighlight';
 
 describe('normalizeSelectionRects', () => {
   test('converts browser selection rectangles to normalized PDF page coordinates', () => {
@@ -87,7 +87,7 @@ describe('getLineSpansAtTarget and selectFullLineAtTarget', () => {
   }
 
   test('groups multiple spans on the same horizontal line into a single line selection', async () => {
-    const { getLineSpansAtTarget, selectFullLineAtTarget } = await import('../src/utils/textHighlight');
+    const { getLineSpansAtTarget, selectFullLineAtTarget } = await import('../src/lib/annotations/textHighlight');
 
     const span1 = createMockSpan('The quick ', { left: 50, right: 120, top: 100, bottom: 120 });
     const span2 = createMockSpan('brown fox ', { left: 125, right: 195, top: 100, bottom: 120 });
@@ -149,7 +149,7 @@ describe('getLineSpansAtTarget and selectFullLineAtTarget', () => {
   });
 
   test('does not group spans across large column gaps on multi-column pages', async () => {
-    const { getLineSpansAtTarget } = await import('../src/utils/textHighlight');
+    const { getLineSpansAtTarget } = await import('../src/lib/annotations/textHighlight');
 
     const col1Span1 = createMockSpan('Column 1 text ', { left: 50, right: 150, top: 100, bottom: 120 });
     const col1Span2 = createMockSpan('here', { left: 155, right: 200, top: 100, bottom: 120 });
@@ -164,7 +164,7 @@ describe('getLineSpansAtTarget and selectFullLineAtTarget', () => {
 
   test('findHighlightAnnotationsCoveringWord and findHighlightAnnotationsCoveringLine find overlapping highlights', async () => {
     const { findHighlightAnnotationsCoveringWord, findHighlightAnnotationsCoveringLine } = await import(
-      '../src/utils/textHighlight'
+      '../src/lib/annotations/textHighlight'
     );
 
     const rectHighlight = {
@@ -247,7 +247,7 @@ describe('getLineSpansAtTarget and selectFullLineAtTarget', () => {
   });
 
   test('computeLineHighlightCoverage correctly calculates coverage fraction and handles multiple highlights', async () => {
-    const { computeLineHighlightCoverage } = await import('../src/utils/textHighlight');
+    const { computeLineHighlightCoverage } = await import('../src/lib/annotations/textHighlight');
 
     const lineBounds = {
       pageNumber: 1,

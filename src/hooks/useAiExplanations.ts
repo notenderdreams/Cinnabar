@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { PDFDocumentProxy } from 'pdfjs-dist';
-import type { AiExplanationAnnotation, Annotation } from '../utils/types';
-import { buildAiPrompt, getRegionContext } from '../utils/regionContext';
+import type { AiExplanationAnnotation, Annotation } from '../lib/types/index';
+import { buildAiPrompt, getRegionContext } from '../lib/ai/regionContext';
 import { cancelAiExplanation, runAiExplanation } from '../utils/tauriBridge';
-import { transitionAiJob } from '../utils/aiJobState';
-export type { AiJobState } from '../utils/aiJobState';
-import type { AiJobState } from '../utils/aiJobState';
+import { transitionAiJob } from '../lib/ai/aiJobState';
+export type { AiJobState } from '../lib/ai/aiJobState';
+import type { AiJobState } from '../lib/ai/aiJobState';
 
 interface Options {
   pdfDoc: PDFDocumentProxy | null;
