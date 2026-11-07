@@ -7,6 +7,8 @@ import {
   AI_RESPONSE_DRAG_MIME,
   setAiResponseDragDroppable,
   subscribeAiResponseDragDroppable,
+  setActiveAiResponseDrag,
+  getTransparentDragImage,
 } from '../../utils/aiResponseDrag';
 
 interface AiChatMessageItemProps {
@@ -42,6 +44,7 @@ export const AiChatMessageItem: React.FC<AiChatMessageItemProps> = React.memo(({
     const handleGlobalDragEnd = () => {
       setIsDragging(false);
       setIsDroppable(false);
+      setActiveAiResponseDrag(null);
       setAiResponseDragDroppable(false);
     };
     window.addEventListener('dragend', handleGlobalDragEnd);
@@ -62,14 +65,25 @@ export const AiChatMessageItem: React.FC<AiChatMessageItemProps> = React.memo(({
     setIsDragging(true);
     setIsDroppable(false);
     e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData(AI_RESPONSE_DRAG_MIME, JSON.stringify({ prompt: chatPrompt || '', response: message.content }));
+    const payload = { prompt: chatPrompt || '', response: message.content };
+    e.dataTransfer.setData(AI_RESPONSE_DRAG_MIME, JSON.stringify(payload));
     // Graceful fallback for targets that only accept plain text
     e.dataTransfer.setData('text/plain', message.content);
+
+    // Save active drag state so the canvas can render a live response card preview
+    setActiveAiResponseDrag(payload);
+
+    // Suppress the OS translucent shadow ghost so only the live in-canvas response card is visible
+    const emptyImg = getTransparentDragImage();
+    if (emptyImg) {
+      e.dataTransfer.setDragImage(emptyImg, 0, 0);
+    }
   };
 
   const handleDragEnd = () => {
     setIsDragging(false);
     setIsDroppable(false);
+    setActiveAiResponseDrag(null);
     setAiResponseDragDroppable(false);
   };
 
@@ -141,7 +155,15 @@ export const AiChatMessageItem: React.FC<AiChatMessageItemProps> = React.memo(({
 
   return (
     <div className="flex flex-col items-start gap-1.5 my-3 pr-4 group select-text">
-      <div className="flex items-center justify-between w-full text-[10px] text-zinc-400 font-medium">
+      <div
+        draggable={canPinToPage}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+        className={`flex items-center justify-between w-full text-[10px] text-zinc-400 font-medium select-none ${
+          canPinToPage ? 'cursor-grab active:cursor-grabbing' : ''
+        }`}
+        title={canPinToPage ? 'Drag response to canvas as sticky card' : undefined}
+      >
         <div className="flex items-center gap-1.5 text-blue-500 dark:text-blue-400">
           <Sparkles className="w-3 h-3" />
           <span className="font-semibold tracking-wide">Cinnabar AI</span>
@@ -150,9 +172,6 @@ export const AiChatMessageItem: React.FC<AiChatMessageItemProps> = React.memo(({
         <div className="flex items-center gap-1">
           {canPinToPage && (
             <span
-              draggable
-              onDragStart={handleDragStart}
-              onDragEnd={handleDragEnd}
               className={`p-1 rounded cursor-grab active:cursor-grabbing shrink-0 transition-all duration-150 select-none ${
                 isDragging
                   ? isDroppable
@@ -160,7 +179,7 @@ export const AiChatMessageItem: React.FC<AiChatMessageItemProps> = React.memo(({
                     : 'opacity-100 scale-110 text-zinc-300 dark:text-zinc-200'
                   : 'opacity-0 group-hover:opacity-100 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-200/60 dark:hover:bg-white/10'
               }`}
-              title="Drag response to canvas"
+              title="Drag response to canvas as sticky card"
               aria-label="Drag response to canvas"
             >
               <GripVertical className="w-3.5 h-3.5" />
@@ -168,6 +187,8 @@ export const AiChatMessageItem: React.FC<AiChatMessageItemProps> = React.memo(({
           )}
           <button
             onClick={handleCopy}
+            onPointerDown={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
             className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-white/10 text-zinc-400 hover:text-zinc-200"
             title="Copy response"
           >
@@ -177,10 +198,12 @@ export const AiChatMessageItem: React.FC<AiChatMessageItemProps> = React.memo(({
       </div>
 
       <div
-        className={`w-full rounded-2xl p-3.5 text-xs leading-relaxed border ${
-          message.status === 'error'
-            ? 'bg-red-500/10 border-red-500/30 text-red-200'
-            : 'bg-[var(--card)] border-[var(--border)] text-[var(--foreground)] shadow-xs'
+        className={`w-full rounded-2xl p-3.5 text-xs leading-relaxed border transition-all duration-200 ${
+          isDragging
+            ? 'opacity-40 scale-[0.98] border-dashed border-blue-500/50 bg-blue-500/5 shadow-inner'
+            : message.status === 'error'
+              ? 'bg-red-500/10 border-red-500/30 text-red-200'
+              : 'bg-[var(--card)] border-[var(--border)] text-[var(--foreground)] shadow-xs'
         }`}
       >
         {message.status === 'error' && (

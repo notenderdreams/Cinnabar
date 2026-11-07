@@ -13,7 +13,11 @@ import { isAnnotationHitByEraser } from '../utils/eraserUtils';
 import { getAnnotationBoundingBox, getAnnotationCoveredText } from '../utils/annotationPresentation';
 import { selectFullLineAtTarget } from '../utils/textHighlight';
 import { bindTextLayerSelection } from '../utils/pdfTextLayerManager';
-import { AI_RESPONSE_DRAG_MIME, extractAiResponseDragPayload, setAiResponseDragDroppable } from '../utils/aiResponseDrag';
+import {
+  AI_RESPONSE_DRAG_MIME,
+  extractAiResponseDragPayload,
+  setAiResponseDragDroppable,
+} from '../utils/aiResponseDrag';
 import 'pdfjs-dist/web/pdf_viewer.css';
 import type {
   Annotation,
@@ -336,7 +340,6 @@ export const PDFPageComponent: React.FC<PDFPageProps> = ({
 
     if (e.dataTransfer.types.includes(AI_RESPONSE_DRAG_MIME)) {
       e.preventDefault();
-      e.stopPropagation();
       e.dataTransfer.dropEffect = 'move';
       setAiResponseDragDroppable(true);
       return;

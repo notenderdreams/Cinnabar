@@ -6,7 +6,12 @@ import type { Annotation, HighlightStyle, LineHighlightStyle, ReadingTheme, Text
 import type { AiExplanationAnnotation } from '../utils/types';
 import type { AiJobState } from '../hooks/useAiExplanations';
 import { findFocalPageNumber, shouldRestoreViewerPosition } from '../utils/viewerPosition';
-import { AI_RESPONSE_DRAG_MIME, extractAiResponseDragPayload, setAiResponseDragDroppable } from '../utils/aiResponseDrag';
+import {
+  AI_RESPONSE_DRAG_MIME,
+  extractAiResponseDragPayload,
+  setAiResponseDragDroppable,
+  getActiveAiResponseDrag,
+} from '../utils/aiResponseDrag';
 import { isAnnotationHitByEraser } from '../utils/eraserUtils';
 import { getReadTogetherPageRows } from '../utils/readTogether';
 
@@ -169,11 +174,14 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
   const pendingFitScrollPageRef = useRef<number | null>(null);
   const fitCenteringCleanupRef = useRef<(() => void) | null>(null);
 
+  const [viewerAiDragPos, setViewerAiDragPos] = useState<{ clientX: number; clientY: number } | null>(null);
+
   // Clear drag affordance state when a drag ends or is cancelled anywhere (including outside the viewer)
   useEffect(() => {
     const clearDragState = () => {
       setIsViewerDraggingFile(false);
       setAiResponseDragDroppable(false);
+      setViewerAiDragPos(null);
     };
     window.addEventListener('dragend', clearDragState);
     window.addEventListener('drop', clearDragState, true);
@@ -1012,6 +1020,10 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
       e.preventDefault();
       e.dataTransfer.dropEffect = 'move';
       setAiResponseDragDroppable(true);
+      setViewerAiDragPos({
+        clientX: e.clientX,
+        clientY: e.clientY,
+      });
     }
   };
 
@@ -1024,6 +1036,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
     }
     if (!e.currentTarget.contains(e.relatedTarget as Node)) {
       setAiResponseDragDroppable(false);
+      setViewerAiDragPos(null);
     }
   };
 
@@ -1031,6 +1044,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
     const hasFiles = Array.from(e.dataTransfer.types).includes('Files');
     setIsViewerDraggingFile(false);
     setAiResponseDragDroppable(false);
+    setViewerAiDragPos(null);
 
     if (!hasFiles) {
       if (onAiResponseDrop) {
@@ -1230,6 +1244,43 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
           }}
           className="fixed pointer-events-none rounded-full border-2 border-red-400/80 bg-red-500/20 shadow-md backdrop-blur-2xs animate-pulse-glow z-50"
         />
+      )}
+
+      {/* Live AI Response Card Preview during Drag */}
+      {onAiResponseDrop && viewerAiDragPos && (
+        <div
+          style={{
+            left: `${viewerAiDragPos.clientX + 14}px`,
+            top: `${viewerAiDragPos.clientY + 14}px`,
+            width: '380px',
+          }}
+          className="fixed z-50 pointer-events-none macos-ai-popover ai-response-card-drag-preview"
+          aria-hidden="true"
+        >
+          <div className="flex items-center justify-between gap-2 px-3.5 py-2 border-b border-[var(--border)] shrink-0 select-none bg-[var(--popover)]/80 backdrop-blur-md rounded-t-xl">
+            <div className="flex items-center gap-1.5 text-xs font-semibold">
+              <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+              <span className="text-[var(--foreground)] font-medium tracking-tight">AI Assistant</span>
+              <span className="text-[9.5px] font-medium font-mono text-purple-400 bg-purple-500/15 border border-purple-500/30 px-1.5 py-0.2 rounded-md">
+                Cinnabar AI
+              </span>
+            </div>
+            <span className="text-[9.5px] font-semibold text-blue-500 dark:text-blue-400 bg-blue-500/15 px-2 py-0.5 rounded-full border border-blue-500/30">
+              Drop to pin card
+            </span>
+          </div>
+
+          <div className="p-3.5 space-y-2 bg-[var(--popover)]/90 backdrop-blur-md rounded-b-xl border border-dashed border-blue-500/40">
+            {getActiveAiResponseDrag()?.prompt && (
+              <div className="text-[11px] text-blue-500 dark:text-blue-400 bg-blue-500/10 border border-blue-500/20 px-2.5 py-1 rounded-md italic line-clamp-1">
+                "{getActiveAiResponseDrag()?.prompt}"
+              </div>
+            )}
+            <div className="text-xs text-[var(--foreground)] opacity-85 line-clamp-3 leading-relaxed">
+              {getActiveAiResponseDrag()?.response || 'Placing AI response card…'}
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Spacebar Pan Glass Interceptor (captures clicks everywhere over text/layers when space is held) */}

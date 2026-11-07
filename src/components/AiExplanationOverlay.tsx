@@ -13,6 +13,7 @@ import {
   Trash2,
   X,
   Send,
+  Sparkles,
 } from 'lucide-react';
 import type { AiJobState } from '../hooks/useAiExplanations';
 import type { AiExplanationAnnotation, Annotation, AttachedImageAnnotation, ToolType } from '../utils/types';
@@ -113,6 +114,17 @@ const AiExplanationCard: React.FC<CardItemProps> = React.memo(
     const [provider, setProvider] = useState(annotation.provider || 'external');
     const [copied, setCopied] = useState(false);
     const [clipboardNotice, setClipboardNotice] = useState<string | null>(null);
+    const [isJustAppeared, setIsJustAppeared] = useState(
+      () => !isPromptComposer && Date.now() - (annotation.createdAt || 0) < 2200
+    );
+
+    useEffect(() => {
+      if (!isJustAppeared) return;
+      const timer = setTimeout(() => setIsJustAppeared(false), 2200);
+      return () => clearTimeout(timer);
+    }, [isJustAppeared]);
+
+    const isDropAnimating = isJustAppeared && !liveDrag;
 
     // Keep prompt in sync if annotation changes externally
     useEffect(() => {
@@ -348,8 +360,8 @@ const AiExplanationCard: React.FC<CardItemProps> = React.memo(
           isPromptComposer
             ? 'ai-prompt-composer-stack'
             : `macos-ai-popover max-h-[min(78vh,600px)] overflow-hidden ${
-                isSelected ? 'ring-1 ring-blue-500/40 shadow-2xl' : ''
-              }`
+                isDropAnimating ? 'ai-response-card-drop-appear' : ''
+              } ${isSelected ? 'ring-1 ring-blue-500/40 shadow-2xl' : ''}`
         }`}
         onPointerDown={(event) => {
           event.stopPropagation();
@@ -377,6 +389,12 @@ const AiExplanationCard: React.FC<CardItemProps> = React.memo(
               {providerName && (
                 <span className="text-[9.5px] font-medium font-mono text-purple-400 bg-purple-500/15 border border-purple-500/30 px-1.5 py-0.2 rounded-md">
                   {providerName}
+                </span>
+              )}
+              {isDropAnimating && !isRunning && (
+                <span className="text-[9.5px] font-semibold text-blue-400 bg-blue-500/15 border border-blue-500/30 px-1.5 py-0.2 rounded-md flex items-center gap-1 animate-fade-in">
+                  <Sparkles className="w-2.5 h-2.5 text-blue-400" />
+                  Placed
                 </span>
               )}
               {isRunning && (
