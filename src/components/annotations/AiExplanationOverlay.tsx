@@ -13,8 +13,8 @@ import {
   Trash2,
   X,
   Send,
-  Sparkles,
 } from 'lucide-react';
+import { SparkleIcon } from '../icons/SparkleIcon';
 import type { AiJobState } from '../../hooks/useAiExplanations';
 import type { AiExplanationAnnotation, Annotation, AttachedImageAnnotation, ToolType } from '../../lib/types/index';
 import { rasterizeResponseCard } from '../../lib/annotations/cardRasterizer';
@@ -394,7 +394,7 @@ const AiExplanationCard: React.FC<CardItemProps> = React.memo(
               )}
               {isDropAnimating && !isRunning && (
                 <span className="text-[9.5px] font-semibold text-blue-400 bg-blue-500/15 border border-blue-500/30 px-1.5 py-0.2 rounded-md flex items-center gap-1 animate-fade-in">
-                  <Sparkles className="w-2.5 h-2.5 text-blue-400" />
+                  <SparkleIcon className="w-2.5 h-2.5 text-blue-400" />
                   Placed
                 </span>
               )}

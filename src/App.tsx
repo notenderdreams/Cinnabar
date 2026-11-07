@@ -11,7 +11,8 @@ import { SettingsModal } from './components/modals/SettingsModal';
 import { ExportModal } from './components/modals/ExportModal';
 import { DeletePageConfirmationDialog } from './components/modals/DeletePageConfirmationDialog';
 import { AiChatPanel } from './components/ai';
-import { Check, Info, LoaderCircle, Sidebar as SidebarIcon, Sparkles } from 'lucide-react';
+import { Check, Info, LoaderCircle, Sidebar as SidebarIcon } from 'lucide-react';
+import { SparkleIcon } from './components/icons/SparkleIcon';
 
 import { usePDFDocument } from './hooks/usePDFDocument';
 import { useAnnotations } from './hooks/useAnnotations';
@@ -1404,7 +1405,7 @@ export function App() {
                 }`}
                 title="Show AI Assistant & Chat (Cmd+J)"
               >
-                <Sparkles className="w-3.5 h-3.5" />
+                <SparkleIcon className="w-3.5 h-3.5" />
               </button>
             )}
 

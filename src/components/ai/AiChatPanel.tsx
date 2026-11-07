@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import type { PDFDocumentProxy } from 'pdfjs-dist';
 import {
-  Sparkles,
   ChevronDown,
   Plus,
   History,
@@ -9,6 +8,7 @@ import {
   Loader2,
   BookOpen,
 } from 'lucide-react';
+import { SparkleIcon } from '../icons/SparkleIcon';
 import type { AiChatAttachment, DocumentInfo } from '../../lib/types/index';
 import { useAiChat } from '../../hooks/useAiChat';
 import { AiChatMessageItem } from './AiChatMessageItem';
@@ -87,7 +87,7 @@ export const AiChatPanel: React.FC<AiChatPanelProps> = ({
       <div className="p-2.5 border-b border-[var(--border)] flex items-center justify-between bg-[var(--background)] shrink-0">
         <div className="flex items-center gap-1.5 min-w-0">
           <div className="w-6 h-6 rounded-md bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0">
-            <Sparkles className="w-3.5 h-3.5" />
+            <SparkleIcon className="w-3.5 h-3.5" />
           </div>
 
           {/* Session Switcher Dropdown Button */}
@@ -153,7 +153,7 @@ export const AiChatPanel: React.FC<AiChatPanelProps> = ({
             /* Empty State with Quick Starter Prompts */
             <div className="h-full flex flex-col items-center justify-center text-center p-4">
               <div className="w-10 h-10 rounded-2xl bg-blue-500/10 text-blue-500 flex items-center justify-center mb-3 shadow-inner">
-                <Sparkles className="w-5 h-5" />
+                <SparkleIcon className="w-5 h-5" />
               </div>
               <h4 className="text-xs font-semibold text-[var(--foreground)] mb-1">
                 AI Reading Companion
@@ -182,7 +182,7 @@ export const AiChatPanel: React.FC<AiChatPanelProps> = ({
                     className="w-full text-left p-2.5 rounded-xl bg-[var(--card)] hover:bg-[var(--hover)] border border-[var(--border)] text-xs text-[var(--foreground)] transition-all flex items-center justify-between group shadow-2xs"
                   >
                     <span className="leading-snug pr-2 text-[11px]">{question}</span>
-                    <Sparkles className="w-3 h-3 text-zinc-500 group-hover:text-blue-400 shrink-0 transition-colors" />
+                    <SparkleIcon className="w-3 h-3 text-zinc-500 group-hover:text-blue-400 shrink-0 transition-colors" />
                   </button>
                 ))}
               </div>

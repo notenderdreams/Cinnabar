@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Copy, Check, Sparkles, AlertCircle, FileText, Quote, GripVertical } from 'lucide-react';
+import { Copy, Check, AlertCircle, FileText, Quote, GripVertical } from 'lucide-react';
+import { SparkleIcon } from '../icons/SparkleIcon';
 import type { AiChatMessage } from '../../lib/types/index';
 import { AiResponseRenderer } from '../annotations/AiResponseRenderer';
 import { copyTextToClipboard } from '../../lib/pdf/pageExtractor';
@@ -165,7 +166,7 @@ export const AiChatMessageItem: React.FC<AiChatMessageItemProps> = React.memo(({
         title={canPinToPage ? 'Drag response to canvas as sticky card' : undefined}
       >
         <div className="flex items-center gap-1.5 text-blue-500 dark:text-blue-400">
-          <Sparkles className="w-3 h-3" />
+          <SparkleIcon className="w-3 h-3" />
           <span className="font-semibold tracking-wide">Cinnabar AI</span>
           <span className="text-zinc-500 font-normal">· {formattedTime}</span>
         </div>
