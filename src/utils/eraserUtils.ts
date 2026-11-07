@@ -101,6 +101,11 @@ export function isAnnotationHitByEraser(
     const box = ann as AiExplanationAnnotation;
     const rx = box.x * pageWidth;
     const ry = box.y * pageHeight;
+    // Regionless AI responses (pinned from chat) anchor a tiny box at the card origin;
+    // erase them like a point marker with a forgiving radius
+    if (box.width <= 0.01 && box.height <= 0.01) {
+      return Math.hypot(px - rx, py - ry) <= eraseRadius + 40;
+    }
     const rw = box.width * pageWidth;
     const rh = box.height * pageHeight;
     return (

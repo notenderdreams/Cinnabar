@@ -6,6 +6,7 @@ import type { Annotation, HighlightStyle, LineHighlightStyle, ReadingTheme, Text
 import type { AiExplanationAnnotation } from '../utils/types';
 import type { AiJobState } from '../hooks/useAiExplanations';
 import { findFocalPageNumber, shouldRestoreViewerPosition } from '../utils/viewerPosition';
+import { AI_RESPONSE_DRAG_MIME, extractAiResponseDragPayload, setAiResponseDragDroppable } from '../utils/aiResponseDrag';
 import { isAnnotationHitByEraser } from '../utils/eraserUtils';
 import { getReadTogetherPageRows } from '../utils/readTogether';
 
@@ -61,6 +62,7 @@ interface PDFViewerProps {
   onChangeLineHighlightStyle: (style: LineHighlightStyle) => void;
   onDeleteAnnotation: (id: string) => void;
   onImageDrop: (pageNumber: number, file: File) => void;
+  onAiResponseDrop?: (pageNumber: number, x: number, y: number, prompt: string, response: string) => void;
   onPdfFileDrop: (file: File) => void;
   onOpenPdfClick: () => void;
   onChangeZoom: (newZoom: number) => void;
@@ -120,6 +122,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
   onChangeLineHighlightStyle,
   onDeleteAnnotation,
   onImageDrop,
+  onAiResponseDrop,
   onPdfFileDrop,
   onOpenPdfClick,
   onChangeZoom,
@@ -165,6 +168,20 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
   const lastFitPageRequestRef = useRef(0);
   const pendingFitScrollPageRef = useRef<number | null>(null);
   const fitCenteringCleanupRef = useRef<(() => void) | null>(null);
+
+  // Clear drag affordance state when a drag ends or is cancelled anywhere (including outside the viewer)
+  useEffect(() => {
+    const clearDragState = () => {
+      setIsViewerDraggingFile(false);
+      setAiResponseDragDroppable(false);
+    };
+    window.addEventListener('dragend', clearDragState);
+    window.addEventListener('drop', clearDragState, true);
+    return () => {
+      window.removeEventListener('dragend', clearDragState);
+      window.removeEventListener('drop', clearDragState, true);
+    };
+  }, []);
 
   useEffect(() => () => {
     if (companionProgrammaticTimerRef.current) {
@@ -944,20 +961,91 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
     startPanInContainer(e, container, pane === 'companion');
   };
 
-  // Handle Drag & Drop of PDF onto main empty viewport
+  // Handle Drag & Drop onto main empty viewport: files, or pinned AI responses onto the nearest page
+  const findNearestPageForDrop = (clientX: number, clientY: number, root?: HTMLElement | null) => {
+    const container = root ?? viewerContainerRef.current;
+    if (!container) return null;
+
+    // Only anchor to primary document pages; the read-only companion has no annotations
+    const pageElements = Array.from(container.querySelectorAll<HTMLElement>('[data-pdf-page-number]')).filter(
+      (el) => !el.id.startsWith('companion-pdf-page-')
+    );
+    let bestEl: HTMLElement | null = null;
+    let minDistance = Infinity;
+
+    for (let i = 0; i < pageElements.length; i++) {
+      const el = pageElements[i];
+      const rect = el.getBoundingClientRect();
+      let distY = 0;
+      if (clientY < rect.top) {
+        distY = rect.top - clientY;
+      } else if (clientY > rect.bottom) {
+        distY = clientY - rect.bottom;
+      }
+
+      if (distY < minDistance) {
+        minDistance = distY;
+        bestEl = el;
+      }
+    }
+
+    if (!bestEl) return null;
+    const rect = bestEl.getBoundingClientRect();
+    return {
+      pageNumber: Number(bestEl.getAttribute('data-pdf-page-number')) || currentPage,
+      // Raw workspace-relative coordinates (may be negative or > 1) so cards can live anywhere
+      x: (clientX - rect.left) / rect.width,
+      y: (clientY - rect.top) / rect.height,
+    };
+  };
+
   const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsViewerDraggingFile(true);
+    const hasFiles = Array.from(e.dataTransfer.types).includes('Files');
+    if (hasFiles) {
+      e.preventDefault();
+      setIsViewerDraggingFile(true);
+      return;
+    }
+    // Allow AI response drops anywhere on the viewer background (they land near the nearest page)
+    if (!onAiResponseDrop) return;
+    if (e.dataTransfer.types.includes(AI_RESPONSE_DRAG_MIME)) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      setAiResponseDragDroppable(true);
+    }
   };
 
   const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsViewerDraggingFile(false);
+    const hasFiles = Array.from(e.dataTransfer.types).includes('Files');
+    if (hasFiles) {
+      e.preventDefault();
+      setIsViewerDraggingFile(false);
+      return;
+    }
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+      setAiResponseDragDroppable(false);
+    }
   };
 
   const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
+    const hasFiles = Array.from(e.dataTransfer.types).includes('Files');
     setIsViewerDraggingFile(false);
+    setAiResponseDragDroppable(false);
+
+    if (!hasFiles) {
+      if (onAiResponseDrop) {
+        const aiResponsePayload = extractAiResponseDragPayload(e.dataTransfer);
+        if (aiResponsePayload) {
+          e.preventDefault();
+          const dropTarget = findNearestPageForDrop(e.clientX, e.clientY, e.currentTarget as HTMLElement);
+          if (dropTarget) {
+            onAiResponseDrop(dropTarget.pageNumber, dropTarget.x, dropTarget.y, aiResponsePayload.prompt, aiResponsePayload.response);
+          }
+        }
+      }
+      return;
+    }
+    e.preventDefault();
 
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       const file = e.dataTransfer.files[0];
@@ -1220,6 +1308,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
                     onChangeLineHighlightStyle={onChangeLineHighlightStyle}
                     onDeleteAnnotation={onDeleteAnnotation}
                     onImageDrop={onImageDrop}
+                    onAiResponseDrop={onAiResponseDrop}
                     onCursorMove={onCursorMove}
                     onCaptureSnippet={onCaptureSnippet}
                     aiJobs={aiJobs}
@@ -1347,6 +1436,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
                 onChangeLineHighlightStyle={onChangeLineHighlightStyle}
                 onDeleteAnnotation={onDeleteAnnotation}
                 onImageDrop={onImageDrop}
+                onAiResponseDrop={onAiResponseDrop}
                 onCursorMove={onCursorMove}
                 onCaptureSnippet={onCaptureSnippet}
                 aiJobs={aiJobs}
@@ -1396,6 +1486,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
               onChangeLineHighlightStyle={onChangeLineHighlightStyle}
               onDeleteAnnotation={onDeleteAnnotation}
               onImageDrop={onImageDrop}
+              onAiResponseDrop={onAiResponseDrop}
               onCursorMove={onCursorMove}
               onCaptureSnippet={onCaptureSnippet}
               aiJobs={aiJobs}
@@ -1447,6 +1538,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
                 onChangeLineHighlightStyle={onChangeLineHighlightStyle}
                 onDeleteAnnotation={onDeleteAnnotation}
                 onImageDrop={onImageDrop}
+                onAiResponseDrop={onAiResponseDrop}
                 onCursorMove={onCursorMove}
                 onCaptureSnippet={onCaptureSnippet}
                 aiJobs={aiJobs}
@@ -1494,6 +1586,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
                   onChangeLineHighlightStyle={onChangeLineHighlightStyle}
                   onDeleteAnnotation={onDeleteAnnotation}
                   onImageDrop={onImageDrop}
+                onAiResponseDrop={onAiResponseDrop}
                   onCursorMove={onCursorMove}
                   onCaptureSnippet={onCaptureSnippet}
                   aiJobs={aiJobs}

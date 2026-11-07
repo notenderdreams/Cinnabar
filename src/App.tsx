@@ -860,6 +860,37 @@ export function App() {
     [addAnnotation, aiExplanations.openComposer, pdfDoc]
   );
 
+  const handleAiChatResponseDrop = useCallback(
+    (pageNumber: number, x: number, y: number, prompt: string, response: string) => {
+      if (!pdfDoc) return;
+      const now = Date.now();
+
+      // Regionless and page-free: the card anchors to the nearest page but its
+      // position (and cardX/cardY) may sit anywhere in the workspace around it.
+      const annotation: AiExplanationAnnotation = {
+        id: `ai_chat_${now}_${Math.random().toString(36).slice(2, 7)}`,
+        pageNumber,
+        type: 'ai-explanation',
+        x,
+        y,
+        width: 0.002,
+        height: 0.002,
+        prompt: prompt.trim(),
+        response,
+        provider: 'chat',
+        isOpen: true,
+        cardX: x,
+        cardY: y,
+        createdAt: now,
+        updatedAt: now,
+      };
+
+      addAnnotation(annotation);
+      setSelectedAnnotationId(annotation.id);
+    },
+    [addAnnotation, pdfDoc, setSelectedAnnotationId]
+  );
+
   const requestDeletePage = useCallback(
     (pageNumber: number) => {
       if (!pdfDoc || !rawPdfBytes || !docInfo) return;
@@ -1567,6 +1598,7 @@ export function App() {
                 onChangeLineHighlightStyle={setLineHighlightStyle}
                 onDeleteAnnotation={(id) => deleteAnnotation(id)}
                 onImageDrop={handleImageDropOnPage}
+                onAiResponseDrop={handleAiChatResponseDrop}
                 onCursorMove={(page, x, y) => {
                   cursorPosRef.current = { pageNumber: page, x, y };
                 }}

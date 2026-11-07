@@ -173,6 +173,25 @@ describe('eraserUtils', () => {
     expect(isAnnotationHitByEraser(image, 100, 100, pageWidth, pageHeight, 22)).toBe(false);
   });
 
+  test('isAnnotationHitByEraser erases regionless AI responses around their anchor point', () => {
+    const regionlessAi: AiExplanationAnnotation = {
+      id: 'ai_chat1',
+      pageNumber: 1,
+      type: 'ai-explanation',
+      x: 0.5, // 300
+      y: 0.5, // 400
+      width: 0.002,
+      height: 0.002,
+      prompt: 'Summarize',
+      response: 'Response',
+      createdAt: 1,
+      updatedAt: 1,
+    };
+
+    expect(isAnnotationHitByEraser(regionlessAi, 310, 410, pageWidth, pageHeight, 22)).toBe(true);
+    expect(isAnnotationHitByEraser(regionlessAi, 400, 500, pageWidth, pageHeight, 22)).toBe(false);
+  });
+
   test('isAnnotationHitByEraser scales eraser tolerance with zoom scale', () => {
     const penAnn: DrawingAnnotation = {
       id: 'penZoom',

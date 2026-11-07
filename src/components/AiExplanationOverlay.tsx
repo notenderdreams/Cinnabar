@@ -159,7 +159,11 @@ const AiExplanationCard: React.FC<CardItemProps> = React.memo(
 
     const providerName =
       EXTERNAL_PROVIDERS.find((p) => p.id === annotation.provider)?.label ||
-      (annotation.provider && annotation.provider !== 'codex' ? annotation.provider : null);
+      (annotation.provider === 'chat'
+        ? 'Cinnabar AI'
+        : annotation.provider && annotation.provider !== 'codex'
+          ? annotation.provider
+          : null);
 
     const handlePromptChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
       const val = e.target.value;
@@ -691,17 +695,19 @@ const AiExplanationCard: React.FC<CardItemProps> = React.memo(
           {/* Settled AI Response View */}
           {annotation.response && !isRunning && (
             <div className="flex flex-col gap-3">
-              <div
-                data-ai-question="true"
-                className="flex flex-col gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--secondary)]/60 p-3"
-              >
-                <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)]">
-                  Question
+              {(annotation.prompt || promptText) && (
+                <div
+                  data-ai-question="true"
+                  className="flex flex-col gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--secondary)]/60 p-3"
+                >
+                  <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)]">
+                    Question
+                  </div>
+                  <div className="text-xs font-medium text-[var(--foreground)] leading-relaxed">
+                    {annotation.prompt || promptText}
+                  </div>
                 </div>
-                <div className="text-xs font-medium text-[var(--foreground)] leading-relaxed">
-                  {annotation.prompt || promptText || DEFAULT_PROMPT}
-                </div>
-              </div>
+              )}
 
               <div className="py-0.5 px-0.5">
                 <AiResponseRenderer response={annotation.response} />
@@ -975,6 +981,8 @@ export const AiExplanationOverlay: React.FC<Props> = ({
     <div className="absolute inset-0 z-20 pointer-events-none">
       {/* 1. Interactive Selection Hitboxes & Dynamic AI Region Highlights */}
       {annotations.map((annotation) => {
+        // Regionless responses (pinned from chat) anchor on a tiny box; render no region outline
+        if (annotation.width * pageWidth < 6 && annotation.height * pageHeight < 6) return null;
         const job = jobs[annotation.id];
         const isRunning = job?.phase === 'running';
         const isPromptComposer = !annotation.response && !isRunning;

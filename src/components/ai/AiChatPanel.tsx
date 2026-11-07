@@ -16,6 +16,7 @@ import { useAiChat } from '../../hooks/useAiChat';
 import { AiChatMessageItem } from './AiChatMessageItem';
 import { AiChatPromptInput } from './AiChatPromptInput';
 import { AiSessionDrawer } from './AiSessionDrawer';
+import { findOriginatingPrompt } from '../../utils/aiResponseDrag';
 
 interface AiChatPanelProps {
   isOpen: boolean;
@@ -191,8 +192,12 @@ export const AiChatPanel: React.FC<AiChatPanelProps> = ({
             </div>
           ) : (
             <>
-              {activeSession.messages.map((message) => (
-                <AiChatMessageItem key={message.id} message={message} />
+              {activeSession.messages.map((message, index) => (
+                <AiChatMessageItem
+                  key={message.id}
+                  message={message}
+                  chatPrompt={message.role === 'assistant' ? findOriginatingPrompt(activeSession.messages, index) : undefined}
+                />
               ))}
 
               {/* Generating Animation Bubble */}

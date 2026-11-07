@@ -13,6 +13,7 @@ import { isAnnotationHitByEraser } from '../utils/eraserUtils';
 import { getAnnotationBoundingBox, getAnnotationCoveredText } from '../utils/annotationPresentation';
 import { selectFullLineAtTarget } from '../utils/textHighlight';
 import { bindTextLayerSelection } from '../utils/pdfTextLayerManager';
+import { AI_RESPONSE_DRAG_MIME, extractAiResponseDragPayload, setAiResponseDragDroppable } from '../utils/aiResponseDrag';
 import 'pdfjs-dist/web/pdf_viewer.css';
 import type {
   Annotation,
@@ -48,6 +49,7 @@ interface PDFPageProps {
   onChangeLineHighlightStyle: (style: LineHighlightStyle) => void;
   onDeleteAnnotation: (id: string) => void;
   onImageDrop: (pageNumber: number, file: File) => void;
+  onAiResponseDrop?: (pageNumber: number, x: number, y: number, prompt: string, response: string) => void;
   onCursorMove?: (pageNumber: number, normalizedX: number, normalizedY: number) => void;
   onCaptureSnippet?: (pageNumber: number, rect: { x: number; y: number; width: number; height: number }) => void;
   aiJobs: Record<string, AiJobState>;
@@ -93,6 +95,7 @@ export const PDFPageComponent: React.FC<PDFPageProps> = ({
   onChangeLineHighlightStyle,
   onDeleteAnnotation,
   onImageDrop,
+  onAiResponseDrop,
   onCursorMove,
   onCaptureSnippet,
   aiJobs,
@@ -323,12 +326,26 @@ export const PDFPageComponent: React.FC<PDFPageProps> = ({
 
   // Handle Drag & Drop of Images directly onto this page
   const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragOver(true);
+    const hasFiles = Array.from(e.dataTransfer.types).includes('Files');
+    if (hasFiles) {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragOver(true);
+      return;
+    }
+
+    if (e.dataTransfer.types.includes(AI_RESPONSE_DRAG_MIME)) {
+      e.preventDefault();
+      e.stopPropagation();
+      e.dataTransfer.dropEffect = 'move';
+      setAiResponseDragDroppable(true);
+      return;
+    }
   };
 
   const handleDragLeave = (e: React.DragEvent) => {
+    const hasFiles = Array.from(e.dataTransfer.types).includes('Files');
+    if (!hasFiles) return;
     e.preventDefault();
     e.stopPropagation();
     setIsDragOver(false);
@@ -338,6 +355,18 @@ export const PDFPageComponent: React.FC<PDFPageProps> = ({
     e.preventDefault();
     e.stopPropagation();
     setIsDragOver(false);
+    setAiResponseDragDroppable(false);
+
+    // Dropped AI chat response from the sidebar chat → pin it on this page
+    const aiResponsePayload = extractAiResponseDragPayload(e.dataTransfer);
+    if (aiResponsePayload && onAiResponseDrop) {
+      const rect = containerRef.current?.getBoundingClientRect();
+      // Coordinates may fall outside the page (negative or > 1) so cards can live in the workspace
+      const nx = rect ? (e.clientX - rect.left) / pageDimensions.width : 0.5;
+      const ny = rect ? (e.clientY - rect.top) / pageDimensions.height : 0.5;
+      onAiResponseDrop(pageNumber, nx, ny, aiResponsePayload.prompt, aiResponsePayload.response);
+      return;
+    }
 
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       const file = e.dataTransfer.files[0];
