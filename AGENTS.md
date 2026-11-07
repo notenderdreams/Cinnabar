@@ -8,6 +8,10 @@ Use Bun for all JavaScript dependency and script commands. Keep the existing Vit
 
 Keep repository automation and AI-agent configuration universal. Shared instructions and scripts must work for any agent that can read this repository and run the documented commands; keep agent-specific hooks or settings out of the project unless the user explicitly requests them.
 
+## Unfamiliar features
+
+Before implementing an unfamiliar feature, search GitHub, npm, and crates.io for existing open-source projects and libraries that solve similar problems. Read relevant documentation and implementations, then compare approaches for project fit, licensing, maintenance, cross-platform support, and integration complexity. Summarize the options and explain the chosen approach before coding. Implement from scratch only after this research shows why reusing or adapting an existing solution is unsuitable.
+
 ## Commands
 
 ```sh
