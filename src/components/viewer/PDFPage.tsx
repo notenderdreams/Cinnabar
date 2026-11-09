@@ -74,6 +74,7 @@ interface PDFPageProps {
   isFlush?: boolean;
   isReadOnly?: boolean;
   pageIdPrefix?: string;
+  enablePageContextMenu?: boolean;
 }
 
 export const PDFPageComponent: React.FC<PDFPageProps> = ({
@@ -120,6 +121,7 @@ export const PDFPageComponent: React.FC<PDFPageProps> = ({
   isFlush = false,
   isReadOnly = false,
   pageIdPrefix = 'pdf-page',
+  enablePageContextMenu = true,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const textLayerRef = useRef<HTMLDivElement | null>(null);
@@ -524,7 +526,7 @@ export const PDFPageComponent: React.FC<PDFPageProps> = ({
       onDragOver={isReadOnly ? undefined : handleDragOver}
       onDragLeave={isReadOnly ? undefined : handleDragLeave}
       onDrop={isReadOnly ? undefined : handleDrop}
-      onContextMenu={isReadOnly ? undefined : handleContextMenu}
+      onContextMenu={isReadOnly || !enablePageContextMenu ? undefined : handleContextMenu}
       onClick={isReadOnly ? undefined : () => onSelectAnnotation(null)}
       style={{
         width: `${pageDimensions.width}px`,
@@ -534,7 +536,7 @@ export const PDFPageComponent: React.FC<PDFPageProps> = ({
         isDragOver ? 'ring-2 ring-[#0080f0] scale-[1.01]' : ''
       }`}
     >
-      {!isReadOnly && contextMenuPosition && (
+      {!isReadOnly && enablePageContextMenu && contextMenuPosition && (
         <PageContextMenu
           position={contextMenuPosition}
           hasSelectedText={Boolean(contextMenuSelectedText || window.getSelection()?.toString().trim())}
@@ -590,6 +592,7 @@ export const PDFPageComponent: React.FC<PDFPageProps> = ({
 
       {/* Annotation Canvas (SVG / Freehand / Highlights / Note Creator) */}
       {!isReadOnly && <AnnotationCanvas
+        pageIdPrefix={pageIdPrefix}
         pageNumber={pageNumber}
         pageWidth={pageDimensions.width}
         pageHeight={pageDimensions.height}

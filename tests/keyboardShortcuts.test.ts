@@ -98,7 +98,7 @@ describe('annotation keyboard shortcuts', () => {
     expect(keyboardSource).toContain('options.onSelectHighlightColor?.(Number(e.key) - 1)');
     expect(appSource).toContain('setSelectedColor(color);');
     expect(appSource).toContain("selectedAnnotation.type === 'highlight-text'");
-    expect(appSource).toContain('updateAnnotation(selectedAnnotation.id, { color });');
+    expect(appSource).toContain('(notesActive ? notes.updateAnnotation : updateAnnotation)(selectedAnnotation.id, { color });');
     expect(appSource).not.toContain('if (!isHighlightTool(activeTool)) return;');
     expect(appSource).toContain('setSelectedColor(selectedAnnotation.color);');
     expect(appSource).toContain('colorPresets={highlightColors}');

@@ -8,10 +8,11 @@ import { isTauri, tauriCopyImageToClipboard } from '../../utils/tauriBridge';
 export async function cropCanvasRegion(
   pageNumber: number,
   rect: { x: number; y: number; width: number; height: number },
-  pdfDoc?: PDFDocumentProxy | null
+  pdfDoc?: PDFDocumentProxy | null,
+  pageIdPrefix = 'pdf-page'
 ): Promise<SnippetImageEntry | null> {
   const safePageNum = Math.max(1, Math.floor(pageNumber));
-  const pageContainer = document.getElementById(`pdf-page-${safePageNum}`);
+  const pageContainer = document.getElementById(`${pageIdPrefix}-${safePageNum}`);
   const pdfCanvas = pageContainer?.querySelector('canvas') as HTMLCanvasElement | null;
 
   try {

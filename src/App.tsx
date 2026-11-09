@@ -3,6 +3,8 @@ import { Header } from './components/layout/Header';
 import { Sidebar } from './components/layout/Sidebar';
 import { Toolbar } from './components/layout/Toolbar';
 import { PDFViewer } from './components/viewer/PDFViewer';
+import { NotePanel } from './components/viewer/NotePanel';
+import { notebookKey, loadNotePageCount, notePageCount } from './lib/notes';
 import { Dashboard } from './components/dashboard/Dashboard';
 import { ColorThemeModal } from './components/modals/ColorThemeModal';
 import { SearchBar } from './components/layout/SearchBar';
@@ -83,6 +85,12 @@ export function App() {
   const [isShortcutsModalOpen, setIsShortcutsModalOpen] = useState<boolean>(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState<boolean>(false);
+  const [isNoteMode, setIsNoteMode] = useState(false);
+  const [notePaneActive, setNotePaneActive] = useState(false);
+  const notesActive = isNoteMode && notePaneActive;
+  const [noteZoom, setNoteZoom] = useState(.8);
+  const [noteNavRequest, setNoteNavRequest] = useState<{ page: number; timestamp: number } | null>(null);
+  const [noteFitRequest, setNoteFitRequest] = useState<{ id: number; page: number } | null>(null);
 
   // Active Toast Feedback
   const { toastMessage, showToast } = useToast();
@@ -116,6 +124,7 @@ export function App() {
 
   // Active Cursor coordinates over PDF pages for precise cursor pasting
   const cursorPosRef = useRef<{ pageNumber: number; x: number; y: number } | null>(null);
+  const noteCursorRef = useRef<{ pageNumber: number; x: number; y: number } | null>(null);
 
   // Custom Hooks
   const {
@@ -136,6 +145,36 @@ export function App() {
     prevSearchResult,
   } = usePDFDocument();
 
+  const notesKey = notebookKey(docKey);
+  useEffect(() => {
+    setNoteNavRequest(null);
+    noteCursorRef.current = null;
+  }, [notesKey]);
+  const notes = useAnnotations(notesKey);
+  const [notebook, setNotebook] = useState(() => ({ key: notesKey, count: loadNotePageCount(notesKey), page: 1 }));
+  if (notebook.key !== notesKey) {
+    setNotebook({ key: notesKey, count: loadNotePageCount(notesKey), page: 1 });
+  }
+  const notesCount = notePageCount(notebook.count, notes.annotations);
+  const navigateNotePage = (page: number) => {
+    const target = Math.max(1, Math.min(notesCount, page));
+    setNotePaneActive(true);
+    setNotebook((value) => ({ ...value, page: target }));
+    setNoteNavRequest({ page: target, timestamp: Date.now() });
+  };
+  const activeNotesKey = useRef(notesKey);
+  activeNotesKey.current = notesKey;
+  const addNotePage = () => {
+    const count = notesCount + 1;
+    try {
+      localStorage.setItem(`${notesKey}:pages`, String(count));
+      setNotebook({ key: notesKey, count, page: count });
+      setNoteNavRequest({ page: count, timestamp: Date.now() });
+    } catch {
+      showToast('Could not save a new note page.', true);
+    }
+  };
+
   const {
     companionPdfDoc,
     companionFileName,
@@ -150,6 +189,7 @@ export function App() {
   } = useCompanionPDF({
     primaryFileName: docInfo?.fileName,
     onOpenCompanion: () => {
+      setIsNoteMode(false);
       setViewMode('continuous');
       saveViewMode('continuous');
     },
@@ -261,7 +301,7 @@ export function App() {
     setSelectedAnnotationId(id);
     if (!id) return;
 
-    const selectedAnnotation = annotations.find((annotation) => annotation.id === id);
+    const selectedAnnotation = [...annotations, ...notes.annotations].find((annotation) => annotation.id === id);
     if (
       selectedAnnotation &&
       (selectedAnnotation.type === 'highlight-line' ||
@@ -275,7 +315,7 @@ export function App() {
       );
       if (paletteIndex >= 0) setSelectedPaletteIndex(paletteIndex);
     }
-  }, [annotations, highlightColors]);
+  }, [annotations, notes.annotations, highlightColors]);
 
   useEffect(() => {
     document.documentElement.dataset.uiTheme = isDarkTheme ? 'dark' : 'light';
@@ -286,6 +326,7 @@ export function App() {
 
   // Handle View Mode persistence
   const handleChangeViewMode = (mode: ViewMode) => {
+    setIsNoteMode(false);
     if (companionPdfDoc && mode !== 'continuous') {
       closeCompanionPdf();
     }
@@ -319,7 +360,7 @@ export function App() {
         const { width: imgW, height: imgH, aspectRatio } = await getImageDimensions(dataUrl);
         let pageW = 595;
         let pageH = 842;
-        if (pdfDoc) {
+        if (pdfDoc && !notesActive) {
           try {
             const page = await pdfDoc.getPage(targetPage);
             const vp = page.getViewport({ scale: 1.0 });
@@ -328,22 +369,23 @@ export function App() {
           } catch {}
         }
 
-        addAttachedImage(targetPage, dataUrl, aspectRatio, fileName, {
+        const addImage = notesActive ? notes.addAttachedImage : addAttachedImage;
+        addImage(targetPage, dataUrl, aspectRatio, fileName, {
           x: cursorPos ? cursorPos.x : undefined,
           y: cursorPos ? cursorPos.y : undefined,
           pageWidth: pageW,
           pageHeight: pageH,
           imageWidth: imgW,
           imageHeight: imgH,
-          attachedInInvertedMode: isDarkTheme,
-          invertInLightMode: isDarkTheme,
+          attachedInInvertedMode: !notesActive && isDarkTheme,
+          invertInLightMode: !notesActive && isDarkTheme,
         });
         setActiveTool('select');
       } catch (err) {
         console.error('Failed to attach image:', err);
       }
     },
-    [pdfDoc, addAttachedImage, isDarkTheme]
+    [pdfDoc, addAttachedImage, isDarkTheme, notesActive, notes.addAttachedImage]
   );
 
   // Open Image to Attach (Desktop native dialog or Browser File Input fallback)
@@ -351,8 +393,9 @@ export function App() {
     if (isTauri()) {
       const imgData = await tauriOpenImage();
       if (imgData) {
-        const targetPage = cursorPosRef.current ? cursorPosRef.current.pageNumber : currentPage;
-        const cursorPos = cursorPosRef.current ? { x: cursorPosRef.current.x, y: cursorPosRef.current.y } : null;
+        const cursor = notesActive ? noteCursorRef.current : cursorPosRef.current;
+        const targetPage = cursor?.pageNumber ?? (notesActive ? notebook.page : currentPage);
+        const cursorPos = cursor ? { x: cursor.x, y: cursor.y } : null;
         await handleAddImage(imgData.dataUrl, targetPage, imgData.fileName, cursorPos);
       }
     } else {
@@ -366,8 +409,9 @@ export function App() {
       const reader = new FileReader();
       reader.onload = async () => {
         if (typeof reader.result === 'string') {
-          const targetPage = cursorPosRef.current ? cursorPosRef.current.pageNumber : currentPage;
-          const cursorPos = cursorPosRef.current ? { x: cursorPosRef.current.x, y: cursorPosRef.current.y } : null;
+          const cursor = notesActive ? noteCursorRef.current : cursorPosRef.current;
+          const targetPage = cursor?.pageNumber ?? (notesActive ? notebook.page : currentPage);
+          const cursorPos = cursor ? { x: cursor.x, y: cursor.y } : null;
           await handleAddImage(reader.result, targetPage, file.name, cursorPos);
         }
       };
@@ -382,8 +426,8 @@ export function App() {
     reader.onload = async () => {
       if (typeof reader.result === 'string') {
         const cursorPos =
-          cursorPosRef.current && cursorPosRef.current.pageNumber === pageNumber
-            ? { x: cursorPosRef.current.x, y: cursorPosRef.current.y }
+          (notesActive ? noteCursorRef.current : cursorPosRef.current)?.pageNumber === pageNumber
+            ? { x: (notesActive ? noteCursorRef.current : cursorPosRef.current)!.x, y: (notesActive ? noteCursorRef.current : cursorPosRef.current)!.y }
             : { x: 0.5, y: 0.5 };
         await handleAddImage(reader.result, pageNumber, file.name, cursorPos);
       }
@@ -395,22 +439,30 @@ export function App() {
   const handleSelectTool = useCallback((tool: ToolType) => {
     setActiveTool(tool);
     if (tool === 'snip') {
-      if (snipTarget !== 'ai-prompt') {
+      if (snipTarget !== 'ai-prompt' && !isNoteMode) {
         setIsSidebarOpen(true);
         setSidebarTab('snippets');
       }
     } else {
       setSnipTarget('snippets');
     }
-  }, [snipTarget]);
+  }, [snipTarget, isNoteMode]);
 
   // Snippet capture handler from canvas
   const handleCaptureSnippet = useCallback(
     async (pageNumber: number, rect: { x: number; y: number; width: number; height: number }) => {
+      const captureNotesKey = notesKey;
       try {
         const entry = await cropCanvasRegion(pageNumber, rect, pdfDoc);
         if (entry) {
-          if (snipTarget === 'ai-prompt') {
+          if (activeNotesKey.current !== captureNotesKey) return;
+          if (isNoteMode && snipTarget !== 'ai-prompt') {
+            notes.addAttachedImage(notebook.page, entry.dataUrl, entry.aspectRatio, `Cutout from PDF page ${pageNumber}`, {
+              imageWidth: entry.width, imageHeight: entry.height,
+            });
+            setActiveTool('select');
+            showToast(`Added cutout to note page ${notebook.page}`);
+          } else if (snipTarget === 'ai-prompt') {
             const newAttachment: AiChatAttachment = {
               id: `snip_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
               type: 'image',
@@ -437,7 +489,7 @@ export function App() {
         showToast('Failed to capture snippet', true);
       }
     },
-    [pdfDoc, snipTarget, addSnippet, showToast]
+    [pdfDoc, snipTarget, addSnippet, showToast, isNoteMode, notesKey, notes.addAttachedImage, notebook.page]
   );
 
   const handleStartSnipCaptureForAi = useCallback(() => {
@@ -513,6 +565,7 @@ export function App() {
 
   // Contextual Global Undo handler
   const handleGlobalUndo = useCallback(() => {
+    if (notesActive) { notes.undo(); return; }
     if (activeTool === 'snip' || sidebarTab === 'snippets') {
       if (canUndoSnippets) {
         undoSnippets();
@@ -528,6 +581,7 @@ export function App() {
       showToast('Undid snippet change');
     }
   }, [
+    notesActive, notes.undo,
     activeTool,
     sidebarTab,
     canUndoSnippets,
@@ -539,6 +593,7 @@ export function App() {
 
   // Contextual Global Redo handler
   const handleGlobalRedo = useCallback(() => {
+    if (notesActive) { notes.redo(); return; }
     if (activeTool === 'snip' || sidebarTab === 'snippets') {
       if (canRedoSnippets) {
         redoSnippets();
@@ -554,6 +609,7 @@ export function App() {
       showToast('Redid snippet change');
     }
   }, [
+    notesActive, notes.redo,
     activeTool,
     sidebarTab,
     canRedoSnippets,
@@ -772,8 +828,9 @@ export function App() {
           const reader = new FileReader();
           reader.onload = async () => {
             if (typeof reader.result === 'string') {
-              const targetPage = cursorPosRef.current ? cursorPosRef.current.pageNumber : currentPage;
-              const cursorPos = cursorPosRef.current ? { x: cursorPosRef.current.x, y: cursorPosRef.current.y } : null;
+              const cursor = notesActive ? noteCursorRef.current : cursorPosRef.current;
+              const targetPage = cursor?.pageNumber ?? (notesActive ? notebook.page : currentPage);
+              const cursorPos = cursor ? { x: cursor.x, y: cursor.y } : null;
 
               await handleAddImage(reader.result, targetPage, 'Pasted-Image', cursorPos);
               showToast(`Pasted image on Page ${targetPage}!`);
@@ -787,7 +844,7 @@ export function App() {
 
     window.addEventListener('paste', handlePaste);
     return () => window.removeEventListener('paste', handlePaste);
-  }, [currentPage, handleAddImage, showToast]);
+  }, [currentPage, handleAddImage, showToast, notesActive, notebook.page]);
 
   const addHighlightsFromSelection = useCallback(
     (style: HighlightStyle = 'box', showEmptyToast = true, color?: string) => {
@@ -848,7 +905,7 @@ export function App() {
 
       setSelectedPaletteIndex(index);
       setSelectedColor(color);
-      const selectedAnnotation = annotations.find(({ id }) => id === selectedAnnotationId);
+      const selectedAnnotation = (notesActive ? notes.annotations : annotations).find(({ id }) => id === selectedAnnotationId);
       if (
         selectedAnnotation &&
         (selectedAnnotation.type === 'highlight-line' ||
@@ -856,12 +913,13 @@ export function App() {
           selectedAnnotation.type === 'highlight-rect' ||
           selectedAnnotation.type === 'highlight-text')
       ) {
-        updateAnnotation(selectedAnnotation.id, { color });
+        (notesActive ? notes.updateAnnotation : updateAnnotation)(selectedAnnotation.id, { color });
       }
     },
     onUndo: handleGlobalUndo,
     onRedo: handleGlobalRedo,
     onZoomIn: () => {
+      if (notesActive) { setNoteZoom((zoom) => Math.min(3.5, zoom + .15)); return; }
       if (companionPdfDoc && activeReaderPane === 'companion') {
         setCompanionZoom((z) => Math.min(3.5, z + 0.15));
       } else {
@@ -869,6 +927,7 @@ export function App() {
       }
     },
     onZoomOut: () => {
+      if (notesActive) { setNoteZoom((zoom) => Math.max(.3, zoom - .15)); return; }
       if (companionPdfDoc && activeReaderPane === 'companion') {
         setCompanionZoom((z) => Math.max(0.3, z - 0.15));
       } else {
@@ -876,10 +935,12 @@ export function App() {
       }
     },
     onResetZoom: () => {
+      if (notesActive) { setNoteZoom(.8); return; }
       if (companionPdfDoc && activeReaderPane === 'companion') setCompanionZoom(1.15);
       else setZoom(1.15);
     },
     onNextPage: () => {
+      if (notesActive) { navigateNotePage(notebook.page + 1); return; }
       if (companionPdfDoc && activeReaderPane === 'companion') {
         setCompanionCurrentPage((page) => Math.min(companionPdfDoc.numPages, page + 1));
         return;
@@ -888,6 +949,7 @@ export function App() {
       handleNavigatePage(viewMode === 'spread' ? spreadStart + 2 : currentPage + 1);
     },
     onPrevPage: () => {
+      if (notesActive) { navigateNotePage(notebook.page - 1); return; }
       if (companionPdfDoc && activeReaderPane === 'companion') {
         setCompanionCurrentPage((page) => Math.max(1, page - 1));
         return;
@@ -927,12 +989,12 @@ export function App() {
         return;
       }
       if (selectedAnnotationId) {
-        const selectedAnn = annotations.find((a) => a.id === selectedAnnotationId);
+        const selectedAnn = (notesActive ? notes.annotations : annotations).find((a) => a.id === selectedAnnotationId);
         if (selectedAnn && selectedAnn.type === 'ai-explanation') {
           if (!selectedAnn.response) {
-            deleteAnnotation(selectedAnn.id);
+            (notesActive ? notes.deleteAnnotation : deleteAnnotation)(selectedAnn.id);
           } else {
-            updateAnnotation(selectedAnn.id, { isOpen: false, updatedAt: Date.now() });
+            (notesActive ? notes.updateAnnotation : updateAnnotation)(selectedAnn.id, { isOpen: false, updatedAt: Date.now() });
           }
         }
         setSelectedAnnotationId(null);
@@ -972,6 +1034,7 @@ export function App() {
       else void handleCopyPageJpg(currentPage);
     },
     onAddPageBelow: () => {
+      if (notesActive) { addNotePage(); return; }
       if (currentScreen === 'reader' && pdfDoc) {
         void handleAddPageBelow(currentPage);
       }
@@ -981,7 +1044,7 @@ export function App() {
     onHighlightSelectedText: handleHighlightSelectedText,
     onDeleteSelectedAnnotation: () => {
       if (selectedAnnotationId) {
-        deleteAnnotation(selectedAnnotationId);
+        (notesActive ? notes.deleteAnnotation : deleteAnnotation)(selectedAnnotationId);
         setSelectedAnnotationId(null);
       }
     },
@@ -1180,17 +1243,18 @@ export function App() {
           {/* Top Header & Titlebar */}
           <Header
             docInfo={docInfo}
-            currentPage={companionPdfDoc && activeReaderPane === 'companion' ? companionCurrentPage : currentPage}
-            numPages={companionPdfDoc && activeReaderPane === 'companion' ? companionPdfDoc.numPages : pdfDoc?.numPages || 0}
-            zoom={companionPdfDoc && activeReaderPane === 'companion' ? companionZoom : zoom}
-            activeDocumentName={companionPdfDoc && activeReaderPane === 'companion' ? companionFileName : docInfo?.fileName}
+            currentPage={notesActive ? notebook.page : companionPdfDoc && activeReaderPane === 'companion' ? companionCurrentPage : currentPage}
+            numPages={notesActive ? notesCount : companionPdfDoc && activeReaderPane === 'companion' ? companionPdfDoc.numPages : pdfDoc?.numPages || 0}
+            zoom={notesActive ? noteZoom : companionPdfDoc && activeReaderPane === 'companion' ? companionZoom : zoom}
+            activeDocumentName={notesActive ? `${docInfo?.fileName} · Notes` : companionPdfDoc && activeReaderPane === 'companion' ? companionFileName : docInfo?.fileName}
+            canUsePageActions={!notesActive}
             viewMode={viewMode}
             theme={themeSettings.theme}
             isZenMode={isZenMode}
             isSearchOpen={isSearchOpen}
             isAiPanelOpen={isAiPanelOpen}
             annotationCount={annotations.length}
-            saveStatus={saveStatus}
+            saveStatus={notesActive ? notes.saveStatus : saveStatus}
             onOpenDashboard={() => setCurrentScreen('dashboard')}
             onToggleSearch={() => setIsSearchOpen((prev) => !prev)}
             onToggleAiPanel={() => setIsAiPanelOpen((prev) => !prev)}
@@ -1199,8 +1263,24 @@ export function App() {
             onToggleZen={() => setIsZenMode((prev) => !prev)}
             onToggleShortcuts={() => setIsShortcutsModalOpen(true)}
             onChangeViewMode={handleChangeViewMode}
-            onChangeZoom={activeReaderPane === 'companion' ? setCompanionZoom : setZoom}
+            onChangeZoom={notesActive ? setNoteZoom : activeReaderPane === 'companion' ? setCompanionZoom : setZoom}
+            isNoteMode={isNoteMode}
+            onToggleNoteMode={() => {
+              if (!isNoteMode) {
+                closeCompanionPdf();
+                setViewMode('continuous');
+                saveViewMode('continuous');
+                setIsSidebarOpen(false);
+                setFitPageRequest((request) => ({ id: (request?.id ?? 0) + 1, page: currentPage }));
+              }
+              setIsNoteMode((value) => !value);
+            }}
             onFitPage={() => {
+              if (notesActive) {
+                setNoteFitRequest((request) => ({ id: (request?.id ?? 0) + 1, page: notebook.page }));
+                navigateNotePage(notebook.page);
+                return;
+              }
               if (companionPdfDoc && activeReaderPane === 'companion') {
                 setCompanionZoom(0.75);
               } else {
@@ -1210,7 +1290,7 @@ export function App() {
                 }));
               }
             }}
-            onPageChange={activeReaderPane === 'companion'
+            onPageChange={notesActive ? navigateNotePage : activeReaderPane === 'companion'
               ? (page) => setCompanionCurrentPage(Math.max(1, Math.min(companionPdfDoc?.numPages || 1, page)))
               : handleNavigatePage}
             onCopyPageText={() => {
@@ -1277,6 +1357,9 @@ export function App() {
 
             {/* Primary PDF Canvas Viewport */}
             <div className="flex-1 min-w-0 relative overflow-hidden flex bg-[var(--workspace)]">
+              <div className={isNoteMode ? 'note-source-pane' : 'contents'}
+                onPointerEnter={() => setNotePaneActive(false)} onPointerDownCapture={() => setNotePaneActive(false)}
+                onFocusCapture={() => setNotePaneActive(false)}>
               <PDFViewer
                 key={companionPdfDoc ? 'read-together' : 'single-document'}
                 pdfDoc={pdfDoc}
@@ -1393,6 +1476,22 @@ export function App() {
                   </div>
                 </div>
               )}
+              </div>
+              {isNoteMode && pdfDoc && <NotePanel key={notesKey} notes={notes} docKey={notesKey}
+                page={notebook.page} pageCount={notesCount}
+                zoom={noteZoom} onZoomChange={setNoteZoom} pageNavRequest={noteNavRequest} fitPageRequest={noteFitRequest}
+                activeTool={activeTool} selectedColor={selectedColor} highlightColors={highlightColors}
+                strokeWidth={strokeWidth} opacity={opacity} highlightStyle={highlightStyle} lineHighlightStyle={lineHighlightStyle}
+                onChangeHighlightStyle={setHighlightStyle} onChangeLineHighlightStyle={setLineHighlightStyle}
+                onSelectTool={handleSelectTool} selectedAnnotationId={selectedAnnotationId} onSelectAnnotation={handleSelectAnnotation}
+                onImageDrop={handleImageDropOnPage}
+                onCursorMove={(pageNumber, x, y) => { noteCursorRef.current = { pageNumber, x, y }; }}
+                onActivate={() => setNotePaneActive(true)}
+                onPageChange={(page) => setNotebook((value) => ({ ...value, page }))}
+                onAddPage={addNotePage}
+                onCapture={(entry) => { addSnippet(entry); showToast('Captured note region.'); }}
+                showToast={showToast}
+              />}
             </div>
 
             {!isZenMode && (
@@ -1430,19 +1529,19 @@ export function App() {
               activeTool={activeTool}
               selectedColor={selectedColor}
               colorPresets={highlightColors}
-              isInvertedColorMode={isDarkTheme}
+              isInvertedColorMode={!notesActive && isDarkTheme}
               strokeWidth={strokeWidth}
               opacity={opacity}
               highlightStyle={highlightStyle}
               lineHighlightStyle={lineHighlightStyle}
-              canUndo={activeTool === 'snip' ? canUndoSnippets : canUndoAnnotations}
-              canRedo={activeTool === 'snip' ? canRedoSnippets : canRedoAnnotations}
+              canUndo={notesActive ? notes.canUndo : activeTool === 'snip' ? canUndoSnippets : canUndoAnnotations}
+              canRedo={notesActive ? notes.canRedo : activeTool === 'snip' ? canRedoSnippets : canRedoAnnotations}
               onSelectTool={handleSelectTool}
               onSelectColor={(c, index) => {
                 setSelectedPaletteIndex(index);
                 setSelectedColor(c);
                 if (selectedAnnotationId) {
-                  updateAnnotation(selectedAnnotationId, { color: c });
+                  (notesActive ? notes.updateAnnotation : updateAnnotation)(selectedAnnotationId, { color: c });
                 }
               }}
               onReplaceSelectedColor={(c) => {
@@ -1451,7 +1550,7 @@ export function App() {
                 );
                 setSelectedColor(c);
                 if (selectedAnnotationId) {
-                  updateAnnotation(selectedAnnotationId, { color: c });
+                  (notesActive ? notes.updateAnnotation : updateAnnotation)(selectedAnnotationId, { color: c });
                 }
               }}
               onChangeStrokeWidth={(w) => setStrokeWidth(w)}
@@ -1461,7 +1560,7 @@ export function App() {
               onAttachImageClick={handleOpenImage}
               onUndo={handleGlobalUndo}
               onRedo={handleGlobalRedo}
-              onClearPageAnnotations={() => clearAllAnnotationsForPage(currentPage)}
+              onClearPageAnnotations={() => notesActive ? notes.clearAllAnnotationsForPage(notebook.page) : clearAllAnnotationsForPage(currentPage)}
             />
           )}
 

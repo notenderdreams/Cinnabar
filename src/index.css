@@ -2078,3 +2078,11 @@
 .app-no-drag {
   -webkit-app-region: no-drag;
 }
+/* Reading and PDF-linked paper share the same desktop split workspace. */
+.note-source-pane { display: flex; position: relative; flex: 1 1 50%; min-width: 0; overflow: hidden; }
+.note-panel { display: flex; flex: 1 1 50%; flex-direction: column; min-width: 0; border-left: 1px solid var(--border); background: var(--workspace); color: var(--foreground); }
+.note-panel-paper { flex: 1; min-height: 0; overflow: auto; }
+.note-paper-stack { display: flex; flex-direction: column; align-items: center; gap: 12px; width: max-content; min-width: 100%; padding: 24px; }
+.note-add-page { display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin: 4px auto; border: 2px dashed var(--muted-foreground); border-radius: 2px; background: transparent; color: var(--muted-foreground); font-size: 14px; cursor: pointer; }
+.note-add-page:hover { border-color: var(--primary); color: var(--primary); }
+.note-add-page:focus-visible, .note-panel-paper:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; }

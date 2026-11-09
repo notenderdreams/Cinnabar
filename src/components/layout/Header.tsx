@@ -12,6 +12,7 @@ import {
   Rows,
   Square,
   Columns2,
+  NotebookPen,
 } from 'lucide-react';
 import type { DocumentInfo, ReadingTheme, ViewMode } from '../../lib/types/index';
 import { isTauri, handleTitlebarMouseDown } from '../../utils/tauriBridge';
@@ -43,6 +44,8 @@ interface HeaderProps {
   onPageChange: (page: number) => void;
   onCopyPageText?: () => void;
   onCopyPageJpg?: () => void;
+  isNoteMode?: boolean;
+  onToggleNoteMode?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -67,6 +70,8 @@ export const Header: React.FC<HeaderProps> = ({
   onPageChange,
   onCopyPageText,
   onCopyPageJpg,
+  isNoteMode = false,
+  onToggleNoteMode,
 }) => {
   const [pageInputText, setPageInputText] = React.useState<string>(String(currentPage));
 
@@ -241,7 +246,7 @@ export const Header: React.FC<HeaderProps> = ({
               transform: `translate3d(${viewModeIndicatorStyle.left}px, ${viewModeIndicatorStyle.top}px, 0)`,
               width: `${viewModeIndicatorStyle.width}px`,
               height: `${viewModeIndicatorStyle.height}px`,
-              opacity: viewModeIndicatorStyle.opacity,
+              opacity: isNoteMode ? 0 : viewModeIndicatorStyle.opacity,
             }}
           />
 
@@ -296,6 +301,11 @@ export const Header: React.FC<HeaderProps> = ({
           >
             <Columns2 className="w-3.5 h-3.5" />
           </button>
+          {onToggleNoteMode && <button type="button" onClick={onToggleNoteMode}
+            className={`relative z-10 p-1.5 rounded-md text-xs transition-colors ${isNoteMode ? 'bg-[var(--accent)] text-[var(--accent-foreground)]' : ''}`}
+            title="Read and take notes" aria-label="Note mode" aria-pressed={isNoteMode}>
+            <NotebookPen className="w-3.5 h-3.5" />
+          </button>}
         </div>
 
         <span className="reader-toolbar-divider hidden sm:block" aria-hidden="true" />

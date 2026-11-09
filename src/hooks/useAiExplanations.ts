@@ -11,10 +11,11 @@ interface Options {
   pdfDoc: PDFDocumentProxy | null;
   documentName: string;
   docKey: string;
+  pageIdPrefix?: string;
   updateAnnotation: (id: string, updates: Partial<Annotation>) => void;
 }
 
-export function useAiExplanations({ pdfDoc, documentName, docKey, updateAnnotation }: Options) {
+export function useAiExplanations({ pdfDoc, documentName, docKey, updateAnnotation, pageIdPrefix = 'pdf-page' }: Options) {
   const [jobs, setJobs] = useState<Record<string, AiJobState>>({});
   const activeRequests = useRef(new Map<string, string>());
   const generationRef = useRef(0);
@@ -46,7 +47,7 @@ export function useAiExplanations({ pdfDoc, documentName, docKey, updateAnnotati
     setJobs((current) => transitionAiJob(current, annotation.id, { phase: 'running', requestId }));
 
     try {
-      const context = await getRegionContext(pdfDoc, annotation.pageNumber, annotation, documentName);
+      const context = await getRegionContext(pdfDoc, annotation.pageNumber, annotation, documentName, pageIdPrefix);
       if (generation !== generationRef.current || activeRequests.current.get(annotation.id) !== requestId) return;
       const result = await runAiExplanation({
         requestId,
@@ -67,7 +68,7 @@ export function useAiExplanations({ pdfDoc, documentName, docKey, updateAnnotati
         setJobs((current) => transitionAiJob(current, annotation.id, { phase: 'error', message: error instanceof Error ? error.message : String(error) }));
       }
     }
-  }, [close, documentName, pdfDoc, updateAnnotation]);
+  }, [close, documentName, pdfDoc, updateAnnotation, pageIdPrefix]);
 
   useEffect(() => {
     generationRef.current += 1;

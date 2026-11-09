@@ -53,6 +53,7 @@ interface AnnotationCanvasProps {
   onCaptureSnippet?: (pageNumber: number, rect: { x: number; y: number; width: number; height: number }) => void;
   onAiBoxCreated?: (annotationId: string) => void;
   onSelectTool?: (tool: ToolType) => void;
+  pageIdPrefix?: string;
 }
 
 export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
@@ -79,6 +80,7 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
   onCaptureSnippet,
   onAiBoxCreated,
   onSelectTool,
+  pageIdPrefix,
 }) => {
   const zoomScale = Math.max(0.1, scale);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -733,7 +735,7 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
         const minY = Math.min(lineStart.y, endY);
         const w = Math.max(0.01, Math.abs(endX - lineStart.x));
         const h = Math.max(0.02, Math.abs(endY - lineStart.y));
-        const text = extractTextFromDomPageRegion(pageNumber, { x: minX, y: minY, width: w, height: h });
+        const text = extractTextFromDomPageRegion(pageNumber, { x: minX, y: minY, width: w, height: h }, pageIdPrefix);
 
         const newLine: LineHighlightAnnotation = {
           id: `line_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
@@ -774,7 +776,7 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
         y: minY,
         width: Math.max(0.01, maxX - minX),
         height: Math.max(0.01, maxY - minY),
-      });
+      }, pageIdPrefix);
 
       const newDrawing: DrawingAnnotation = {
         id: `draw_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
@@ -796,7 +798,7 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
       const height = Math.abs(rectCurrent.y - rectStart.y);
 
       if (width * pageWidth > 6 && height * pageHeight > 6) {
-        const text = extractTextFromDomPageRegion(pageNumber, { x, y, width, height });
+        const text = extractTextFromDomPageRegion(pageNumber, { x, y, width, height }, pageIdPrefix);
 
         const newRect: RectHighlightAnnotation = {
           id: `rect_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
@@ -1377,7 +1379,7 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
           }}
           className="absolute z-50 px-2.5 py-1 rounded-md bg-emerald-600 text-white font-medium text-[11px] shadow-xl pointer-events-none flex items-center gap-1.5 backdrop-blur-xs animate-fade-in whitespace-nowrap ring-1 ring-emerald-400"
         >
-          <span>✓ Added to Snippets</span>
+          <span>✓ Region captured</span>
         </div>
       )}
 

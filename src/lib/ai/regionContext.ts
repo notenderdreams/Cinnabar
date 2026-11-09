@@ -100,7 +100,8 @@ export async function getRegionContext(
   pdfDoc: PDFDocumentProxy,
   pageNumber: number,
   rect: NormalizedRect,
-  documentName: string
+  documentName: string,
+  pageIdPrefix = 'pdf-page'
 ): Promise<RegionContext> {
   const safePage = Math.max(1, Math.floor(pageNumber));
   const page = await pdfDoc.getPage(safePage);
@@ -124,7 +125,7 @@ export async function getRegionContext(
     }
 
     let crop: ReturnType<typeof cropCanvas> = null;
-    const mountedCanvas = document.querySelector(`#pdf-page-${safePage} canvas`) as HTMLCanvasElement | null;
+    const mountedCanvas = document.querySelector(`#${pageIdPrefix}-${safePage} canvas`) as HTMLCanvasElement | null;
     if (mountedCanvas?.width && mountedCanvas.height) crop = cropCanvas(mountedCanvas, rect);
 
     if (!crop) {

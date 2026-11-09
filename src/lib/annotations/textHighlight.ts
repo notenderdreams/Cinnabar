@@ -252,13 +252,15 @@ export function createTextHighlightsFromSelection(
  */
 export function extractTextFromDomPageRegion(
   pageNumber: number,
-  normalizedBounds: { x: number; y: number; width: number; height: number }
+  normalizedBounds: { x: number; y: number; width: number; height: number },
+  pageIdPrefix?: string
 ): string {
   if (typeof document === 'undefined') return '';
 
-  const pageContainer =
-    document.querySelector<HTMLElement>(`[data-pdf-page-number="${pageNumber}"]`) ||
-    document.getElementById(`pdf-page-${pageNumber}`);
+  const pageContainer = pageIdPrefix
+    ? document.getElementById(`${pageIdPrefix}-${pageNumber}`)
+    : document.querySelector<HTMLElement>(`[data-pdf-page-number="${pageNumber}"]`) ||
+      document.getElementById(`pdf-page-${pageNumber}`);
   if (!pageContainer) return '';
 
   const textLayer = pageContainer.querySelector<HTMLElement>('[data-pdf-text-layer]');
