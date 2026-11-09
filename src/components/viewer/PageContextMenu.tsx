@@ -21,6 +21,7 @@ interface PageContextMenuProps {
   onCopyAnnotationText?: (ann: Annotation) => void;
   onCopyAnnotationImage?: (ann: Annotation) => void;
   onDeleteAnnotation?: (id: string) => void;
+  pageActionsOnly?: boolean;
 }
 
 export const PageContextMenu: React.FC<PageContextMenuProps> = ({
@@ -40,6 +41,7 @@ export const PageContextMenu: React.FC<PageContextMenuProps> = ({
   onCopyAnnotationText,
   onCopyAnnotationImage,
   onDeleteAnnotation,
+  pageActionsOnly = false,
 }) => {
   const menuRef = useRef<HTMLDivElement | null>(null);
 
@@ -99,6 +101,7 @@ export const PageContextMenu: React.FC<PageContextMenuProps> = ({
       onPointerDown={(event) => event.stopPropagation()}
       onContextMenu={(event) => event.preventDefault()}
     >
+      {!pageActionsOnly && <>
       {/* 1. Highlight / Annotation specific actions */}
       {hitAnnotation && (
         <>
@@ -221,12 +224,14 @@ export const PageContextMenu: React.FC<PageContextMenuProps> = ({
         </span>
         <span>Copy page text</span>
       </button>
+      </>}
       <button type="button" role="menuitem" className={itemClass} onClick={run(onCopyPageImage)}>
         <span className="page-context-menu__icon" aria-hidden="true">
           <Image />
         </span>
         <span>Copy page as image</span>
       </button>
+      {!pageActionsOnly && <>
       <button type="button" role="menuitem" className={itemClass} onClick={run(onAskAi)}>
         <span className="page-context-menu__icon" aria-hidden="true">
           <SparkleIcon />
@@ -234,11 +239,12 @@ export const PageContextMenu: React.FC<PageContextMenuProps> = ({
         <span>Ask AI about this page</span>
       </button>
       <div className="page-context-menu__separator" role="separator" />
+      </>}
       <button type="button" role="menuitem" className={itemClass} onClick={run(onAddPageBelow)}>
         <span className="page-context-menu__icon" aria-hidden="true">
           <FilePlus />
         </span>
-        <span>Add page below</span>
+        <span>{pageActionsOnly ? 'Add page after' : 'Add page below'}</span>
       </button>
       <button
         type="button"

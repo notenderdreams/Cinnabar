@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
-import { notebookKey, loadNotePageCount, notePageCount } from '../src/lib/notes';
+import { notebookKey, loadNotePageCount, notePageCount, editNotePages } from '../src/lib/notes';
 import { loadAnnotationsForDoc, saveAnnotationsForDoc } from '../src/lib/storage/storage';
 import type { Annotation } from '../src/lib/types';
 
@@ -39,5 +39,28 @@ describe('PDF-linked notebooks', () => {
     const note: Annotation = { id: 'note', type: 'text-note', pageNumber: 7, x: .1, y: .1, text: 'Summary', color: '#000', fontSize: 14, createdAt: 1 };
     expect(notePageCount(1, [note])).toBe(7);
     expect(notePageCount(9, [note])).toBe(9);
+  });
+
+  test('inserts after the targeted page and preserves later content through deletion', () => {
+    const first: Annotation = { id: 'first', type: 'text-note', pageNumber: 1, x: .1, y: .1, text: 'First summary', color: '#000', fontSize: 14, createdAt: 1 };
+    const later: Annotation = { ...first, id: 'later', pageNumber: 2, text: 'Later summary' };
+    const inserted = editNotePages([first, later], 2, 1, 'insert');
+    expect(inserted.count).toBe(3);
+    expect(inserted.page).toBe(2);
+    expect(inserted.annotations.map(({ id, pageNumber }) => ({ id, pageNumber }))).toEqual([
+      { id: 'first', pageNumber: 1 }, { id: 'later', pageNumber: 3 },
+    ]);
+    expect(editNotePages(inserted.annotations, 3, 2, 'delete')).toEqual({ annotations: [first, later], count: 2, page: 2 });
+    const deleted = editNotePages([first, later], 2, 1, 'delete');
+    expect(deleted).toEqual({ annotations: [{ ...later, pageNumber: 1 }], count: 1, page: 1 });
+    expect([first, later].map(({ pageNumber }) => pageNumber)).toEqual([1, 2]);
+  });
+
+  test('deleting the last sheet leaves a blank page and invalid targets do not mutate notes', () => {
+    const note: Annotation = { id: 'last', type: 'text-note', pageNumber: 1, x: .1, y: .1, text: 'Last summary', color: '#000', fontSize: 14, createdAt: 1 };
+    expect(editNotePages([note], 1, 1, 'delete')).toEqual({ annotations: [], count: 1, page: 1 });
+    expect(() => editNotePages([note], 1, 0, 'delete')).toThrow();
+    expect(() => editNotePages([note], 1, 2, 'insert')).toThrow();
+    expect(note.pageNumber).toBe(1);
   });
 });

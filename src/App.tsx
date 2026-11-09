@@ -4,7 +4,7 @@ import { Sidebar } from './components/layout/Sidebar';
 import { Toolbar } from './components/layout/Toolbar';
 import { PDFViewer } from './components/viewer/PDFViewer';
 import { NotePanel } from './components/viewer/NotePanel';
-import { notebookKey, loadNotePageCount, notePageCount } from './lib/notes';
+import { notebookKey, loadNotePageCount, notePageCount, editNotePages } from './lib/notes';
 import { Dashboard } from './components/dashboard/Dashboard';
 import { ColorThemeModal } from './components/modals/ColorThemeModal';
 import { SearchBar } from './components/layout/SearchBar';
@@ -164,16 +164,21 @@ export function App() {
   };
   const activeNotesKey = useRef(notesKey);
   activeNotesKey.current = notesKey;
-  const addNotePage = () => {
-    const count = notesCount + 1;
+  const mutateNotePage = (page: number, action: 'insert' | 'delete') => {
     try {
-      localStorage.setItem(`${notesKey}:pages`, String(count));
-      setNotebook({ key: notesKey, count, page: count });
-      setNoteNavRequest({ page: count, timestamp: Date.now() });
+      const result = editNotePages(notes.annotations, notesCount, page, action);
+      localStorage.setItem(`${notesKey}:pages`, String(result.count));
+      notes.replaceAnnotations(result.annotations);
+      setSelectedAnnotationId(null);
+      noteCursorRef.current = null;
+      setNotePaneActive(true);
+      setNotebook({ key: notesKey, count: result.count, page: result.page });
+      setNoteNavRequest({ page: result.page, timestamp: Date.now() });
     } catch {
-      showToast('Could not save a new note page.', true);
+      showToast(`Could not ${action === 'insert' ? 'add' : 'delete'} the note page.`, true);
     }
   };
+  const addNotePage = () => mutateNotePage(notesCount, 'insert');
 
   const {
     companionPdfDoc,
@@ -1489,6 +1494,8 @@ export function App() {
                 onActivate={() => setNotePaneActive(true)}
                 onPageChange={(page) => setNotebook((value) => ({ ...value, page }))}
                 onAddPage={addNotePage}
+                onAddPageAfter={(page) => mutateNotePage(page, 'insert')}
+                onDeletePage={(page) => mutateNotePage(page, 'delete')}
                 onCapture={(entry) => { addSnippet(entry); showToast('Captured note region.'); }}
                 showToast={showToast}
               />}

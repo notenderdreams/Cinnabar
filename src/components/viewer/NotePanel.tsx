@@ -7,6 +7,7 @@ import { PDFPage } from './PDFPage';
 import type { useAnnotations } from '../../hooks/useAnnotations';
 import { useAiExplanations } from '../../hooks/useAiExplanations';
 import { copyPageImageToClipboard, copyTextToClipboard } from '../../lib/pdf/pageExtractor';
+import { exportAnnotatedPDF } from '../../lib/pdf/pdfExporter';
 import { isAnnotationHitByEraser } from '../../lib/annotations/eraserUtils';
 import { cropCanvasRegion } from '../../lib/snippets/snippetExtractor';
 import type { AiExplanationAnnotation, Annotation, SnippetImageEntry } from '../../lib/types';
@@ -28,13 +29,15 @@ interface NotePanelProps extends SharedTools {
   pageNavRequest: { page: number; timestamp: number } | null;
   fitPageRequest: { id: number; page: number } | null;
   onAddPage: () => void;
+  onAddPageAfter: (page: number) => void;
+  onDeletePage: (page: number) => void;
   onActivate: () => void;
   onCapture: (entry: SnippetImageEntry) => void;
   showToast: (message: string, isError?: boolean) => void;
 }
 
 export function NotePanel({ notes, docKey, page, pageCount, zoom, onZoomChange,
-  onPageChange, pageNavRequest, fitPageRequest, onAddPage, onActivate, onCapture,
+  onPageChange, pageNavRequest, fitPageRequest, onAddPage, onAddPageAfter, onDeletePage, onActivate, onCapture,
   showToast, ...tools }: NotePanelProps) {
   const [paper, setPaper] = useState<PDFDocumentProxy | null>(null);
   const [error, setError] = useState(false);
@@ -114,6 +117,26 @@ export function NotePanel({ notes, docKey, page, pageCount, zoom, onZoomChange,
     void copyTextToClipboard(text);
   };
 
+  const copyPageImage = async (number: number) => {
+    let task: ReturnType<typeof pdfjsLib.getDocument> | undefined;
+    try {
+      // Export this sheet's contents so text, SVG drawings, and cutouts are included.
+      const sheet = await PDFDocument.create();
+      sheet.addPage([595, 842]);
+      const annotations = (annotationsByPage.get(number) ?? []).map((annotation) => ({ ...annotation, pageNumber: 1 }));
+      const data = await exportAnnotatedPDF(await sheet.save(), annotations);
+      task = pdfjsLib.getDocument({ data });
+      tasks.current.add(task);
+      const document = await task.promise;
+      const copied = await copyPageImageToClipboard(1, document, 'note-copy-export');
+      showToast(copied ? 'Note page copied as image.' : 'Could not copy note page as image.', !copied);
+    } catch {
+      showToast('Could not copy note page as image.', true);
+    } finally {
+      if (task) { tasks.current.delete(task); void task.destroy(); }
+    }
+  };
+
   const addAi = (number: number, x = .01, y = .01, prompt = '', response = '') => {
     const now = Date.now();
     const annotation: AiExplanationAnnotation = {
@@ -144,12 +167,17 @@ export function NotePanel({ notes, docKey, page, pageCount, zoom, onZoomChange,
         }}
         onPointerDownCapture={(event) => {
           onActivate();
+          if (event.button !== 0 || (event.target as HTMLElement).closest('[role="menu"]')) return;
           if (!(event.target as HTMLElement).closest('button, input, textarea, [contenteditable="true"]')) {
             container.current?.focus({ preventScroll: true });
           }
           if (tools.activeTool === 'eraser') { event.preventDefault(); event.stopPropagation(); eraseAt(event.clientX, event.clientY); }
         }}
-        onPointerMove={(event) => { if (tools.activeTool === 'eraser' && event.buttons === 1) eraseAt(event.clientX, event.clientY); }}>
+        onPointerMove={(event) => {
+          if (tools.activeTool === 'eraser' && event.buttons === 1 && !(event.target as HTMLElement).closest('[role="menu"]')) {
+            eraseAt(event.clientX, event.clientY);
+          }
+        }}>
         <div className="note-paper-stack">
           {error && <p role="alert">Could not load note paper. Reopen note mode to try again.</p>}
           {!paper && !error && <p role="status">Preparing note paper…</p>}
@@ -162,8 +190,8 @@ export function NotePanel({ notes, docKey, page, pageCount, zoom, onZoomChange,
             onAiResponseDrop={addAi} aiJobs={ai.jobs}
             onAiBoxCreated={ai.openComposer} onSubmitAi={(annotation, prompt) => { void ai.submit(annotation, prompt); tools.onSelectTool?.('select'); }}
             onCancelAi={(id) => { void ai.cancel(id); }} onCloseAi={ai.close}
-            onDeletePage={() => {}} onCopyPageText={copyPageText}
-            onCopyPageImage={(number) => { void copyPageImageToClipboard(number, paper, 'note-paper'); }}
+            onDeletePage={onDeletePage} onAddPageBelow={onAddPageAfter} onCopyPageText={copyPageText}
+            onCopyPageImage={(number) => { void copyPageImage(number); }}
             onAskAiAboutPage={addAi}
             onCaptureSnippet={(number, rect) => {
               void cropCanvasRegion(number, rect, paper, 'note-paper').then((entry) => {
@@ -171,7 +199,7 @@ export function NotePanel({ notes, docKey, page, pageCount, zoom, onZoomChange,
               }).catch(() => showToast('Could not capture note region.', true));
             }}
             onCopySelectedText={(text) => { void copyTextToClipboard(text); }}
-            showToast={showToast} enablePageContextMenu={false} isFlush
+            showToast={showToast} pageActionsOnly isFlush
           />)}
           {paper && <button type="button" className="note-add-page" aria-label="Add note page"
             style={{ width: 595 * zoom, height: 842 * zoom }} onClick={onAddPage}>Add page</button>}

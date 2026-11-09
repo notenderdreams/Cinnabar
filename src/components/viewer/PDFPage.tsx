@@ -75,6 +75,7 @@ interface PDFPageProps {
   isReadOnly?: boolean;
   pageIdPrefix?: string;
   enablePageContextMenu?: boolean;
+  pageActionsOnly?: boolean;
 }
 
 export const PDFPageComponent: React.FC<PDFPageProps> = ({
@@ -122,6 +123,7 @@ export const PDFPageComponent: React.FC<PDFPageProps> = ({
   isReadOnly = false,
   pageIdPrefix = 'pdf-page',
   enablePageContextMenu = true,
+  pageActionsOnly = false,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const textLayerRef = useRef<HTMLDivElement | null>(null);
@@ -476,7 +478,7 @@ export const PDFPageComponent: React.FC<PDFPageProps> = ({
     }
 
     const menuWidth = 224;
-    const menuHeight = hitAnn ? 320 : 220;
+    const menuHeight = pageActionsOnly ? 124 : hitAnn ? 320 : 220;
     setContextMenuPosition({
       x: Math.max(8, Math.min(event.clientX, window.innerWidth - menuWidth - 8)),
       y: Math.max(8, Math.min(event.clientY, window.innerHeight - menuHeight - 8)),
@@ -538,6 +540,7 @@ export const PDFPageComponent: React.FC<PDFPageProps> = ({
     >
       {!isReadOnly && enablePageContextMenu && contextMenuPosition && (
         <PageContextMenu
+          pageActionsOnly={pageActionsOnly}
           position={contextMenuPosition}
           hasSelectedText={Boolean(contextMenuSelectedText || window.getSelection()?.toString().trim())}
           hitAnnotation={contextMenuHitAnnotation}
