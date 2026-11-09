@@ -15,6 +15,7 @@ import { AiChatMessageItem } from './AiChatMessageItem';
 import { AiChatPromptInput } from './AiChatPromptInput';
 import { AiSessionDrawer } from './AiSessionDrawer';
 import { findOriginatingPrompt } from '../../lib/ai/aiResponseDrag';
+import type { AiNotebookContext } from '../../lib/ai/notebookActions';
 
 interface AiChatPanelProps {
   isOpen: boolean;
@@ -27,6 +28,9 @@ interface AiChatPanelProps {
   onStartSnipCapture?: () => void;
   onAttachSelectedText?: () => void;
   onRemoveAttachment?: (id: string) => void;
+  notebook?: AiNotebookContext;
+  onAppendToNotebook?: (docKey: string, text: string) => string;
+  isDocumentLoading?: boolean;
 }
 
 const QUICK_QUESTIONS = [
@@ -47,6 +51,9 @@ export const AiChatPanel: React.FC<AiChatPanelProps> = ({
   onStartSnipCapture,
   onAttachSelectedText,
   onRemoveAttachment,
+  notebook,
+  onAppendToNotebook,
+  isDocumentLoading,
 }) => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -62,7 +69,7 @@ export const AiChatPanel: React.FC<AiChatPanelProps> = ({
     renameSession,
     sendMessage,
     cancelActiveRequest,
-  } = useAiChat({ pdfDoc, docInfo, currentPage });
+  } = useAiChat({ pdfDoc, docInfo, currentPage, notebook, onAppendToNotebook, isDocumentLoading });
 
   // Scroll strictly within messages container without touching window or outer layout
   useEffect(() => {
@@ -159,7 +166,7 @@ export const AiChatPanel: React.FC<AiChatPanelProps> = ({
                 AI Reading Companion
               </h4>
               <p className="text-[11px] text-zinc-400 mb-4 max-w-[240px] leading-relaxed">
-                Ask questions, generate summaries, or analyze complex formulas with context from your PDF.
+                Ask questions, explain your PDF, or ask me to add a summary to your notebook.
               </p>
 
               {/* Context Pill */}

@@ -149,6 +149,10 @@ export function useAnnotations(docKey: string, docInfo?: DocumentInfo | null) {
     pushState(updated);
   }, [pushState]);
 
+  const addAnnotations = useCallback((items: Annotation[]) => {
+    if (items.length) pushState([...annotationsRef.current, ...items]);
+  }, [pushState]);
+
   const updateAnnotation = useCallback((id: string, updates: Partial<Annotation>) => {
     const updated = annotationsRef.current.map((item) =>
       item.id === id ? ({ ...item, ...updates } as Annotation) : item
@@ -272,6 +276,7 @@ export function useAnnotations(docKey: string, docInfo?: DocumentInfo | null) {
     annotations,
     saveStatus,
     addAnnotation,
+    addAnnotations,
     updateAnnotation,
     deleteAnnotation,
     clearAllAnnotationsForPage,

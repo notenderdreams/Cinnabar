@@ -4,6 +4,7 @@ import { Sidebar } from './components/layout/Sidebar';
 import { Toolbar } from './components/layout/Toolbar';
 import { PDFViewer } from './components/viewer/PDFViewer';
 import { NotePanel } from './components/viewer/NotePanel';
+import { appendAiNotebookText, getAiNotebookContext } from './lib/ai/notebookActions';
 import { notebookKey, loadNotePageCount, notePageCount, editNotePages } from './lib/notes';
 import { Dashboard } from './components/dashboard/Dashboard';
 import { ColorThemeModal } from './components/modals/ColorThemeModal';
@@ -156,6 +157,8 @@ export function App() {
     setNotebook({ key: notesKey, count: loadNotePageCount(notesKey), page: 1 });
   }
   const notesCount = notePageCount(notebook.count, notes.annotations);
+  const aiNotebook = useMemo(() => notesKey ? getAiNotebookContext(notesKey, notesCount, notes.annotations) : undefined,
+    [notesKey, notesCount, notes.annotations]);
   const navigateNotePage = (page: number) => {
     const target = Math.max(1, Math.min(notesCount, page));
     setNotePaneActive(true);
@@ -1522,6 +1525,23 @@ export function App() {
               pdfDoc={pdfDoc}
               docInfo={docInfo}
               currentPage={currentPage}
+              notebook={aiNotebook}
+              isDocumentLoading={isLoading}
+              onAppendToNotebook={(key, text) => {
+                if (key !== activeNotesKey.current) throw new Error('The document changed. No notes were added.');
+                const result = appendAiNotebookText(notes.annotations, notesCount, text);
+                localStorage.setItem(`${key}:pages`, String(result.count));
+                notes.addAnnotations(result.annotations);
+                setNotebook({ key, count: result.count, page: result.firstPage });
+                setNoteNavRequest({ page: result.firstPage, timestamp: Date.now() });
+                closeCompanionPdf();
+                setViewMode('continuous');
+                saveViewMode('continuous');
+                setIsNoteMode(true);
+                setNotePaneActive(true);
+                setSelectedAnnotationId(result.annotations[0].id);
+                return result.annotations.length === 1 ? `Added to note page ${result.firstPage}.` : `Added to note pages ${result.firstPage}–${result.count}.`;
+              }}
               isSnipCapturing={activeTool === 'snip' && snipTarget === 'ai-prompt'}
               pendingAttachments={pendingAiAttachments}
               onStartSnipCapture={handleStartSnipCaptureForAi}

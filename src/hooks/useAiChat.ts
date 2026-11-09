@@ -3,6 +3,7 @@ import type { PDFDocumentProxy } from 'pdfjs-dist';
 import type { AiChatAttachment, AiChatMessage, AiChatSession, DocumentInfo } from '../lib/types/index';
 import { extractPageText } from '../lib/pdf/pageExtractor';
 import { runAiExplanation, cancelAiExplanation, isTauri } from '../utils/tauriBridge';
+import { notebookInstructions, parseNotebookReply, type AiNotebookContext } from '../lib/ai/notebookActions';
 
 const STORAGE_KEY = 'cinnabar_ai_chat_sessions';
 
@@ -45,9 +46,12 @@ interface UseAiChatOptions {
   pdfDoc?: PDFDocumentProxy | null;
   docInfo?: DocumentInfo | null;
   currentPage: number;
+  notebook?: AiNotebookContext;
+  onAppendToNotebook?: (docKey: string, text: string) => string;
+  isDocumentLoading?: boolean;
 }
 
-export function useAiChat({ pdfDoc, docInfo, currentPage }: UseAiChatOptions) {
+export function useAiChat({ pdfDoc, docInfo, currentPage, notebook, onAppendToNotebook, isDocumentLoading = false }: UseAiChatOptions) {
   const [sessions, setSessions] = useState<AiChatSession[]>(() => {
     const persisted = loadPersistedSessions();
     if (persisted.length > 0) return persisted;
@@ -68,6 +72,18 @@ export function useAiChat({ pdfDoc, docInfo, currentPage }: UseAiChatOptions) {
 
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const activeRequestIdRef = useRef<string | null>(null);
+  const notebookRef = useRef({ notebook, onAppendToNotebook, isDocumentLoading });
+  notebookRef.current = { notebook, onAppendToNotebook, isDocumentLoading };
+  const documentIdentity = notebook?.docKey ?? docInfo?.filePath ?? docInfo?.fingerprint ?? docInfo?.fileName;
+
+  useEffect(() => {
+    setIsLoading(false);
+    return () => {
+      const requestId = activeRequestIdRef.current;
+      activeRequestIdRef.current = null;
+      if (requestId) void cancelAiExplanation(requestId);
+    };
+  }, [documentIdentity, isDocumentLoading]);
 
   // Sync sessions to localStorage
   useEffect(() => {
@@ -151,7 +167,9 @@ export function useAiChat({ pdfDoc, docInfo, currentPage }: UseAiChatOptions) {
     ) => {
       const trimmed = text.trim();
       const attachments = options?.attachments || [];
-      if ((!trimmed && attachments.length === 0) || !activeSession || isLoading) return;
+      if ((!trimmed && attachments.length === 0) || !activeSession || isLoading || activeRequestIdRef.current) return;
+      if (notebookRef.current.isDocumentLoading) return;
+      const requestNotebook = notebookRef.current.notebook;
 
       const targetPage = options?.pageNumber ?? currentPage;
       const userMessage: AiChatMessage = {
@@ -211,7 +229,17 @@ export function useAiChat({ pdfDoc, docInfo, currentPage }: UseAiChatOptions) {
 
         // Image attachment (e.g. from snip capture)
         const imageAttachment = attachments.find((a) => a.type === 'image' && a.dataUrl);
-        const pngDataUrl = imageAttachment?.dataUrl || '';
+        // The CLI image argument still requires a valid PNG for text-only chats.
+        let pngDataUrl = imageAttachment?.dataUrl;
+        if (!pngDataUrl) {
+          const placeholder = document.createElement('canvas');
+          placeholder.width = placeholder.height = 1;
+          const context = placeholder.getContext('2d');
+          if (!context) throw new Error('Could not prepare the AI request image.');
+          context.fillStyle = '#ffffff';
+          context.fillRect(0, 0, 1, 1);
+          pngDataUrl = placeholder.toDataURL('image/png');
+        }
 
         // Build conversation history prompt
         const historyText = activeSession.messages
@@ -223,6 +251,7 @@ export function useAiChat({ pdfDoc, docInfo, currentPage }: UseAiChatOptions) {
         const fullPrompt = [
           `You are an expert AI reading assistant for Cinnabar PDF reader.`,
           `Document: ${docName}`,
+          requestNotebook ? notebookInstructions(requestNotebook) : null,
           options?.includePageContext ? `Active Page: ${targetPage}` : null,
           quoteContext || null,
           imageAttachment ? `[Note: A cropped region/diagram from Page ${imageAttachment.pageNumber ?? targetPage} is attached as an image]` : null,
@@ -230,12 +259,14 @@ export function useAiChat({ pdfDoc, docInfo, currentPage }: UseAiChatOptions) {
           historyText ? `\nRecent Conversation:\n${historyText}` : null,
           `\nUser: ${trimmed || 'Please analyze this attached snippet.'}`,
           `\nAssistant: Respond clearly with structured Markdown and concise explanations. Separate paragraphs, headings, and lists with blank lines. Use bullets or tables for descriptive comparisons. Reserve LaTeX for mathematical expressions: use $...$ inline, and put each $$ display delimiter on its own line with the formula between them.`,
+          requestNotebook ? 'Final response format: a JSON object with message (Markdown string) and notebookText (plain text string or null). Encode this JSON in the explanation string if required by the CLI output schema.' : null,
         ]
           .filter(Boolean)
           .join('\n');
 
         let assistantContent = '';
         let assistantError: string | undefined = undefined;
+        if (activeRequestIdRef.current !== requestId) return;
 
         if (isTauri()) {
           const result = await runAiExplanation({
@@ -243,9 +274,21 @@ export function useAiChat({ pdfDoc, docInfo, currentPage }: UseAiChatOptions) {
             prompt: fullPrompt,
             pngDataUrl,
           });
+          if (activeRequestIdRef.current !== requestId) return;
 
           if (result.ok) {
-            assistantContent = result.response;
+            if (requestNotebook) {
+              const reply = parseNotebookReply(result.response);
+              assistantContent = reply.message;
+              if (reply.notebookText !== null) {
+                const current = notebookRef.current;
+                if (current.isDocumentLoading || current.notebook?.docKey !== requestNotebook.docKey || !current.onAppendToNotebook) {
+                  throw new Error('The document changed. No notes were added.');
+                }
+                const receipt = current.onAppendToNotebook(requestNotebook.docKey, reply.notebookText);
+                assistantContent += `\n\n*${receipt}*`;
+              }
+            } else assistantContent = result.response;
           } else {
             assistantError = result.message || 'Failed to get AI response.';
             assistantContent = `⚠️ **Error**: ${assistantError}\n\n*Make sure a local CLI (like Codex or Antigravity) is selected in Settings > AI Assistant.*`;
@@ -256,7 +299,10 @@ export function useAiChat({ pdfDoc, docInfo, currentPage }: UseAiChatOptions) {
           assistantContent = `### Analysis & Explanation\n\nRegarding your question about **${docName}**${
             options?.includePageContext ? ` (Page ${targetPage})` : ''
           }:\n\n> "${trimmed}"\n\nHere is a structured breakdown:\n\n1. **Core Concept**: The key takeaway highlights the primary mechanism discussed in this section.\n2. **Mathematical Formulation**:\n   $$\n   \\mathcal{L}(\\theta) = \\mathbb{E}_{x \\sim p_{data}} \\left[ \\log D_\\theta(x) \\right] + \\lambda \\cdot \\Omega(\\theta)\n   $$\n3. **Practical Application**: You can reference this directly in your annotations or extract snippets for further review.\n\n*Note: Running in browser dev mode. In desktop app, this queries your local CLI engine.*`;
+          if (requestNotebook) assistantContent += '\n\n*Notebook writing is available with the desktop AI. Preview replies do not change your notes.*';
         }
+
+        if (activeRequestIdRef.current !== requestId) return;
 
         const assistantMessage: AiChatMessage = {
           id: `msg_${Date.now()}_a`,
@@ -278,6 +324,7 @@ export function useAiChat({ pdfDoc, docInfo, currentPage }: UseAiChatOptions) {
           })
         );
       } catch (err) {
+        if (activeRequestIdRef.current !== requestId) return;
         const errorText = err instanceof Error ? err.message : String(err);
         const errorMessage: AiChatMessage = {
           id: `msg_${Date.now()}_err`,
@@ -299,8 +346,10 @@ export function useAiChat({ pdfDoc, docInfo, currentPage }: UseAiChatOptions) {
           })
         );
       } finally {
-        activeRequestIdRef.current = null;
-        setIsLoading(false);
+        if (activeRequestIdRef.current === requestId) {
+          activeRequestIdRef.current = null;
+          setIsLoading(false);
+        }
       }
     },
     [activeSession, currentPage, docInfo?.fileName, isLoading, pdfDoc]
