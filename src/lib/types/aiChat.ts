@@ -10,6 +10,7 @@ export interface AiChatAttachment {
 
 export interface AiChatMessage {
   id: string;
+  docKey?: string;
   role: 'user' | 'assistant' | 'system';
   content: string;
   timestamp: number;

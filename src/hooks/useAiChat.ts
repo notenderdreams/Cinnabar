@@ -4,6 +4,7 @@ import type { AiChatAttachment, AiChatMessage, AiChatSession, DocumentInfo } fro
 import { extractPageText } from '../lib/pdf/pageExtractor';
 import { runAiExplanation, cancelAiExplanation, isTauri } from '../utils/tauriBridge';
 import { notebookInstructions, parseNotebookReply, type AiNotebookContext } from '../lib/ai/notebookActions';
+import { getChatRetry } from '../lib/ai/chatRetry';
 
 const STORAGE_KEY = 'cinnabar_ai_chat_sessions';
 
@@ -163,17 +164,21 @@ export function useAiChat({ pdfDoc, docInfo, currentPage, notebook, onAppendToNo
         includePageContext?: boolean;
         pageNumber?: number;
         attachments?: AiChatAttachment[];
+        retryMessageId?: string;
       }
     ) => {
       const trimmed = text.trim();
       const attachments = options?.attachments || [];
       if ((!trimmed && attachments.length === 0) || !activeSession || isLoading || activeRequestIdRef.current) return;
       if (notebookRef.current.isDocumentLoading) return;
+      const retry = options?.retryMessageId ? getChatRetry(activeSession.messages, options.retryMessageId, documentIdentity) : null;
+      if (options?.retryMessageId && !retry) return;
       const requestNotebook = notebookRef.current.notebook;
 
       const targetPage = options?.pageNumber ?? currentPage;
       const userMessage: AiChatMessage = {
         id: `msg_${Date.now()}_u`,
+        docKey: documentIdentity,
         role: 'user',
         content: trimmed || (attachments.length > 0 ? '(Attached snippet/reference)' : ''),
         timestamp: Date.now(),
@@ -192,7 +197,7 @@ export function useAiChat({ pdfDoc, docInfo, currentPage, notebook, onAppendToNo
         : activeSession.title;
 
       // Update session with user message
-      setSessions((prev) =>
+      if (!retry) setSessions((prev) =>
         prev.map((s) => {
           if (s.id !== activeSession.id) return s;
           return {
@@ -242,7 +247,7 @@ export function useAiChat({ pdfDoc, docInfo, currentPage, notebook, onAppendToNo
         }
 
         // Build conversation history prompt
-        const historyText = activeSession.messages
+        const historyText = (retry?.history ?? activeSession.messages)
           .slice(-6)
           .map((m) => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`)
           .join('\n\n');
@@ -305,7 +310,8 @@ export function useAiChat({ pdfDoc, docInfo, currentPage, notebook, onAppendToNo
         if (activeRequestIdRef.current !== requestId) return;
 
         const assistantMessage: AiChatMessage = {
-          id: `msg_${Date.now()}_a`,
+          id: options?.retryMessageId ?? `msg_${Date.now()}_a`,
+          docKey: documentIdentity,
           role: 'assistant',
           content: assistantContent,
           timestamp: Date.now(),
@@ -319,7 +325,7 @@ export function useAiChat({ pdfDoc, docInfo, currentPage, notebook, onAppendToNo
             return {
               ...s,
               updatedAt: Date.now(),
-              messages: [...s.messages, assistantMessage],
+              messages: retry ? s.messages.map((message) => message.id === assistantMessage.id ? assistantMessage : message) : [...s.messages, assistantMessage],
             };
           })
         );
@@ -327,7 +333,8 @@ export function useAiChat({ pdfDoc, docInfo, currentPage, notebook, onAppendToNo
         if (activeRequestIdRef.current !== requestId) return;
         const errorText = err instanceof Error ? err.message : String(err);
         const errorMessage: AiChatMessage = {
-          id: `msg_${Date.now()}_err`,
+          id: options?.retryMessageId ?? `msg_${Date.now()}_err`,
+          docKey: documentIdentity,
           role: 'assistant',
           content: `⚠️ **Request failed**: ${errorText}`,
           timestamp: Date.now(),
@@ -341,7 +348,7 @@ export function useAiChat({ pdfDoc, docInfo, currentPage, notebook, onAppendToNo
             return {
               ...s,
               updatedAt: Date.now(),
-              messages: [...s.messages, errorMessage],
+              messages: retry ? s.messages.map((message) => message.id === errorMessage.id ? errorMessage : message) : [...s.messages, errorMessage],
             };
           })
         );
@@ -352,8 +359,20 @@ export function useAiChat({ pdfDoc, docInfo, currentPage, notebook, onAppendToNo
         }
       }
     },
-    [activeSession, currentPage, docInfo?.fileName, isLoading, pdfDoc]
+    [activeSession, currentPage, docInfo?.fileName, isLoading, pdfDoc, documentIdentity]
   );
+
+  const retryMessage = useCallback((messageId: string) => {
+    if (!activeSession) return;
+    const retry = getChatRetry(activeSession.messages, messageId, documentIdentity);
+    if (!retry) return;
+    return sendMessage(retry.user.content === '(Attached snippet/reference)' ? '' : retry.user.content, {
+      includePageContext: retry.user.pageNumber !== undefined,
+      pageNumber: retry.user.pageNumber,
+      attachments: retry.user.attachments,
+      retryMessageId: messageId,
+    });
+  }, [activeSession, documentIdentity, sendMessage]);
 
   return {
     sessions,
@@ -366,6 +385,8 @@ export function useAiChat({ pdfDoc, docInfo, currentPage, notebook, onAppendToNo
     renameSession,
     clearCurrentSession,
     sendMessage,
+    retryMessage,
+    canRetryMessage: (messageId: string) => Boolean(activeSession && !isDocumentLoading && getChatRetry(activeSession.messages, messageId, documentIdentity)),
     cancelActiveRequest,
   };
 }

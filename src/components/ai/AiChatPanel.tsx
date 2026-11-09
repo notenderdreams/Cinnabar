@@ -68,6 +68,8 @@ export const AiChatPanel: React.FC<AiChatPanelProps> = ({
     deleteSession,
     renameSession,
     sendMessage,
+    retryMessage,
+    canRetryMessage,
     cancelActiveRequest,
   } = useAiChat({ pdfDoc, docInfo, currentPage, notebook, onAppendToNotebook, isDocumentLoading });
 
@@ -200,6 +202,8 @@ export const AiChatPanel: React.FC<AiChatPanelProps> = ({
                 <AiChatMessageItem
                   key={message.id}
                   message={message}
+                  onRetry={canRetryMessage(message.id) ? () => { void retryMessage(message.id); } : undefined}
+                  isLoading={isLoading}
                   chatPrompt={message.role === 'assistant' ? findOriginatingPrompt(activeSession.messages, index) : undefined}
                 />
               ))}

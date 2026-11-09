@@ -2086,3 +2086,16 @@
 .note-add-page { display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin: 4px auto; border: 2px dashed var(--muted-foreground); border-radius: 2px; background: transparent; color: var(--muted-foreground); font-size: 14px; cursor: pointer; }
 .note-add-page:hover { border-color: var(--primary); color: var(--primary); }
 .note-add-page:focus-visible, .note-panel-paper:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; }
+.ai-chat-retry {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px;
+  border-radius: 4px;
+  color: var(--muted-foreground);
+  opacity: 0;
+  transition: opacity 150ms;
+}
+.group:hover .ai-chat-retry, .ai-chat-retry:focus-visible { opacity: 1; }
+.ai-chat-retry:hover:not(:disabled) { background: var(--hover); color: var(--foreground); }
+.ai-chat-retry:disabled { opacity: .5; cursor: default; }
+.ai-chat-retry:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }

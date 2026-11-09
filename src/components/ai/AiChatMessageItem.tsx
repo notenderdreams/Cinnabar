@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Copy, Check, AlertCircle, FileText, Quote, GripVertical } from 'lucide-react';
+import { Copy, Check, AlertCircle, FileText, Quote, GripVertical, RotateCcw } from 'lucide-react';
 import { SparkleIcon } from '../icons/SparkleIcon';
 import type { AiChatMessage } from '../../lib/types/index';
 import { AiResponseRenderer } from '../annotations/AiResponseRenderer';
@@ -16,9 +16,11 @@ interface AiChatMessageItemProps {
   message: AiChatMessage;
   /** The user question that produced this assistant response, for pinning on a page. */
   chatPrompt?: string;
+  onRetry?: () => void;
+  isLoading?: boolean;
 }
 
-export const AiChatMessageItem: React.FC<AiChatMessageItemProps> = React.memo(({ message, chatPrompt }) => {
+export const AiChatMessageItem: React.FC<AiChatMessageItemProps> = React.memo(({ message, chatPrompt, onRetry, isLoading = false }) => {
   const [copied, setCopied] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [isDroppable, setIsDroppable] = useState(false);
@@ -195,6 +197,20 @@ export const AiChatMessageItem: React.FC<AiChatMessageItemProps> = React.memo(({
           >
             {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
           </button>
+          {message.status === 'error' && onRetry && (
+            <button
+              type="button"
+              className="ai-chat-retry"
+              onClick={onRetry}
+              onPointerDown={(event) => event.stopPropagation()}
+              onMouseDown={(event) => event.stopPropagation()}
+              disabled={isLoading}
+              title="Retry response"
+              aria-label="Retry response"
+            >
+              <RotateCcw className="w-3.5 h-3.5" aria-hidden="true" />
+            </button>
+          )}
         </div>
       </div>
 
