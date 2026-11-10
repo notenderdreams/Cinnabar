@@ -1,0 +1,19 @@
+{
+  "type": "object",
+  "properties": {
+    "message": { "type": "string" },
+    "notebookText": { "type": ["string", "null"] },
+    "notebookImage": {
+      "type": ["object", "null"],
+      "properties": {
+        "attachmentId": { "type": "string" },
+        "pageNumber": { "type": ["integer", "null"] },
+        "placement": { "type": "string", "enum": ["after_title", "end"] }
+      },
+      "required": ["attachmentId", "pageNumber", "placement"],
+      "additionalProperties": false
+    }
+  },
+  "required": ["message", "notebookText", "notebookImage"],
+  "additionalProperties": false
+}

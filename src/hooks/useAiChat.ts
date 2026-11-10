@@ -72,6 +72,7 @@ export function useAiChat({ pdfDoc, docInfo, currentPage, notebook, onWriteNoteb
   });
 
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [retryingMessageId, setRetryingMessageId] = useState<string | null>(null);
   const activeRequestIdRef = useRef<string | null>(null);
   const notebookRef = useRef({ notebook, onWriteNotebook, isDocumentLoading });
   notebookRef.current = { notebook, onWriteNotebook, isDocumentLoading };
@@ -79,6 +80,7 @@ export function useAiChat({ pdfDoc, docInfo, currentPage, notebook, onWriteNoteb
 
   useEffect(() => {
     setIsLoading(false);
+    setRetryingMessageId(null);
     return () => {
       const requestId = activeRequestIdRef.current;
       activeRequestIdRef.current = null;
@@ -154,6 +156,7 @@ export function useAiChat({ pdfDoc, docInfo, currentPage, notebook, onWriteNoteb
     const reqId = activeRequestIdRef.current;
     activeRequestIdRef.current = null;
     setIsLoading(false);
+    setRetryingMessageId(null);
     await cancelAiExplanation(reqId);
   }, []);
 
@@ -213,6 +216,7 @@ export function useAiChat({ pdfDoc, docInfo, currentPage, notebook, onWriteNoteb
       );
 
       setIsLoading(true);
+      setRetryingMessageId(options?.retryMessageId ?? null);
       const requestId = `chat_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
       activeRequestIdRef.current = requestId;
 
@@ -369,6 +373,7 @@ export function useAiChat({ pdfDoc, docInfo, currentPage, notebook, onWriteNoteb
         if (activeRequestIdRef.current === requestId) {
           activeRequestIdRef.current = null;
           setIsLoading(false);
+          setRetryingMessageId(null);
         }
       }
     },
@@ -392,6 +397,7 @@ export function useAiChat({ pdfDoc, docInfo, currentPage, notebook, onWriteNoteb
     activeSession,
     activeSessionId,
     isLoading,
+    retryingMessageId,
     createNewSession,
     selectSession,
     deleteSession,

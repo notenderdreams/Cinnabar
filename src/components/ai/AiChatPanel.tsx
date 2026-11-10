@@ -65,6 +65,7 @@ export const AiChatPanel: React.FC<AiChatPanelProps> = ({
     activeSession,
     activeSessionId,
     isLoading,
+    retryingMessageId,
     createNewSession,
     selectSession,
     deleteSession,
@@ -200,7 +201,7 @@ export const AiChatPanel: React.FC<AiChatPanelProps> = ({
             </div>
           ) : (
             <>
-              {activeSession.messages.map((message, index) => (
+              {activeSession.messages.map((message, index) => message.id === retryingMessageId ? null : (
                 <AiChatMessageItem
                   key={message.id}
                   message={message}
