@@ -48,7 +48,7 @@ interface UseAiChatOptions {
   docInfo?: DocumentInfo | null;
   currentPage: number;
   notebook?: AiNotebookContext;
-  onAppendToNotebook?: (docKey: string, text: string) => string;
+  onAppendToNotebook?: (docKey: string, text: string, canApply: () => boolean) => Promise<string>;
   isDocumentLoading?: boolean;
 }
 
@@ -264,7 +264,7 @@ export function useAiChat({ pdfDoc, docInfo, currentPage, notebook, onAppendToNo
           historyText ? `\nRecent Conversation:\n${historyText}` : null,
           `\nUser: ${trimmed || 'Please analyze this attached snippet.'}`,
           `\nAssistant: Respond clearly with structured Markdown and concise explanations. Separate paragraphs, headings, and lists with blank lines. Use bullets or tables for descriptive comparisons. Reserve LaTeX for mathematical expressions: use $...$ inline, and put each $$ display delimiter on its own line with the formula between them.`,
-          requestNotebook ? 'Final response format: a JSON object with message (Markdown string) and notebookText (plain text string or null). Encode this JSON in the explanation string if required by the CLI output schema.' : null,
+          requestNotebook ? 'Final response format: a JSON object with message (Markdown string) and notebookText (well-formatted Markdown string or null). Encode this JSON in the explanation string if required by the CLI output schema.' : null,
         ]
           .filter(Boolean)
           .join('\n');
@@ -290,7 +290,9 @@ export function useAiChat({ pdfDoc, docInfo, currentPage, notebook, onAppendToNo
                 if (current.isDocumentLoading || current.notebook?.docKey !== requestNotebook.docKey || !current.onAppendToNotebook) {
                   throw new Error('The document changed. No notes were added.');
                 }
-                const receipt = current.onAppendToNotebook(requestNotebook.docKey, reply.notebookText);
+                const receipt = await current.onAppendToNotebook(requestNotebook.docKey, reply.notebookText,
+                  () => activeRequestIdRef.current === requestId && !notebookRef.current.isDocumentLoading && notebookRef.current.notebook?.docKey === requestNotebook.docKey);
+                if (activeRequestIdRef.current !== requestId) return;
                 assistantContent += `\n\n*${receipt}*`;
               }
             } else assistantContent = result.response;

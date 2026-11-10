@@ -1,6 +1,7 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import type { PDFDocumentProxy } from 'pdfjs-dist';
 import { pdfjsLib } from '../lib/pdf/pdfWorker';
+import { readPdfOverview, withPdfDeadline } from '../lib/pdf/documentOverview';
 import type { DocumentInfo, PDFOutlineItem, SearchMatch } from '../lib/types/index';
 import {
   loadLastPageForDoc,
@@ -25,6 +26,13 @@ export function usePDFDocument() {
   const [isSearching, setIsSearching] = useState<boolean>(false);
 
   const activeDocRef = useRef<PDFDocumentProxy | null>(null);
+  const loadingTaskRef = useRef<ReturnType<typeof pdfjsLib.getDocument> | null>(null);
+  const loadGenerationRef = useRef(0);
+  useEffect(() => () => {
+    loadGenerationRef.current += 1;
+    void loadingTaskRef.current?.destroy();
+    void activeDocRef.current?.destroy();
+  }, []);
 
   const loadPdf = useCallback(
     async (
@@ -36,6 +44,8 @@ export function usePDFDocument() {
       documentFingerprintOverride?: string,
       silent: boolean = false
     ) => {
+      const generation = ++loadGenerationRef.current;
+      if (loadingTaskRef.current) void loadingTaskRef.current.destroy();
       if (!silent) setIsLoading(true);
       setError(null);
       try {
@@ -57,17 +67,15 @@ export function usePDFDocument() {
           cMapUrl: 'https://unpkg.com/pdfjs-dist@4.0.379/cmaps/',
           cMapPacked: true,
         });
+        loadingTaskRef.current = loadingTask;
 
-        const loadedDoc = await loadingTask.promise;
+        const loadedDoc = await withPdfDeadline(loadingTask.promise, 30_000);
+        if (generation !== loadGenerationRef.current) { void loadedDoc.destroy(); return false; }
 
         const key = documentKeyOverride || `${fileName}_${loadedDoc.numPages}_${bytes.length}`;
 
-        // Fetch metadata and outline BEFORE updating any state so all document state updates synchronously and atomically together
-        const [metadata, rawOutline] = await Promise.all([
-          loadedDoc.getMetadata().catch(() => ({ info: {} })),
-          loadedDoc.getOutline().catch(() => null),
-        ]);
-        const infoObj = ((metadata as { info?: unknown })?.info || {}) as Record<string, string>;
+        const overview = await readPdfOverview(loadedDoc);
+        if (generation !== loadGenerationRef.current) { void loadedDoc.destroy(); return false; }
         const fingerprint =
           documentFingerprintOverride ||
           (loadedDoc as unknown as { fingerprint?: string }).fingerprint ||
@@ -78,37 +86,11 @@ export function usePDFDocument() {
           filePath,
           numPages: loadedDoc.numPages,
           fileSize: bytes.byteLength,
-          title: infoObj.Title || fileName,
-          author: infoObj.Author || undefined,
+          title: overview.title || fileName,
+          author: overview.author,
           libraryId: documentKeyOverride,
           fingerprint,
         };
-
-        // Outline / Table of Contents
-        const parsedOutline: PDFOutlineItem[] = [];
-        if (rawOutline && rawOutline.length > 0) {
-          for (const item of rawOutline) {
-            let pageNum = 1;
-            if (item.dest) {
-              try {
-                let explicitDest: unknown = item.dest;
-                if (typeof item.dest === 'string') {
-                  explicitDest = await loadedDoc.getDestination(item.dest);
-                }
-                if (Array.isArray(explicitDest) && explicitDest[0]) {
-                  const pageIndex = await loadedDoc.getPageIndex(
-                    explicitDest[0] as Parameters<typeof loadedDoc.getPageIndex>[0]
-                  );
-                  pageNum = pageIndex + 1;
-                }
-              } catch {}
-            }
-            parsedOutline.push({
-              title: item.title || 'Untitled Section',
-              pageNumber: pageNum,
-            });
-          }
-        }
 
         // Restore last saved page or explicit initialPageNumber
         const savedPage =
@@ -121,7 +103,7 @@ export function usePDFDocument() {
         setPdfDoc(loadedDoc);
         setDocKey(key);
         setDocInfo(nextDocInfo);
-        setOutline(parsedOutline);
+        setOutline(overview.outline);
         setCurrentPage(initialPage);
         setSearchResults([]);
         setCurrentMatchIndex(-1);
@@ -139,11 +121,16 @@ export function usePDFDocument() {
         });
         return true;
       } catch (err: unknown) {
+        if (generation !== loadGenerationRef.current) return false;
+        if (loadingTaskRef.current) void loadingTaskRef.current.destroy();
         console.error('Error loading PDF:', err);
         setError(err instanceof Error ? err.message : 'Failed to load PDF');
         return false;
       } finally {
-        if (!silent) setIsLoading(false);
+        if (generation === loadGenerationRef.current) {
+          loadingTaskRef.current = null;
+          if (!silent) setIsLoading(false);
+        }
       }
     },
     []

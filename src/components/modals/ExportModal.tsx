@@ -21,7 +21,7 @@ import {
 
 interface ExportModalProps {
   isOpen: boolean;
-  rawPdfBytes: Uint8Array | null;
+  getPdfBytes: () => Uint8Array | null;
   annotations: Annotation[];
   fileName: string;
   currentPage: number;
@@ -31,7 +31,7 @@ interface ExportModalProps {
 
 export const ExportModal: React.FC<ExportModalProps> = ({
   isOpen,
-  rawPdfBytes,
+  getPdfBytes,
   annotations,
   fileName,
   currentPage,
@@ -42,6 +42,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [mergeMode, setMergeMode] = useState<boolean>(false);
+  const rawPdfBytes = getPdfBytes();
 
   const hasOpenPdf = Boolean(rawPdfBytes);
 

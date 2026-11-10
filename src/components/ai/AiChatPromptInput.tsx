@@ -8,6 +8,7 @@ import {
   Quote,
 } from 'lucide-react';
 import type { AiChatAttachment } from '../../lib/types/index';
+import { getClipboardImageFiles } from '../../lib/ai/chatClipboard';
 
 interface AiChatPromptInputProps {
   isLoading: boolean;
@@ -15,6 +16,7 @@ interface AiChatPromptInputProps {
   isSnipCapturing?: boolean;
   pendingAttachments?: AiChatAttachment[];
   onRemoveAttachment?: (id: string) => void;
+  onPasteImages?: (files: File[]) => Promise<void>;
   onStartSnipCapture?: () => void;
   onAttachSelectedText?: () => void;
   onSendMessage: (
@@ -34,6 +36,7 @@ export const AiChatPromptInput: React.FC<AiChatPromptInputProps> = ({
   isSnipCapturing = false,
   pendingAttachments = [],
   onRemoveAttachment,
+  onPasteImages,
   onStartSnipCapture,
   onAttachSelectedText,
   onSendMessage,
@@ -41,6 +44,9 @@ export const AiChatPromptInput: React.FC<AiChatPromptInputProps> = ({
 }) => {
   const [text, setText] = useState('');
   const [includePageContext, setIncludePageContext] = useState(true);
+  const [pendingPastes, setPendingPastes] = useState(0);
+  const isPasting = pendingPastes > 0;
+  const [pasteError, setPasteError] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Auto-grow textarea height stably without jumping
@@ -64,7 +70,7 @@ export const AiChatPromptInput: React.FC<AiChatPromptInputProps> = ({
 
   const handleSubmit = () => {
     const trimmed = text.trim();
-    if ((!trimmed && pendingAttachments.length === 0) || isLoading) return;
+    if ((!trimmed && pendingAttachments.length === 0) || isLoading || isPasting) return;
     onSendMessage(trimmed, {
       includePageContext,
       pageNumber: currentPage,
@@ -76,10 +82,25 @@ export const AiChatPromptInput: React.FC<AiChatPromptInputProps> = ({
     }
   };
 
-  const canSend = text.trim().length > 0 || pendingAttachments.length > 0;
+  const canSend = !isPasting && (text.trim().length > 0 || pendingAttachments.length > 0);
 
   return (
-    <div className="border-t border-[var(--border)] bg-[var(--background)] flex flex-col shrink-0 select-none">
+    <div className="border-t border-[var(--border)] bg-[var(--background)] flex flex-col shrink-0 select-none"
+      data-ai-chat-composer
+      onPasteCapture={(event) => {
+        const files = getClipboardImageFiles(event.clipboardData);
+        if (!files.length) return;
+        event.preventDefault();
+        event.stopPropagation();
+        if (!onPasteImages) return;
+        setPendingPastes((count) => count + 1);
+        setPasteError(null);
+        void onPasteImages(files).catch((error: unknown) => {
+          setPasteError(error instanceof Error ? error.message : 'Could not attach the pasted image.');
+        }).finally(() => setPendingPastes((count) => count - 1));
+      }}>
+      {isPasting && <p role="status" className="px-3 pt-2 text-xs text-[var(--muted-foreground)]">Adding image…</p>}
+      {pasteError && <p role="alert" className="px-3 pt-2 text-xs text-red-500">{pasteError}</p>}
       {/* 1. Pending Attachments Strip (Images & Quoted text) */}
       {pendingAttachments.length > 0 && (
         <div className="px-3 pt-2 pb-1 flex flex-wrap gap-2 items-center bg-[var(--card)]/40 border-b border-[var(--border)]/50">
@@ -93,12 +114,12 @@ export const AiChatPromptInput: React.FC<AiChatPromptInputProps> = ({
                   <div className="w-7 h-7 rounded overflow-hidden bg-black/20 shrink-0 border border-white/10">
                     <img
                       src={att.dataUrl}
-                      alt="Snippet attachment"
+                      alt="Image attachment"
                       className="w-full h-full object-cover"
                     />
                   </div>
                   <span className="text-[11px] font-medium text-zinc-300">
-                    Snip P.{att.pageNumber ?? currentPage}
+                    {att.pageNumber !== undefined ? `Snip P.${att.pageNumber}` : 'Pasted image'}
                   </span>
                 </>
               ) : (

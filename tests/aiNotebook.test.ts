@@ -18,26 +18,26 @@ describe('AI notebook actions', () => {
     ]) expect(() => parseNotebookReply(value)).toThrow();
   });
 
-  test('adds editable content without covering existing text or changing its page', () => {
-    const result = appendAiNotebookText([existing], 1, 'A short summary.');
+  test('adds editable content without covering existing text or changing its page', async () => {
+    const result = await appendAiNotebookText([existing], 1, 'A short summary.');
     expect(result.firstPage).toBe(2);
     expect(result.count).toBe(2);
-    expect(result.annotations[0]).toMatchObject({ type: 'text-note', kind: 'plain', pageNumber: 2, text: 'A short summary.' });
+    expect(result.annotations[0]).toMatchObject({ type: 'text-note', kind: 'plain', format: 'markdown', pageNumber: 2, text: 'A short summary.' });
     expect(existing.text).toBe('My existing notes');
     expect(existing.pageNumber).toBe(1);
-    expect(appendAiNotebookText([existing], 3, 'Use the blank final sheet.').firstPage).toBe(3);
-    expect(appendAiNotebookText([], 1, 'First note').count).toBe(1);
+    expect((await appendAiNotebookText([existing], 3, 'Use the blank final sheet.')).firstPage).toBe(3);
+    expect((await appendAiNotebookText([], 1, 'First note')).count).toBe(1);
   });
 
-  test('paginates long text into bounded editable sheets, including long words', () => {
+  test('paginates long text into bounded editable sheets, including long words', async () => {
     const text = 'A'.repeat(10000);
-    const result = appendAiNotebookText([existing], 1, text);
+    const result = await appendAiNotebookText([existing], 1, text);
     expect(result.annotations.length).toBeGreaterThan(1);
     expect(result.count).toBe(1 + result.annotations.length);
     expect(result.annotations.map((annotation) => annotation.text.replaceAll('\n', '')).join('')).toBe(text);
     expect(result.annotations.every((annotation) => annotation.text.split('\n').length <= 34)).toBe(true);
     expect(new Set(result.annotations.map(({ id }) => id)).size).toBe(result.annotations.length);
-    expect(() => appendAiNotebookText([], 1, ' ')).toThrow();
+    expect(appendAiNotebookText([], 1, ' ')).rejects.toThrow();
   });
 
   test('provides bounded notebook reference text and requires a latest-user write request', () => {

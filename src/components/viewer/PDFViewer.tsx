@@ -38,7 +38,6 @@ interface PDFViewerProps {
   companionCurrentPage?: number;
   companionZoom?: number;
   activePane?: 'primary' | 'companion';
-  rawPdfBytes: Uint8Array | null;
   currentPage: number;
   numPages: number;
   pageNavRequest?: { page: number; timestamp: number } | null;

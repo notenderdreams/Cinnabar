@@ -1,5 +1,5 @@
 import type { Annotation, TextNoteAnnotation } from '../types';
-import { wrapTextLines } from '../annotations/textNoteRasterizer';
+import { paginateNotebookMarkdown } from './notebookMarkdown';
 
 export interface AiNotebookContext {
   docKey: string;
@@ -31,7 +31,9 @@ export function notebookInstructions(context: AiNotebookContext): string {
     'Only set notebookText when the LATEST user message explicitly asks you to add, save, or write content to their notes/notebook. Otherwise use null.',
     'Requests to explain, summarize, draft notes in chat, or discuss the notebook do not authorize writing to it.',
     'For requests like "add that to notes", use the relevant recent answer. Preserve existing notes; appending is your only notebook operation.',
-    'Notebook text must be plain text, with readable headings and paragraphs, at most 20000 characters. The app handles placement and pagination.',
+    'Write notebookText as well-structured Markdown, at most 20000 characters. Start with one short # title, followed by a short overview, then ## sections and concise bullet or numbered lists.',
+    'Use **bold** for key terms, > blockquotes for useful takeaways or cautions, and compact tables only when comparing information. Keep paragraphs short and use whitespace thoughtfully. Do not output one long text block.',
+    'Use $...$ for inline formulas and $$ on separate lines for display formulas. The app renders the formatting and handles pagination.',
     'Return ONLY a JSON object with exactly these fields: {"message":"Your Markdown chat reply","notebookText":null}. Replace null with the note text string when authorized.',
     'If the CLI requires an explanation string, put this JSON object encoded as a string inside explanation.',
     'Do not claim the notebook was changed: the app executes the action and adds a receipt after it succeeds.',
@@ -54,19 +56,20 @@ export function parseNotebookReply(response: string): AiNotebookReply {
 }
 
 /** Use the final sheet only if empty; existing writing and cutouts are never covered. */
-export function appendAiNotebookText(annotations: Annotation[], pageCount: number, text: string) {
+export async function appendAiNotebookText(annotations: Annotation[], pageCount: number, text: string) {
   if (!text.trim() || text.length > MAX_NOTE_LENGTH) throw new Error('Note text must contain 1–20000 characters.');
-  const canvas = typeof document !== 'undefined' ? document.createElement('canvas') : null;
-  const context = canvas?.getContext('2d');
-  if (context) context.font = '14px sans-serif';
-  const lines = wrapTextLines(text.replace(/\r\n?/g, '\n'), 475, (line) => context?.measureText(line).width ?? [...line].length * 8);
+  const markdown = text.replace(/\r\n?/g, '\n');
+  const pages = typeof document === 'undefined'
+    ? paginateNotebookMarkdown(markdown, (content) => Math.ceil(content.length / 55) * 20 + content.split('\n').length * 8)
+    : await (await import('../annotations/notebookRendering')).layoutNotebookMarkdown(markdown);
+  if (!pages.length) throw new Error('The note contains no visible content.');
   const firstPage = annotations.some((annotation) => annotation.pageNumber === pageCount) ? pageCount + 1 : pageCount;
   const notes: TextNoteAnnotation[] = [];
-  for (let start = 0; start < lines.length; start += 34) {
+  for (const page of pages) {
     notes.push({
       id: crypto.randomUUID(), type: 'text-note', kind: 'plain', pageNumber: firstPage + notes.length,
-      x: .08, y: .08, width: .84, text: lines.slice(start, start + 34).join('\n'),
-      color: '#111827', fontSize: 14, fontFamily: 'sans', createdAt: Date.now(),
+      x: .08, y: .08, width: .84, text: page, format: 'markdown',
+      color: '#243247', fontSize: 13, fontFamily: 'sans', createdAt: Date.now(),
     });
   }
   return { annotations: notes, count: firstPage + notes.length - 1, firstPage };

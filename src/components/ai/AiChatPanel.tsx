@@ -28,8 +28,9 @@ interface AiChatPanelProps {
   onStartSnipCapture?: () => void;
   onAttachSelectedText?: () => void;
   onRemoveAttachment?: (id: string) => void;
+  onPasteImages?: (files: File[]) => Promise<void>;
   notebook?: AiNotebookContext;
-  onAppendToNotebook?: (docKey: string, text: string) => string;
+  onAppendToNotebook?: (docKey: string, text: string, canApply: () => boolean) => Promise<string>;
   isDocumentLoading?: boolean;
 }
 
@@ -51,6 +52,7 @@ export const AiChatPanel: React.FC<AiChatPanelProps> = ({
   onStartSnipCapture,
   onAttachSelectedText,
   onRemoveAttachment,
+  onPasteImages,
   notebook,
   onAppendToNotebook,
   isDocumentLoading,
@@ -228,6 +230,7 @@ export const AiChatPanel: React.FC<AiChatPanelProps> = ({
           onStartSnipCapture={onStartSnipCapture}
           onAttachSelectedText={onAttachSelectedText}
           onRemoveAttachment={onRemoveAttachment}
+          onPasteImages={onPasteImages}
           onSendMessage={sendMessage}
           onCancel={cancelActiveRequest}
         />

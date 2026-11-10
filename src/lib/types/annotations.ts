@@ -85,6 +85,8 @@ export interface TextNoteAnnotation {
   pageNumber: number;
   type: 'text-note';
   kind?: 'plain' | 'sticky';
+  /** Absent on existing notes, which retain their original plain-text rendering. */
+  format?: 'plain' | 'markdown';
   x: number; // Normalized 0..1
   y: number; // Normalized 0..1
   width?: number; // Normalized 0..1

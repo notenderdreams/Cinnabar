@@ -2099,3 +2099,74 @@
 .ai-chat-retry:hover:not(:disabled) { background: var(--hover); color: var(--foreground); }
 .ai-chat-retry:disabled { opacity: .5; cursor: default; }
 .ai-chat-retry:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+/* Notebook paper has its own typography, independent of the app chrome theme. */
+.notebook-document {
+  display: flow-root;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: 1.7;
+  letter-spacing: 0;
+  overflow-wrap: anywhere;
+  user-select: text;
+}
+.notebook-document > :first-child { margin-top: 0; }
+.notebook-document > :last-child { margin-bottom: 0; }
+.notebook-document h1 {
+  margin: 0 0 .65em;
+  font-family: Georgia, Cambria, serif;
+  font-size: 2.3em;
+  font-weight: 600;
+  line-height: 1.16;
+  letter-spacing: -.035em;
+  color: #14253c;
+}
+.notebook-document h1 + p { color: #64748b; font-size: 1.05em; }
+.notebook-document h2 {
+  margin: 1.8em 0 .75em;
+  padding-bottom: .5em;
+  border-bottom: 1px solid #dce5ef;
+  font-size: 1.03em;
+  font-weight: 700;
+  line-height: 1.4;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: #2563a6;
+}
+.notebook-document h3, .notebook-document h4 {
+  margin: 1.25em 0 .5em;
+  font-size: 1.05em;
+  font-weight: 650;
+  line-height: 1.4;
+  color: #203851;
+}
+.notebook-document p { margin: 0 0 .9em; }
+.notebook-document strong { font-weight: 700; color: #172d45; }
+.notebook-document em { font-style: italic; }
+.notebook-document ul, .notebook-document ol { margin: .7em 0 1.15em; padding-left: 1.5em; }
+.notebook-document ul { list-style: disc; }
+.notebook-document ol { list-style: decimal; }
+.notebook-document li { padding-left: .25em; margin: .4em 0; }
+.notebook-document li::marker { color: #3872b1; font-weight: 650; }
+.notebook-document li > p { margin-bottom: .35em; }
+.notebook-document li > ul, .notebook-document li > ol { margin: .3em 0; }
+.notebook-document blockquote {
+  margin: 1.15em 0;
+  padding: .9em 1.1em;
+  background: #edf4fc;
+  border-left: 3px solid #4b83be;
+  border-radius: 0 6px 6px 0;
+  color: #294967;
+}
+.notebook-document blockquote > :last-child { margin-bottom: 0; }
+.notebook-document table { width: 100%; margin: 1em 0; border-collapse: collapse; table-layout: fixed; font-size: .92em; }
+.notebook-document th, .notebook-document td { padding: .65em .8em; border: 1px solid #dce5ef; text-align: left; vertical-align: top; }
+.notebook-document th { background: #f0f4f8; font-weight: 650; color: #203851; }
+.notebook-document tbody tr:nth-child(even) { background: #f8fafc; }
+.notebook-document code { font-family: var(--font-mono); font-size: .88em; background: #eef2f6; border-radius: 3px; padding: .1em .3em; }
+.notebook-document pre { margin: 1em 0; padding: 1em; border: 1px solid #dce5ef; border-radius: 6px; background: #f5f7fa; white-space: pre-wrap; }
+.notebook-document pre code { background: none; padding: 0; }
+.notebook-document hr { margin: 1.5em 0; border: 0; border-top: 1px solid #dce5ef; }
+.notebook-document a { color: #2563a6; text-decoration: underline; text-underline-offset: 2px; }
+.notebook-document .katex-display { margin: 1em 0; max-width: 100%; overflow-x: auto; overflow-y: hidden; }
+.notebook-document .katex { font-size: 1.05em; }
+.notebook-document .notebook-image-caption { color: #64748b; font-style: italic; }

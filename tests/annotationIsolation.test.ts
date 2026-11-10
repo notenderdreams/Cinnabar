@@ -182,11 +182,11 @@ describe('Annotation Isolation between PDFs', () => {
     // Initial docKey must not be hardcoded to 'sample'
     expect(hookSource).not.toContain("useState<string>('sample')");
 
-    // Promise.all must fetch metadata and outline before setting state
-    const promiseAllIndex = hookSource.indexOf('Promise.all([');
+    // The bounded overview read must complete before committing document identity.
+    const overviewIndex = hookSource.indexOf('await readPdfOverview(loadedDoc)');
     const setDocKeyIndex = hookSource.indexOf('setDocKey(key)');
-    expect(promiseAllIndex).toBeGreaterThan(-1);
+    expect(overviewIndex).toBeGreaterThan(-1);
     expect(setDocKeyIndex).toBeGreaterThan(-1);
-    expect(promiseAllIndex).toBeLessThan(setDocKeyIndex);
+    expect(overviewIndex).toBeLessThan(setDocKeyIndex);
   });
 });

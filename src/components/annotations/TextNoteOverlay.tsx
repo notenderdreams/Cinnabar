@@ -3,6 +3,7 @@ import { Trash2, GripHorizontal, Edit3, Palette } from 'lucide-react';
 import type { TextNoteAnnotation, ReadingTheme, ToolType } from '../../lib/types/index';
 import { focusWithoutMovingViewer, keepViewerPositionAfter } from '../../lib/pdf/viewerPosition';
 import { TextFormattingToolbar } from './TextFormattingToolbar';
+import { NotebookContent } from './NotebookContent';
 
 interface TextNoteOverlayProps {
   annotation: TextNoteAnnotation;
@@ -226,7 +227,9 @@ export const TextNoteOverlay: React.FC<TextNoteOverlayProps> = ({
   };
 
   // Scaled font sizes matching relative highlights behavior
-  const scaledPlainFontSize = Math.max(6, Math.round((annotation.fontSize || 14) * zoomScale));
+  const scaledPlainFontSize = annotation.format === 'markdown'
+    ? (annotation.fontSize || 13) * zoomScale
+    : Math.max(6, Math.round((annotation.fontSize || 14) * zoomScale));
   const plainLineHeight = Math.round(scaledPlainFontSize * 1.4);
 
   if (annotation.kind === 'plain') {
@@ -316,7 +319,7 @@ export const TextNoteOverlay: React.FC<TextNoteOverlayProps> = ({
             onChange={handleTextChange}
             onBlur={handleSaveEdit}
             placeholder="Type text..."
-            aria-label="Edit plain text"
+            aria-label={annotation.format === 'markdown' ? 'Edit formatted note' : 'Edit plain text'}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
                 e.preventDefault();
@@ -337,14 +340,15 @@ export const TextNoteOverlay: React.FC<TextNoteOverlayProps> = ({
           />
         ) : (
           <div
-            className={`cursor-grab whitespace-pre-wrap break-words leading-relaxed active:cursor-grabbing p-0.5 select-text ${fontClass} ${alignClass}`}
+            className={`cursor-grab ${annotation.format === 'markdown' ? 'notebook-note-content' : 'whitespace-pre-wrap p-0.5'} break-words leading-relaxed active:cursor-grabbing select-text ${fontClass} ${alignClass}`}
             style={{
               color: annotation.color || '#000000',
               fontSize: `${scaledPlainFontSize}px`,
               lineHeight: 1.4,
             }}
           >
-            {annotation.text || <span className="opacity-40 italic">Empty text</span>}
+            {annotation.format === 'markdown' ? <NotebookContent text={annotation.text} />
+              : annotation.text || <span className="opacity-40 italic">Empty text</span>}
           </div>
         )}
       </div>

@@ -223,6 +223,10 @@ export async function rasterizePlainText(
   if (typeof document === 'undefined' || typeof document.createElement !== 'function') {
     return null;
   }
+  if (annotation.format === 'markdown') {
+    const { rasterizeNotebookNote } = await import('./notebookRendering');
+    return rasterizeNotebookNote(annotation, pageWidth);
+  }
 
   const relScale = pageWidth / 612;
   const fontStack =

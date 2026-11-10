@@ -4,6 +4,7 @@ import { Sidebar } from './components/layout/Sidebar';
 import { Toolbar } from './components/layout/Toolbar';
 import { PDFViewer } from './components/viewer/PDFViewer';
 import { NotePanel } from './components/viewer/NotePanel';
+import { createAiClipboardAttachment } from './lib/ai/chatClipboard';
 import { appendAiNotebookText, getAiNotebookContext } from './lib/ai/notebookActions';
 import { notebookKey, loadNotePageCount, notePageCount, editNotePages } from './lib/notes';
 import { Dashboard } from './components/dashboard/Dashboard';
@@ -157,6 +158,8 @@ export function App() {
     setNotebook({ key: notesKey, count: loadNotePageCount(notesKey), page: 1 });
   }
   const notesCount = notePageCount(notebook.count, notes.annotations);
+  const notebookWriteState = useRef({ annotations: notes.annotations, count: notesCount, addAnnotations: notes.addAnnotations });
+  notebookWriteState.current = { annotations: notes.annotations, count: notesCount, addAnnotations: notes.addAnnotations };
   const aiNotebook = useMemo(() => notesKey ? getAiNotebookContext(notesKey, notesCount, notes.annotations) : undefined,
     [notesKey, notesCount, notes.annotations]);
   const navigateNotePage = (page: number) => {
@@ -825,6 +828,7 @@ export function App() {
   // Cursor-aware Clipboard Paste: Pastes image at mouse cursor position on hovered page
   useEffect(() => {
     const handlePaste = (e: ClipboardEvent) => {
+      if (e.defaultPrevented || (e.target instanceof Element && e.target.closest('[data-ai-chat-composer]'))) return;
       const items = e.clipboardData?.items;
       if (!items) return;
 
@@ -1377,7 +1381,6 @@ export function App() {
                 companionCurrentPage={companionCurrentPage}
                 companionZoom={companionZoom}
                 activePane={activeReaderPane}
-                rawPdfBytes={rawPdfBytes}
                 currentPage={currentPage}
                 numPages={pdfDoc?.numPages || 0}
                 pageNavRequest={pageNavRequest}
@@ -1527,11 +1530,19 @@ export function App() {
               currentPage={currentPage}
               notebook={aiNotebook}
               isDocumentLoading={isLoading}
-              onAppendToNotebook={(key, text) => {
+              onAppendToNotebook={async (key, text, canApply) => {
                 if (key !== activeNotesKey.current) throw new Error('The document changed. No notes were added.');
-                const result = appendAiNotebookText(notes.annotations, notesCount, text);
+                const snapshot = notebookWriteState.current;
+                const result = await appendAiNotebookText(snapshot.annotations, snapshot.count, text);
+                if (!canApply() || key !== activeNotesKey.current) throw new Error('The request was cancelled. No notes were added.');
+                const latest = notebookWriteState.current;
+                const firstPage = latest.annotations.some((annotation) => annotation.pageNumber === latest.count) ? latest.count + 1 : latest.count;
+                const shift = firstPage - result.firstPage;
+                result.annotations = result.annotations.map((annotation) => ({ ...annotation, pageNumber: annotation.pageNumber + shift }));
+                result.firstPage = firstPage;
+                result.count += shift;
                 localStorage.setItem(`${key}:pages`, String(result.count));
-                notes.addAnnotations(result.annotations);
+                latest.addAnnotations(result.annotations);
                 setNotebook({ key, count: result.count, page: result.firstPage });
                 setNoteNavRequest({ page: result.firstPage, timestamp: Date.now() });
                 closeCompanionPdf();
@@ -1547,6 +1558,11 @@ export function App() {
               onStartSnipCapture={handleStartSnipCaptureForAi}
               onAttachSelectedText={handleAttachSelectedTextToAi}
               onRemoveAttachment={handleRemoveAiAttachment}
+              onPasteImages={async (files) => {
+                const key = activeNotesKey.current;
+                const attachments = await Promise.all(files.map(createAiClipboardAttachment));
+                if (key === activeNotesKey.current) setPendingAiAttachments((current) => [...current, ...attachments]);
+              }}
             />
           </div>
 
@@ -1634,7 +1650,7 @@ export function App() {
           {/* PDF & Annotations Export/Import Modal */}
           <ExportModal
             isOpen={isExportModalOpen}
-            rawPdfBytes={rawPdfBytes}
+            getPdfBytes={() => rawPdfBytes}
             annotations={annotations}
             fileName={docInfo?.fileName || 'document.pdf'}
             currentPage={currentPage}

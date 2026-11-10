@@ -593,6 +593,8 @@ export const PDFPageComponent: React.FC<PDFPageProps> = ({
         }}
       />
 
+      {/* Keep rich overlays as lazy as the PDF canvas, retaining any active edit/drag. */}
+      {(isVisible || annotations.some((annotation) => annotation.id === selectedAnnotationId)) && <>
       {/* Annotation Canvas (SVG / Freehand / Highlights / Note Creator) */}
       {!isReadOnly && <AnnotationCanvas
         pageIdPrefix={pageIdPrefix}
@@ -675,6 +677,7 @@ export const PDFPageComponent: React.FC<PDFPageProps> = ({
         />
       ))}
 
+      </>}
       {/* Drop Image Overlay Visual Cue */}
       {!isReadOnly && isDragOver && (
         <div className="absolute inset-0 bg-[#0080f0]/20 backdrop-blur-xs border-2 border-dashed border-[#0080f0] flex flex-col items-center justify-center text-blue-200 z-50 rounded animate-fade-in pointer-events-none">
