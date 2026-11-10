@@ -80,6 +80,12 @@ export interface AttachedImageAnnotation {
   extractedText?: string; // Optional extracted raw text from rasterized region or OCR
 }
 
+export interface NotebookImageAsset {
+  dataUrl: string;
+  width: number;
+  height: number;
+}
+
 export interface TextNoteAnnotation {
   id: string;
   pageNumber: number;
@@ -87,6 +93,7 @@ export interface TextNoteAnnotation {
   kind?: 'plain' | 'sticky';
   /** Absent on existing notes, which retain their original plain-text rendering. */
   format?: 'plain' | 'markdown';
+  inlineImages?: Record<string, NotebookImageAsset>;
   x: number; // Normalized 0..1
   y: number; // Normalized 0..1
   width?: number; // Normalized 0..1

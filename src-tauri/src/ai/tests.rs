@@ -4,6 +4,26 @@ use std::fs;
 use std::path::Path;
 
 #[test]
+fn notebook_image_response_is_accepted_without_an_explanation_wrapper() {
+    let response = r#"{"message":"Place the image below the title.","notebookText":null,"notebookImage":{"attachmentId":"clip-1","pageNumber":1,"placement":"after_title"}}"#;
+    assert!(parse_ai_output(response).is_ok());
+    let wrapped = format!(r#"{{"status":"SUCCESS","structured_output":{response}}}"#);
+    assert!(parse_ai_output(&wrapped).is_ok());
+}
+
+#[test]
+fn invalid_notebook_actions_are_rejected() {
+    for response in [
+        r#"{"message":"ok","notebookText":null,"notebookImage":{"attachmentId":"clip","pageNumber":0,"placement":"after_title"}}"#,
+        r#"{"message":"ok","notebookText":null,"notebookImage":{"attachmentId":"clip","pageNumber":1,"placement":"delete"}}"#,
+        r#"{"message":"ok","notebookText":"new text","notebookImage":{"attachmentId":"clip","pageNumber":1,"placement":"end"}}"#,
+        r#"{"message":"ok","notebookText":null,"deletePage":1}"#,
+    ] {
+        assert!(parse_ai_output(response).is_err(), "accepted {response}");
+    }
+}
+
+#[test]
 fn codex_execution_keeps_restricted_arguments_and_stdin_input() {
     let args = codex_arguments(
         Path::new("region.png"),

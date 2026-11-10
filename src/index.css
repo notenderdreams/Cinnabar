@@ -2170,3 +2170,6 @@
 .notebook-document .katex-display { margin: 1em 0; max-width: 100%; overflow-x: auto; overflow-y: hidden; }
 .notebook-document .katex { font-size: 1.05em; }
 .notebook-document .notebook-image-caption { color: #64748b; font-style: italic; }
+.notebook-document .notebook-inline-image { display: block; margin: 1.1em 0; text-align: center; }
+.notebook-document .notebook-inline-image img { display: block; width: 100%; height: auto; max-height: 18em; object-fit: contain; border-radius: 4px; }
+.notebook-document .notebook-inline-image .notebook-image-caption { display: block; margin-top: .5em; font-size: .85em; }

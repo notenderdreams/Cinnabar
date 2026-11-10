@@ -42,6 +42,7 @@ export interface AiExplanationRequest {
   requestId: string;
   prompt: string;
   pngDataUrl: string;
+  responseFormat?: 'notebook';
 }
 
 export type AiExplanationResult =
@@ -157,7 +158,7 @@ export async function runAiExplanation(request: AiExplanationRequest): Promise<A
     return { ok: false, code: 'native_required', message: 'Local CLI explanations require the Cinnabar desktop app.' };
   }
   try {
-    return normalizeExplanationResult(await commands.runAiExplanation(request));
+    return normalizeExplanationResult(await commands.runAiExplanation({ ...request, responseFormat: request.responseFormat ?? null }));
   } catch (error) {
     return { ok: false, code: 'process_failed', message: error instanceof Error ? error.message : String(error) };
   }

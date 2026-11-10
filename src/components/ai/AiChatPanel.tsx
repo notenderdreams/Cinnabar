@@ -15,7 +15,7 @@ import { AiChatMessageItem } from './AiChatMessageItem';
 import { AiChatPromptInput } from './AiChatPromptInput';
 import { AiSessionDrawer } from './AiSessionDrawer';
 import { findOriginatingPrompt } from '../../lib/ai/aiResponseDrag';
-import type { AiNotebookContext } from '../../lib/ai/notebookActions';
+import type { AiNotebookContext, AiNotebookWrite } from '../../lib/ai/notebookActions';
 
 interface AiChatPanelProps {
   isOpen: boolean;
@@ -30,7 +30,7 @@ interface AiChatPanelProps {
   onRemoveAttachment?: (id: string) => void;
   onPasteImages?: (files: File[]) => Promise<void>;
   notebook?: AiNotebookContext;
-  onAppendToNotebook?: (docKey: string, text: string, canApply: () => boolean) => Promise<string>;
+  onWriteNotebook?: (docKey: string, write: AiNotebookWrite, canApply: () => boolean) => Promise<string>;
   isDocumentLoading?: boolean;
 }
 
@@ -54,7 +54,7 @@ export const AiChatPanel: React.FC<AiChatPanelProps> = ({
   onRemoveAttachment,
   onPasteImages,
   notebook,
-  onAppendToNotebook,
+  onWriteNotebook,
   isDocumentLoading,
 }) => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -73,7 +73,7 @@ export const AiChatPanel: React.FC<AiChatPanelProps> = ({
     retryMessage,
     canRetryMessage,
     cancelActiveRequest,
-  } = useAiChat({ pdfDoc, docInfo, currentPage, notebook, onAppendToNotebook, isDocumentLoading });
+  } = useAiChat({ pdfDoc, docInfo, currentPage, notebook, onWriteNotebook, isDocumentLoading });
 
   // Scroll strictly within messages container without touching window or outer layout
   useEffect(() => {

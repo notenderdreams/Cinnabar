@@ -3,7 +3,7 @@ import { flushSync } from 'react-dom';
 import { toCanvas } from 'html-to-image';
 import { NotebookContent } from '../../components/annotations/NotebookContent';
 import { paginateNotebookMarkdown } from '../ai/notebookMarkdown';
-import type { TextNoteAnnotation } from '../types';
+import type { TextNoteAnnotation, NotebookImageAsset } from '../types';
 import { canvasToPngBytes } from './textNoteRasterizer';
 
 function createNotebookSurface(width: number, fontSize: number, color = '#243247', fontFamily = 'sans') {
@@ -15,17 +15,17 @@ function createNotebookSurface(width: number, fontSize: number, color = '#243247
     fontFamily: fontFamily === 'serif' ? 'Georgia, Cambria, serif' : fontFamily === 'mono' ? 'monospace' : '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' });
   document.body.append(host);
   const root = createRoot(host);
-  return { host, render: (text: string) => flushSync(() => root.render(<NotebookContent text={text} />)),
+  return { host, render: (text: string, images?: Record<string, NotebookImageAsset>) => flushSync(() => root.render(<NotebookContent text={text} images={images} />)),
     destroy: () => { root.unmount(); host.remove(); } };
 }
 
-export async function layoutNotebookMarkdown(text: string): Promise<string[]> {
+export async function layoutNotebookMarkdown(text: string, images?: Record<string, NotebookImageAsset>): Promise<string[]> {
   const surface = createNotebookSurface(595 * .84, 13);
   try {
-    surface.render(text);
+    surface.render(text, images);
     await document.fonts.ready;
     return paginateNotebookMarkdown(text, (markdown) => {
-      surface.render(markdown);
+      surface.render(markdown, images);
       return surface.host.getBoundingClientRect().height;
     });
   } finally { surface.destroy(); }
@@ -37,7 +37,7 @@ export async function rasterizeNotebookNote(annotation: TextNoteAnnotation, page
   const surface = createNotebookSurface(width, fontSize, annotation.color, annotation.fontFamily);
   surface.host.style.textAlign = annotation.align ?? 'left';
   try {
-    surface.render(annotation.text);
+    surface.render(annotation.text, annotation.inlineImages);
     await document.fonts.ready;
     const height = Math.ceil(surface.host.getBoundingClientRect().height);
     const canvas = await toCanvas(surface.host.firstElementChild as HTMLElement, {

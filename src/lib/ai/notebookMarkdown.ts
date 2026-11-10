@@ -9,6 +9,15 @@ type Root = ReturnType<typeof processor.parse>;
 type RootContent = Root['children'][number];
 type PhrasingContent = Extract<RootContent, { type: 'paragraph' }>['children'][number];
 
+export function insertNotebookImageMarkdown(text: string, imageId: string, placement: 'after_title' | 'end'): string {
+  const tree = processor.parse(text);
+  const image: RootContent = { type: 'paragraph', children: [{ type: 'image', url: `notebook-image/${imageId}`, alt: '', title: null }] };
+  const title = tree.children.findIndex((node) => node.type === 'heading' && node.depth === 1);
+  const index = placement === 'after_title' && title >= 0 ? title + 1 : tree.children.length;
+  tree.children.splice(index, 0, image);
+  return processor.stringify(tree).trim();
+}
+
 function splitText(value: string): [string, string] | null {
   if (value.length < 2) return null;
   const middle = Math.floor(value.length / 2);
@@ -80,12 +89,29 @@ export function paginateNotebookMarkdown(text: string, measure: (markdown: strin
   const tree = processor.parse(text);
   const definitions = tree.children.filter((node) => node.type === 'definition');
   const blocks = tree.children.filter((node) => node.type !== 'definition');
-  const render = (nodes: RootContent[]) => processor.stringify({ type: 'root', children: [...nodes, ...definitions] } satisfies Root).trim();
+  const render = (nodes: RootContent[]) => {
+    const merged: RootContent[] = [];
+    for (const node of nodes) {
+      const previous = merged.at(-1);
+      if (previous?.position && previous.position === node.position && previous.type === 'list' && node.type === 'list') {
+        merged[merged.length - 1] = { ...previous, children: [...previous.children, ...node.children] };
+      } else if (previous?.position && previous.position === node.position && previous.type === 'table' && node.type === 'table') {
+        merged[merged.length - 1] = { ...previous, children: [...previous.children, ...node.children.slice(1)] };
+      } else merged.push(node);
+    }
+    return processor.stringify({ type: 'root', children: [...merged, ...definitions] } satisfies Root).trim();
+  };
   const pages: string[] = [];
   let current: RootContent[] = [];
   const add = (node: RootContent, depth = 0) => {
     if (depth > 24) throw new Error('This note contains a block that cannot fit on a page.');
     if (measure(render([...current, node])) <= height) { current.push(node); return; }
+    // Fill the space below an inserted image with part of a long list/table,
+    // rather than moving an entire section to the next sheet.
+    if (current.length && ((node.type === 'list' && node.children.length > 1) || (node.type === 'table' && node.children.length > 2))) {
+      const parts = splitBlock(node);
+      if (parts) { add(parts[0], depth + 1); add(parts[1], depth + 1); return; }
+    }
     if (current.length) {
       const heading = current.at(-1)?.type === 'heading' ? current.pop() : undefined;
       if (current.length) pages.push(render(current));

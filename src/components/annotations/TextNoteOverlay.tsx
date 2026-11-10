@@ -347,7 +347,7 @@ export const TextNoteOverlay: React.FC<TextNoteOverlayProps> = ({
               lineHeight: 1.4,
             }}
           >
-            {annotation.format === 'markdown' ? <NotebookContent text={annotation.text} />
+            {annotation.format === 'markdown' ? <NotebookContent text={annotation.text} images={annotation.inlineImages} />
               : annotation.text || <span className="opacity-40 italic">Empty text</span>}
           </div>
         )}

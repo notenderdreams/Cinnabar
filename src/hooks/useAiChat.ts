@@ -3,7 +3,7 @@ import type { PDFDocumentProxy } from 'pdfjs-dist';
 import type { AiChatAttachment, AiChatMessage, AiChatSession, DocumentInfo } from '../lib/types/index';
 import { extractPageText } from '../lib/pdf/pageExtractor';
 import { runAiExplanation, cancelAiExplanation, isTauri } from '../utils/tauriBridge';
-import { notebookInstructions, parseNotebookReply, type AiNotebookContext } from '../lib/ai/notebookActions';
+import { notebookInstructions, parseNotebookReply, type AiNotebookContext, type AiNotebookWrite } from '../lib/ai/notebookActions';
 import { getChatRetry } from '../lib/ai/chatRetry';
 
 const STORAGE_KEY = 'cinnabar_ai_chat_sessions';
@@ -48,11 +48,11 @@ interface UseAiChatOptions {
   docInfo?: DocumentInfo | null;
   currentPage: number;
   notebook?: AiNotebookContext;
-  onAppendToNotebook?: (docKey: string, text: string, canApply: () => boolean) => Promise<string>;
+  onWriteNotebook?: (docKey: string, write: AiNotebookWrite, canApply: () => boolean) => Promise<string>;
   isDocumentLoading?: boolean;
 }
 
-export function useAiChat({ pdfDoc, docInfo, currentPage, notebook, onAppendToNotebook, isDocumentLoading = false }: UseAiChatOptions) {
+export function useAiChat({ pdfDoc, docInfo, currentPage, notebook, onWriteNotebook, isDocumentLoading = false }: UseAiChatOptions) {
   const [sessions, setSessions] = useState<AiChatSession[]>(() => {
     const persisted = loadPersistedSessions();
     if (persisted.length > 0) return persisted;
@@ -73,8 +73,8 @@ export function useAiChat({ pdfDoc, docInfo, currentPage, notebook, onAppendToNo
 
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const activeRequestIdRef = useRef<string | null>(null);
-  const notebookRef = useRef({ notebook, onAppendToNotebook, isDocumentLoading });
-  notebookRef.current = { notebook, onAppendToNotebook, isDocumentLoading };
+  const notebookRef = useRef({ notebook, onWriteNotebook, isDocumentLoading });
+  notebookRef.current = { notebook, onWriteNotebook, isDocumentLoading };
   const documentIdentity = notebook?.docKey ?? docInfo?.filePath ?? docInfo?.fingerprint ?? docInfo?.fileName;
 
   useEffect(() => {
@@ -174,6 +174,9 @@ export function useAiChat({ pdfDoc, docInfo, currentPage, notebook, onAppendToNo
       const retry = options?.retryMessageId ? getChatRetry(activeSession.messages, options.retryMessageId, documentIdentity) : null;
       if (options?.retryMessageId && !retry) return;
       const requestNotebook = notebookRef.current.notebook;
+      const conversation = retry?.history ?? activeSession.messages;
+      const availableImages = [...conversation.slice(-6).flatMap((message) => message.attachments ?? []), ...attachments]
+        .filter((attachment) => attachment.type === 'image' && attachment.dataUrl);
 
       const targetPage = options?.pageNumber ?? currentPage;
       const userMessage: AiChatMessage = {
@@ -256,15 +259,15 @@ export function useAiChat({ pdfDoc, docInfo, currentPage, notebook, onAppendToNo
         const fullPrompt = [
           `You are an expert AI reading assistant for Cinnabar PDF reader.`,
           `Document: ${docName}`,
-          requestNotebook ? notebookInstructions(requestNotebook) : null,
+          requestNotebook ? notebookInstructions(requestNotebook, availableImages) : null,
           options?.includePageContext ? `Active Page: ${targetPage}` : null,
           quoteContext || null,
-          imageAttachment ? `[Note: A cropped region/diagram from Page ${imageAttachment.pageNumber ?? targetPage} is attached as an image]` : null,
+          imageAttachment ? `Attached image ID: ${imageAttachment.id}${imageAttachment.pageNumber !== undefined ? ` (source PDF page ${imageAttachment.pageNumber})` : ''}. Use this attachment ID when the user asks to insert this image.` : null,
           pageTextContext || null,
           historyText ? `\nRecent Conversation:\n${historyText}` : null,
           `\nUser: ${trimmed || 'Please analyze this attached snippet.'}`,
           `\nAssistant: Respond clearly with structured Markdown and concise explanations. Separate paragraphs, headings, and lists with blank lines. Use bullets or tables for descriptive comparisons. Reserve LaTeX for mathematical expressions: use $...$ inline, and put each $$ display delimiter on its own line with the formula between them.`,
-          requestNotebook ? 'Final response format: a JSON object with message (Markdown string) and notebookText (well-formatted Markdown string or null). Encode this JSON in the explanation string if required by the CLI output schema.' : null,
+          requestNotebook ? 'Final response format: the notebook JSON schema with message, notebookText, and notebookImage. Return this object directly. Do not wrap it in explanation or a Markdown fence.' : null,
         ]
           .filter(Boolean)
           .join('\n');
@@ -278,6 +281,7 @@ export function useAiChat({ pdfDoc, docInfo, currentPage, notebook, onAppendToNo
             requestId,
             prompt: fullPrompt,
             pngDataUrl,
+            responseFormat: requestNotebook ? 'notebook' : undefined,
           });
           if (activeRequestIdRef.current !== requestId) return;
 
@@ -285,12 +289,18 @@ export function useAiChat({ pdfDoc, docInfo, currentPage, notebook, onAppendToNo
             if (requestNotebook) {
               const reply = parseNotebookReply(result.response);
               assistantContent = reply.message;
-              if (reply.notebookText !== null) {
+              if (reply.notebookText !== null || reply.notebookImage) {
                 const current = notebookRef.current;
-                if (current.isDocumentLoading || current.notebook?.docKey !== requestNotebook.docKey || !current.onAppendToNotebook) {
+                if (current.isDocumentLoading || current.notebook?.docKey !== requestNotebook.docKey || !current.onWriteNotebook) {
                   throw new Error('The document changed. No notes were added.');
                 }
-                const receipt = await current.onAppendToNotebook(requestNotebook.docKey, reply.notebookText,
+                let write: AiNotebookWrite;
+                if (reply.notebookImage) {
+                  const image = availableImages.find((attachment) => attachment.id === reply.notebookImage?.attachmentId);
+                  if (!image) throw new Error('The referenced image is unavailable. Attach it again and retry.');
+                  write = { type: 'image', image, action: reply.notebookImage };
+                } else write = { type: 'text', text: reply.notebookText! };
+                const receipt = await current.onWriteNotebook(requestNotebook.docKey, write,
                   () => activeRequestIdRef.current === requestId && !notebookRef.current.isDocumentLoading && notebookRef.current.notebook?.docKey === requestNotebook.docKey);
                 if (activeRequestIdRef.current !== requestId) return;
                 assistantContent += `\n\n*${receipt}*`;
@@ -298,7 +308,8 @@ export function useAiChat({ pdfDoc, docInfo, currentPage, notebook, onAppendToNo
             } else assistantContent = result.response;
           } else {
             assistantError = result.message || 'Failed to get AI response.';
-            assistantContent = `⚠️ **Error**: ${assistantError}\n\n*Make sure a local CLI (like Codex or Antigravity) is selected in Settings > AI Assistant.*`;
+            assistantContent = `⚠️ **Error**: ${assistantError}`;
+            if (['missing_cli', 'unauthenticated', 'incompatible_cli'].includes(result.code)) assistantContent += '\n\n*Check the selected CLI in Settings > AI Assistant.*';
           }
         } else {
           // Web / browser fallback with rich realistic preview

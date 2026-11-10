@@ -1,5 +1,7 @@
 use super::models::{AiExplanationRequest, AiExplanationResult};
-use super::protocol::{antigravity_arguments, codex_arguments, parse_ai_output};
+use super::protocol::{
+    antigravity_arguments, codex_arguments, parse_ai_output, NOTEBOOK_RESPONSE_SCHEMA,
+};
 use super::providers::resolve_active_provider;
 use super::workspace::create_workspace;
 use anyhow::Context;
@@ -117,7 +119,12 @@ pub(crate) async fn run_ai_explanation(
     if let Err(error) = fs::write(&crop_path, crop)
         .with_context(|| format!("failed to write region image to {}", crop_path.display()))
         .and_then(|_| {
-            fs::write(&schema_path, RESPONSE_SCHEMA).with_context(|| {
+            let schema = if request.response_format.is_some() {
+                NOTEBOOK_RESPONSE_SCHEMA
+            } else {
+                RESPONSE_SCHEMA
+            };
+            fs::write(&schema_path, schema).with_context(|| {
                 format!(
                     "failed to write response schema to {}",
                     schema_path.display()

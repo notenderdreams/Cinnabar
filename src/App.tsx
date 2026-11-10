@@ -5,7 +5,7 @@ import { Toolbar } from './components/layout/Toolbar';
 import { PDFViewer } from './components/viewer/PDFViewer';
 import { NotePanel } from './components/viewer/NotePanel';
 import { createAiClipboardAttachment } from './lib/ai/chatClipboard';
-import { appendAiNotebookText, getAiNotebookContext } from './lib/ai/notebookActions';
+import { appendAiNotebookText, getAiNotebookContext, insertAiNotebookImage } from './lib/ai/notebookActions';
 import { notebookKey, loadNotePageCount, notePageCount, editNotePages } from './lib/notes';
 import { Dashboard } from './components/dashboard/Dashboard';
 import { ColorThemeModal } from './components/modals/ColorThemeModal';
@@ -158,8 +158,8 @@ export function App() {
     setNotebook({ key: notesKey, count: loadNotePageCount(notesKey), page: 1 });
   }
   const notesCount = notePageCount(notebook.count, notes.annotations);
-  const notebookWriteState = useRef({ annotations: notes.annotations, count: notesCount, addAnnotations: notes.addAnnotations });
-  notebookWriteState.current = { annotations: notes.annotations, count: notesCount, addAnnotations: notes.addAnnotations };
+  const notebookWriteState = useRef({ annotations: notes.annotations, count: notesCount, addAnnotations: notes.addAnnotations, replaceAnnotations: notes.replaceAnnotations, page: notebook.page });
+  notebookWriteState.current = { annotations: notes.annotations, count: notesCount, addAnnotations: notes.addAnnotations, replaceAnnotations: notes.replaceAnnotations, page: notebook.page };
   const aiNotebook = useMemo(() => notesKey ? getAiNotebookContext(notesKey, notesCount, notes.annotations) : undefined,
     [notesKey, notesCount, notes.annotations]);
   const navigateNotePage = (page: number) => {
@@ -1528,11 +1528,25 @@ export function App() {
               pdfDoc={pdfDoc}
               docInfo={docInfo}
               currentPage={currentPage}
-              notebook={aiNotebook}
+              notebook={aiNotebook ? { ...aiNotebook, currentPage: notebook.page } : undefined}
               isDocumentLoading={isLoading}
-              onAppendToNotebook={async (key, text, canApply) => {
+              onWriteNotebook={async (key, write, canApply) => {
                 if (key !== activeNotesKey.current) throw new Error('The document changed. No notes were added.');
                 const snapshot = notebookWriteState.current;
+                if (write.type === 'image') {
+                  const result = await insertAiNotebookImage(snapshot.annotations, snapshot.count, snapshot.page, write.image, write.action);
+                  if (!canApply() || key !== activeNotesKey.current) throw new Error('The request was cancelled. No notes were changed.');
+                  const latest = notebookWriteState.current;
+                  if (latest.annotations !== snapshot.annotations || latest.count !== snapshot.count) throw new Error('The notebook changed during image placement. Retry to use the latest version.');
+                  localStorage.setItem(`${key}:pages`, String(result.count));
+                  latest.replaceAnnotations(result.annotations);
+                  setNotebook({ key, count: result.count, page: result.firstPage });
+                  setNoteNavRequest({ page: result.firstPage, timestamp: Date.now() });
+                  closeCompanionPdf(); setViewMode('continuous'); saveViewMode('continuous'); setIsNoteMode(true); setNotePaneActive(true);
+                  setSelectedAnnotationId(result.selectedId);
+                  return `Image added to note page ${result.firstPage}.`;
+                }
+                const text = write.text;
                 const result = await appendAiNotebookText(snapshot.annotations, snapshot.count, text);
                 if (!canApply() || key !== activeNotesKey.current) throw new Error('The request was cancelled. No notes were added.');
                 const latest = notebookWriteState.current;
