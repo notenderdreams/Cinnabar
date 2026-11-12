@@ -996,7 +996,7 @@
   outline-style: none !important;
 }
 
-[data-ui-theme] :focus-visible:not(input):not(textarea):not(select):not(.control-field):not(.macos-search-field):not(.control-field *) {
+[data-ui-theme] :focus-visible:not(input):not(textarea):not(select):not(.control-field):not(.macos-search-field):not(.control-field *):not(.notebook-block-document) {
   outline: 2px solid var(--ring);
   outline-offset: 1.5px;
 }
