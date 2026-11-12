@@ -1499,7 +1499,7 @@ export function App() {
             </div>
 
             {hasOpenedNotebookPanel && <React.Suspense fallback={null}>
-              <NotebookPanel zoom={notebookZoom} onZoomChange={setNotebookZoom} onActivate={activateNotebookPane} onDocumentChange={setPanelNotebook} pageRequest={notebookPageRequest} fitRequest={notebookFitRequest} isOpen={isNotebookPanelOpen && !isZenMode} onClose={closeNotebookPanel} />
+              <NotebookPanel zoom={notebookZoom} onZoomChange={setNotebookZoom} onActivate={activateNotebookPane} onDocumentChange={setPanelNotebook} pageRequest={notebookPageRequest} fitRequest={notebookFitRequest} isOpen={isNotebookPanelOpen && !isZenMode} />
             </React.Suspense>}
             </div>
 
