@@ -78,6 +78,7 @@ export function App() {
   // View & UI State
   const [zoom, setZoom] = useState<number>(1.15);
   const [fitPageRequest, setFitPageRequest] = useState<{ id: number; page: number } | null>(null);
+  const [companionFitRequest, setCompanionFitRequest] = useState<{ id: number } | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>(() => loadViewMode());
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
   const [isAiPanelOpen, setIsAiPanelOpen] = useState<boolean>(false);
@@ -1281,7 +1282,7 @@ export function App() {
                 return;
               }
               if (companionPdfDoc && activeReaderPane === 'companion') {
-                setCompanionZoom(0.75);
+                setCompanionFitRequest(value => ({ id: (value?.id ?? 0) + 1 }));
               } else {
                 setFitPageRequest((request) => ({
                   id: (request?.id ?? 0) + 1,
@@ -1390,6 +1391,7 @@ export function App() {
                 onPageChange={(p) => changePage(p)}
                 onCompanionPageChange={setCompanionCurrentPage}
                 onCompanionZoomChange={setCompanionZoom}
+                companionFitRequest={companionFitRequest}
                 onActivePaneChange={setActiveReaderPane}
                 onSelectAnnotation={handleSelectAnnotation}
                 onAddAnnotation={(ann) => addAnnotation(ann)}

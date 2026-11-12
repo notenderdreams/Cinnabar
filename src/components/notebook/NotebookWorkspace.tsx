@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { NotebookEditor } from '@cinnabar/notebook/editor';
 import { PAPER, type NotebookLayout } from '@cinnabar/notebook/layout';
 import { serializeNotebook } from '@cinnabar/notebook';
 import { useViewportZoom } from '../../hooks/useViewportZoom';
+import { centerPageInViewport, fitPageZoom } from '../../lib/pdf/fitViewport';
 import { useNotebookSession } from '../../hooks/useNotebookSession';
 import type { NotebookTarget } from '../../lib/notebook/navigation';
 import { saveNotebookFile, tauriOpenImage } from '../../utils/tauriBridge';
@@ -21,6 +22,7 @@ export function NotebookWorkspace({ onBack, initialTarget, embedded = false, zoo
   const zoom = controlledZoom ?? localZoom;
   const changeZoom = onZoomChange ?? setLocalZoom;
   const viewport = useRef<HTMLElement | null>(null);
+  const pendingFit = useRef<{ page: number; zoom: number } | null>(null);
   const pan = useRef<{ id: number; x: number; y: number; left: number; top: number } | null>(null);
   const latest = useRef(notebook); latest.current = notebook;
   const saving = useRef(false);
@@ -100,10 +102,26 @@ export function NotebookWorkspace({ onBack, initialTarget, embedded = false, zoo
   }, [pageRequest]);
   useEffect(() => {
     if (!fitRequest || !viewport.current) return;
-    changeZoom(Math.min(3, Math.max(.4, (viewport.current.clientWidth - 64) / PAPER.width)));
+    const element = viewport.current;
+    const fitted = fitPageZoom(element.clientWidth, element.clientHeight, PAPER.width, PAPER.height);
+    if (fitted === zoom) {
+      const sheet = element.querySelectorAll<HTMLElement>('.independent-paper-sheet')[page - 1];
+      if (sheet) centerPageInViewport(element, sheet);
+    } else {
+      pendingFit.current = { page, zoom: fitted };
+      changeZoom(fitted);
+    }
   }, [fitRequest]);
 
   useViewportZoom(viewport, zoom, changeZoom, file?.id, embedded, '.independent-paper-stack', onActivate);
+
+  useLayoutEffect(() => {
+    const pending = pendingFit.current;
+    if (!pending || pending.zoom !== zoom || !viewport.current) return;
+    const sheet = viewport.current.querySelectorAll<HTMLElement>('.independent-paper-sheet')[pending.page - 1];
+    if (sheet) centerPageInViewport(viewport.current, sheet);
+    pendingFit.current = null;
+  }, [zoom]);
 
   return <section className={`standalone-notebook ${embedded ? 'embedded-notebook' : ''}`} aria-label="Notebook workspace"
     onPointerDownCapture={onActivate} onFocusCapture={onActivate}
@@ -133,6 +151,7 @@ export function NotebookWorkspace({ onBack, initialTarget, embedded = false, zoo
         if (target.closest('button, input, textarea, select, a')) return;
         const background = !target.closest('.independent-paper-stack');
         if (event.button !== 1 && !(event.button === 0 && (spacePressed || background))) return;
+        pendingFit.current = null;
         event.preventDefault();
         event.stopPropagation();
         const element = event.currentTarget;

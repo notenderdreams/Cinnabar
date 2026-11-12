@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import type { PDFDocumentProxy } from 'pdfjs-dist';
 import { useViewportZoom } from '../../hooks/useViewportZoom';
+import { centerPageInViewport, fitPageZoom } from '../../lib/pdf/fitViewport';
 import { PDFPage } from './PDFPage';
 import { SplitDivider } from '../ui/SplitDivider';
 import { UploadCloud } from 'lucide-react';
@@ -77,6 +78,7 @@ interface PDFViewerProps {
   onOpenPdfClick: () => void;
   onChangeZoom: (newZoom: number) => void;
   fitPageRequest?: { id: number; page: number } | null;
+  companionFitRequest?: { id: number } | null;
   onCursorMove?: (pageNumber: number, normalizedX: number, normalizedY: number) => void;
   onCaptureSnippet?: (pageNumber: number, rect: { x: number; y: number; width: number; height: number }) => void;
   aiJobs: Record<string, AiJobState>;
@@ -138,6 +140,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
   onOpenPdfClick,
   onChangeZoom,
   fitPageRequest,
+  companionFitRequest,
   onCursorMove,
   onCaptureSnippet,
   aiJobs,
@@ -180,6 +183,9 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
   const lastFitPageRequestRef = useRef(0);
   const pendingFitScrollPageRef = useRef<number | null>(null);
   const fitCenteringCleanupRef = useRef<(() => void) | null>(null);
+  const lastCompanionFit = useRef<number | null>(null);
+  const pendingCompanionFit = useRef<{ page: number; zoom: number } | null>(null);
+  const fitInteraction = useRef(0);
 
   const [viewerAiDragPos, setViewerAiDragPos] = useState<{ clientX: number; clientY: number } | null>(null);
 
@@ -378,6 +384,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
     fitCenteringCleanupRef.current = null;
 
     const center = () => {
+      if (panStartRef.current) return;
       const container = viewerContainerRef.current;
       const page = document.getElementById(`pdf-page-${pageNumber}`);
       if (!container || !page) return;
@@ -391,20 +398,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
         lastReportedPageRef.current = pageNumber;
       }, 80);
 
-      const containerRect = container.getBoundingClientRect();
-      const pageRect = page.getBoundingClientRect();
-      const maxScrollLeft = Math.max(0, container.scrollWidth - container.clientWidth);
-      const maxScrollTop = Math.max(0, container.scrollHeight - container.clientHeight);
-      const scrollLeft = container.scrollLeft + pageRect.left - containerRect.left
-        - (container.clientWidth - pageRect.width) / 2;
-      const scrollTop = container.scrollTop + pageRect.top - containerRect.top
-        - (container.clientHeight - pageRect.height) / 2;
-
-      container.scrollTo({
-        left: Math.max(0, Math.min(maxScrollLeft, scrollLeft)),
-        top: Math.max(0, Math.min(maxScrollTop, scrollTop)),
-        behavior: 'instant',
-      });
+      centerPageInViewport(container, page);
       lastReportedPageRef.current = pageNumber;
     };
 
@@ -626,18 +620,12 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
     lastReportedPageRef.current = targetPage;
 
     let cancelled = false;
+    const interaction = fitInteraction.current;
     void pdfDoc.getPage(targetPage).then((page) => {
-      if (cancelled) return;
+      if (cancelled || interaction !== fitInteraction.current) return;
 
       const viewport = page.getViewport({ scale: 1 });
-      const availableWidth = Math.max(1, container.clientWidth - 48);
-      const availableHeight = Math.max(1, container.clientHeight - 48);
-      const fittedZoom = Math.min(
-        3.5,
-        Math.max(0.3, Math.min(availableWidth / viewport.width, availableHeight / viewport.height))
-      );
-
-      const roundedZoom = Number(fittedZoom.toFixed(2));
+      const roundedZoom = fitPageZoom(container.clientWidth, container.clientHeight, viewport.width, viewport.height);
       if (roundedZoom === zoom) {
         centerFittedPage(targetPage, true);
       } else {
@@ -652,6 +640,42 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
   }, [centerFittedPage, fitPageRequest, onChangeZoom, pdfDoc, zoom]);
 
   // A fit action must scroll after the zoom effect has finished preserving the focal point.
+  useEffect(() => {
+    const container = companionContainerRef.current;
+    if (!companionFitRequest || lastCompanionFit.current === companionFitRequest.id || !container || !companionPdfDoc || !onCompanionZoomChange) return;
+    lastCompanionFit.current = companionFitRequest.id;
+    const pageNumber = getFocalPageInContainer(container, companionLastReportedPageRef.current);
+    let cancelled = false;
+    const interaction = fitInteraction.current;
+    void companionPdfDoc.getPage(pageNumber).then(page => {
+      if (cancelled || interaction !== fitInteraction.current) return;
+      const size = page.getViewport({ scale: 1 });
+      const fitted = fitPageZoom(container.clientWidth, container.clientHeight, size.width, size.height);
+      pendingCompanionFit.current = { page: pageNumber, zoom: fitted };
+      onCompanionZoomChange(fitted);
+      if (fitted === companionZoom) {
+        const paper = container.querySelector<HTMLElement>(`#companion-pdf-page-${pageNumber}`);
+        if (paper) centerPageInViewport(container, paper);
+        pendingCompanionFit.current = null;
+      }
+    });
+    return () => { cancelled = true; };
+  }, [companionFitRequest, companionPdfDoc, companionZoom, onCompanionZoomChange]);
+
+  useEffect(() => {
+    const pending = pendingCompanionFit.current;
+    const container = companionContainerRef.current;
+    if (!pending || !container || pending.zoom !== companionZoom) return;
+    pendingCompanionFit.current = null;
+    const frame = requestAnimationFrame(() => {
+      const page = container.querySelector<HTMLElement>(`#companion-pdf-page-${pending.page}`);
+      if (page && !panStartRef.current) centerPageInViewport(container, page);
+    });
+    fitCenteringCleanupRef.current?.();
+    fitCenteringCleanupRef.current = () => cancelAnimationFrame(frame);
+    return () => cancelAnimationFrame(frame);
+  }, [companionZoom]);
+
   useEffect(() => {
     const pageNumber = pendingFitScrollPageRef.current;
     if (pageNumber === null) return;
@@ -839,6 +863,20 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
   useViewportZoom(viewerContainerRef, zoom, onChangeZoom, pdfDoc, `${viewMode}-${Boolean(companionPdfDoc)}`, '[data-pdf-page-number]', () => onActivePaneChange?.('primary'));
   useViewportZoom(companionContainerRef, companionZoom, onCompanionZoomChange, companionPdfDoc, viewMode, '[data-pdf-page-number]', () => onActivePaneChange?.('companion'));
 
+  // A user's scroll/pinch takes ownership from any outstanding fit operation.
+  useEffect(() => {
+    const containers = [viewerContainerRef.current, companionContainerRef.current].filter((element): element is HTMLDivElement => element !== null);
+    const interruptFit = () => {
+      fitInteraction.current += 1;
+      fitCenteringCleanupRef.current?.();
+      fitCenteringCleanupRef.current = null;
+      pendingFitScrollPageRef.current = null;
+      pendingCompanionFit.current = null;
+    };
+    containers.forEach(element => element.addEventListener('wheel', interruptFit, { passive: true }));
+    return () => containers.forEach(element => element.removeEventListener('wheel', interruptFit));
+  }, [pdfDoc, companionPdfDoc, viewMode]);
+
   // Mouse Wheel: Pinch-to-zoom and intuitive single-page turn on boundary scroll
   useEffect(() => {
     const container = viewerContainerRef.current;
@@ -948,6 +986,11 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
 
     if (isMiddleClick || isSpaceDrag || isBackgroundClick) {
       e.preventDefault();
+      fitInteraction.current += 1;
+      fitCenteringCleanupRef.current?.();
+      fitCenteringCleanupRef.current = null;
+      pendingFitScrollPageRef.current = null;
+      pendingCompanionFit.current = null;
 
       setIsPanning(true);
       panStartRef.current = {
