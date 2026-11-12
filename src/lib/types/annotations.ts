@@ -94,6 +94,8 @@ export interface TextNoteAnnotation {
   /** Absent on existing notes, which retain their original plain-text rendering. */
   format?: 'plain' | 'markdown';
   inlineImages?: Record<string, NotebookImageAsset>;
+  /** Retained for structured legacy notebooks during migration. */
+  notebookDocument?: import('@cinnabar/notebook').NotebookDocument;
   x: number; // Normalized 0..1
   y: number; // Normalized 0..1
   width?: number; // Normalized 0..1

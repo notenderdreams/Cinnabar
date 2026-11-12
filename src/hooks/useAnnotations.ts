@@ -44,6 +44,7 @@ export function useAnnotations(docKey: string, docInfo?: DocumentInfo | null) {
   });
   const [historyIndex, setHistoryIndex] = useState<number>(0);
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'error'>('saved');
+  const [loadedRecordIdentity, setLoadedRecordIdentity] = useState('');
   const [loadedIdentity, setLoadedIdentity] = useState<string | null>(() =>
     docKey ? [docKey, ...fallbackKeys].join('\u0000') : null
   );
@@ -98,6 +99,7 @@ export function useAnnotations(docKey: string, docInfo?: DocumentInfo | null) {
           void saveAnnotationsForDoc(docKey, newestRecord.annotations);
         }
       }
+      setLoadedRecordIdentity(storageIdentity);
     });
 
     return () => {
@@ -274,6 +276,7 @@ export function useAnnotations(docKey: string, docInfo?: DocumentInfo | null) {
 
   return {
     annotations,
+    isLoaded: Boolean(docKey) && loadedRecordIdentity === storageIdentity,
     saveStatus,
     addAnnotation,
     addAnnotations,

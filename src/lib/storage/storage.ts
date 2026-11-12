@@ -38,6 +38,7 @@ const IDB_STORE_ACTIVE_PDF = 'active_pdf_store';
 export interface StoredAnnotationRecord {
   annotations: Annotation[];
   updatedAt: number;
+  notebookPageCount?: number;
 }
 
 let lastAnnotationSaveTimestamp = 0;
@@ -70,7 +71,8 @@ function openIDB(): Promise<IDBDatabase> {
 export async function idbSaveAnnotations(
   docKey: string,
   annotations: Annotation[],
-  updatedAt = nextAnnotationSaveTimestamp()
+  updatedAt = nextAnnotationSaveTimestamp(),
+  metadata: { notebookPageCount?: number } = {}
 ): Promise<boolean> {
   try {
     const db = await openIDB();
@@ -80,11 +82,11 @@ export async function idbSaveAnnotations(
     existingRequest.onsuccess = () => {
       const existing = parseStoredAnnotationRecord(existingRequest.result);
       if (!existing || existing.updatedAt <= updatedAt) {
-        store.put({ docKey, annotations, updatedAt });
+        store.put({ docKey, annotations, updatedAt, ...metadata });
       }
     };
     existingRequest.onerror = () => {
-      store.put({ docKey, annotations, updatedAt });
+      store.put({ docKey, annotations, updatedAt, ...metadata });
     };
 
     return await new Promise<boolean>((resolve) => {
@@ -291,7 +293,7 @@ export function parseStoredAnnotationRecord(value: unknown): StoredAnnotationRec
       typeof parsed === 'object' &&
       Array.isArray((parsed as { annotations?: unknown }).annotations)
     ) {
-      const record = parsed as { annotations: Annotation[]; updatedAt?: unknown };
+      const record = parsed as { annotations: Annotation[]; updatedAt?: unknown; notebookPageCount?: unknown };
       const updatedAt =
         typeof record.updatedAt === 'number' && Number.isFinite(record.updatedAt)
           ? record.updatedAt
@@ -300,6 +302,8 @@ export function parseStoredAnnotationRecord(value: unknown): StoredAnnotationRec
       return {
         annotations: filterPersistableAnnotations(record.annotations),
         updatedAt,
+        ...(typeof record.notebookPageCount === 'number' && Number.isSafeInteger(record.notebookPageCount) && record.notebookPageCount > 0
+          ? { notebookPageCount: record.notebookPageCount } : {}),
       };
     }
   } catch {}
@@ -319,12 +323,13 @@ export function selectNewestAnnotationRecord(
 export async function saveAnnotationsForDoc(
   docKey: string,
   annotations: Annotation[],
-  fallbackKeys: string[] = []
+  fallbackKeys: string[] = [],
+  metadata: { notebookPageCount?: number } = {}
 ): Promise<void> {
   if (!docKey) return;
   const persistable = filterPersistableAnnotations(annotations);
   const updatedAt = nextAnnotationSaveTimestamp();
-  const record: StoredAnnotationRecord = { annotations: persistable, updatedAt };
+  const record: StoredAnnotationRecord = { annotations: persistable, updatedAt, ...metadata };
   let localSaveSucceeded = false;
 
   // 1. LocalStorage for fast instant access - save ONLY to primary docKey
@@ -337,7 +342,7 @@ export async function saveAnnotationsForDoc(
   }
 
   // 2. Persistent IndexedDB for full-size payloads & image attachments - save ONLY to primary docKey
-  const idbSucceeded = await idbSaveAnnotations(docKey, persistable, updatedAt);
+  const idbSucceeded = await idbSaveAnnotations(docKey, persistable, updatedAt, metadata);
 
   // 3. Update annotation count in recent docs
   try {

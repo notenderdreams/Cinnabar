@@ -1,5 +1,6 @@
 import type { Annotation } from '../types/index';
 import { isTauri, tauriOpenJson, tauriSaveJson } from '../../utils/tauriBridge';
+import { validateNotebookDocument } from '../notebook/operations';
 
 /**
  * Validates whether an object matches the shape of a known Cinnabar annotation.
@@ -134,6 +135,7 @@ export function parseAnnotationsJson(input: string | unknown): Annotation[] {
   for (let i = 0; i < rawList.length; i++) {
     const item = rawList[i];
     if (isValidAnnotation(item)) {
+      if (item.type === 'text-note' && item.notebookDocument) validateNotebookDocument(item.notebookDocument);
       validAnnotations.push(normalizeAnnotation(item, i));
     }
   }

@@ -4,6 +4,9 @@
   "description": "Ultra-Smooth High-Performance Desktop PDF Reader, Inverting & Annotation Studio",
   "type": "module",
   "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
     "dev": "tauri dev",
     "dev:web": "bun run generate:bindings && vite",
@@ -13,12 +16,15 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@cinnabar/notebook": "workspace:*",
     "@hugeicons/core-free-icons": "^4.3.0",
     "@hugeicons/react": "^1.1.10",
     "@tauri-apps/api": "^2.11.1",
     "@tauri-apps/plugin-dialog": "^2.7.2",
     "@tauri-apps/plugin-fs": "^2.5.1",
     "@tauri-apps/plugin-opener": "^2.5.4",
+    "@tiptap/core": "3.33.1",
+    "@tiptap/pm": "3.33.1",
     "canvas-confetti": "^1.9.4",
     "clsx": "^2.1.1",
     "html-to-image": "^1.11.13",
@@ -42,6 +48,7 @@
     "@tauri-apps/cli": "^2.11.4",
     "@types/canvas-confetti": "^1.9.0",
     "@types/katex": "^0.16.8",
+    "@types/mdast": "^4.0.4",
     "@types/node": "^22.13.4",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",

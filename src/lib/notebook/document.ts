@@ -5,44 +5,9 @@ import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import type { RootContent, PhrasingContent } from 'mdast';
 import type { Annotation, NotebookImageAsset, TextNoteAnnotation } from '../types';
-
-export interface NotebookStyles {
-  fontFamily: string;
-  fontSize: number;
-  lineHeight: number;
-  paragraphSpacing: number;
-  color: string;
-  background: string;
-}
-export interface NotebookDocument {
-  version: 1;
-  content: JSONContent;
-  styles: NotebookStyles;
-  assets: Record<string, NotebookImageAsset>;
-  /** Explicit sheets, including blank or occupied sheets, survive content shrinkage. */
-  minimumSheets: number;
-}
-export const neutralStyles: NotebookStyles = {
-  fontFamily: 'Arial, sans-serif', fontSize: 13, lineHeight: 1.5, paragraphSpacing: 10,
-  color: '#222222', background: '#ffffff',
-};
-export const BLOCK_TYPES = ['paragraph', 'heading', 'bulletList', 'orderedList', 'taskList',
-  'listItem', 'taskItem', 'blockquote', 'codeBlock', 'horizontalRule', 'image', 'table', 'tableRow', 'tableCell', 'tableHeader', 'blockMath', 'sheetBreak'];
-
-export function identifyBlocks(content: JSONContent, used = new Set<string>()): JSONContent {
-  const attrs = { ...content.attrs };
-  if (BLOCK_TYPES.includes(content.type ?? '')) {
-    if (typeof attrs.id !== 'string' || used.has(attrs.id)) attrs.id = crypto.randomUUID();
-    used.add(attrs.id);
-  }
-  return { ...content, ...(Object.keys(attrs).length ? { attrs } : {}),
-    ...(content.content ? { content: content.content.map((node) => identifyBlocks(node, used)) } : {}) };
-}
-
-export function emptyNotebook(minimumSheets = 1): NotebookDocument {
-  return { version: 1, content: identifyBlocks({ type: 'doc', content: [{ type: 'paragraph' }] }),
-    styles: { ...neutralStyles }, assets: {}, minimumSheets };
-}
+import { emptyNotebook, identifyBlocks, notebookText, type NotebookDocument } from '@cinnabar/notebook';
+export { emptyNotebook, identifyBlocks, notebookText, neutralStyles, BLOCK_TYPES } from '@cinnabar/notebook';
+export type { NotebookDocument, NotebookStyles } from '@cinnabar/notebook';
 
 const parser = unified().use(remarkParse).use(remarkGfm).use(remarkMath);
 export function markdownBlocks(markdown: string, assets: Record<string, NotebookImageAsset> = {}): JSONContent[] {
@@ -113,12 +78,6 @@ export function markdownBlocks(markdown: string, assets: Record<string, Notebook
   return tree.children.flatMap(block).map((node) => identifyBlocks(node));
 }
 
-export function notebookText(node: JSONContent): string {
-  if (node.type === 'text') return node.text ?? '';
-  if (node.type === 'inlineMath' || node.type === 'blockMath') return String(node.attrs?.latex ?? '');
-  if (node.type === 'image') return `[Image: ${node.attrs?.caption || node.attrs?.alt || 'Notebook image'}]`;
-  return (node.content ?? []).map(notebookText).join(['paragraph', 'heading'].includes(node.type ?? '') ? '' : '\n');
-}
 export function notebookCarrier(annotations: Annotation[]): TextNoteAnnotation | undefined {
   return annotations.find((item): item is TextNoteAnnotation => item.type === 'text-note' && !!item.notebookDocument);
 }

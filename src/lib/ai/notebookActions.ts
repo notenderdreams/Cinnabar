@@ -1,5 +1,6 @@
 import type { Annotation, TextNoteAnnotation, AiChatAttachment, NotebookImageAsset } from '../types';
 import { paginateNotebookMarkdown, insertNotebookImageMarkdown } from './notebookMarkdown';
+import { identifyBlocks, markdownBlocks, notebookCarrier, withNotebook } from '../notebook/document';
 
 export interface AiNotebookContext {
   docKey: string;
@@ -82,6 +83,18 @@ export async function insertAiNotebookImage(annotations: Annotation[], count: nu
   image: AiChatAttachment, action: AiNotebookImageAction) {
   if (image.id !== action.attachmentId || image.type !== 'image' || !image.dataUrl?.startsWith('data:image/png;base64,') ||
     !image.width || !image.height) throw new Error('Attach the image again before adding it to the notebook.');
+  const structured = notebookCarrier(annotations)?.notebookDocument;
+  if (structured) {
+    const assetId = crypto.randomUUID();
+    const blocks = [...structured.content.content ?? []];
+    const title = blocks.findIndex(block => block.type === 'heading');
+    if (action.placement === 'after_title' && title < 0) throw new Error('The notebook has no title.');
+    const block = identifyBlocks({ type: 'image', attrs: { src: image.dataUrl, assetId, caption: 'Notebook image', width: Math.min(499, image.width) } });
+    blocks.splice(action.placement === 'after_title' ? title + 1 : blocks.length, 0, block);
+    return { annotations: withNotebook(annotations, { ...structured, content: { ...structured.content, content: blocks },
+      assets: { ...structured.assets, [assetId]: { dataUrl: image.dataUrl, width: image.width, height: image.height } } }),
+      count, firstPage: action.pageNumber ?? currentPage, selectedId: notebookCarrier(annotations)!.id };
+  }
   let page = action.pageNumber ?? currentPage;
   if (page < 1 || page > count) throw new Error('The requested note page does not exist.');
   let target = annotations.find((annotation): annotation is TextNoteAnnotation => annotation.pageNumber === page &&
@@ -111,6 +124,12 @@ export async function insertAiNotebookImage(annotations: Annotation[], count: nu
 /** Use the final sheet only if empty; existing writing and cutouts are never covered. */
 export async function appendAiNotebookText(annotations: Annotation[], pageCount: number, text: string) {
   if (!text.trim() || text.length > MAX_NOTE_LENGTH) throw new Error('Note text must contain 1–20000 characters.');
+  const structured = notebookCarrier(annotations)?.notebookDocument;
+  if (structured) {
+    return { annotations: withNotebook(annotations, { ...structured,
+      content: { ...structured.content, content: [...structured.content.content ?? [], ...markdownBlocks(text)] } }),
+      count: pageCount, firstPage: pageCount };
+  }
   const markdown = text.replace(/\r\n?/g, '\n');
   const pages = typeof document === 'undefined'
     ? paginateNotebookMarkdown(markdown, (content) => Math.ceil(content.length / 55) * 20 + content.split('\n').length * 8)
