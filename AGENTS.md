@@ -94,6 +94,10 @@ Preserve the current safety properties when changing it: Codex prompts go throug
 
 ## Verification
 
+Run `bun run check` for formatting, typed ESLint, TypeScript, Knip, and Bun tests. Generate bindings first on a fresh checkout with `bun run generate:bindings`. Use `bun run check:rust` for Rust formatting, Clippy, and tests, and `bun run audit:rust` for the dependency policy.
+
+ESLint's existing findings are tracked per file/rule in `eslint-suppressions.json`. Fix findings and use `bun run lint:prune` to reduce that baseline; preserve enforcement for new code. Knip uses the notebook package's declared exports as entry points. Keep generated bindings and build output out of formatting and linting. See `DEVELOPMENT.md` for maintenance commands, hook behavior, and audit exceptions.
+
 Run checks proportional to the change:
 
 - TypeScript or React: `bunx tsc --noEmit`, relevant `bun test` coverage, `bun run build:frontend`.

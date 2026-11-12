@@ -17,8 +17,15 @@ build-frontend:
     bun run build:frontend
 
 check:
-    bun x tsc --noEmit
-    cargo check --manifest-path src-tauri/Cargo.toml
+    bun run check
+    bun run check:rust
+
+format:
+    bun run format
+    cargo fmt --manifest-path src-tauri/Cargo.toml
+
+audit:
+    bun run audit:rust
 
 clean:
     cargo clean --manifest-path src-tauri/Cargo.toml

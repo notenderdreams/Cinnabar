@@ -64,6 +64,31 @@ bun run dev:frontend
 
 ## Testing & Quality Checks
 
+The maintenance tools are installed by `bun install`, which also activates the shared Husky hook. Use the pinned Bun version in `package.json`. On a fresh checkout, run `bun run generate:bindings` before checks that need native types.
+
+| Command                | Purpose                                                                 |
+| ---------------------- | ----------------------------------------------------------------------- |
+| `bun run format`       | Format supported files and sort Tailwind classes using `src/index.css`. |
+| `bun run format:check` | Check formatting without modifying files.                               |
+| `bun run lint`         | Run typed ESLint, React Hooks, accessibility, and React Refresh checks. |
+| `bun run lint:fix`     | Apply safe ESLint fixes.                                                |
+| `bun run lint:prune`   | Remove resolved findings from the lint baseline.                        |
+| `bun run typecheck`    | Check application and imported notebook TypeScript.                     |
+| `bun run knip`         | Find unused files, exports, and dependencies across both workspaces.    |
+| `bun run check`        | Run the complete frontend maintenance suite.                            |
+| `bun run check:rust`   | Check Rust formatting, run Clippy, and run Rust tests.                  |
+| `bun run audit:rust`   | Check Rust dependency advisories, licenses, sources, and bans.          |
+
+Prettier owns formatting; ESLint's conflicting formatting rules are disabled. Generated bindings, build artifacts, and local research output are excluded. Knip discovers Vite entry points and the notebook package's exported entry points, with Bun tests included explicitly.
+
+`eslint-suppressions.json` records existing findings by file and rule. New files and increases in those counts fail linting. This allows gradual cleanup without disabling correctness rules across the project. Fix the underlying finding, run `bun run lint:prune`, and include the reduced baseline in the same commit. Regenerating the baseline to accept new violations defeats that check.
+
+The pre-commit hook runs lint-staged: ESLint and Prettier on staged JS/TS, Prettier on staged documents/styles/configuration, and rustfmt checks when Rust files are staged. Full-project checks run in CI on macOS, Windows, and Linux. Keep commit hooks quick; run `bun run check` and the relevant native checks before opening a PR.
+
+Install the audit CLI once with `cargo install cargo-deny --version 0.20.2 --locked`. `deny.toml` checks desktop targets and records explicit exceptions for unmaintained transitive GTK/Tauri/dialog dependencies. It also documents the remaining Linux `glib` advisory, whose fixed version is incompatible with Tauri's GTK 3 dependency tree. Review these exceptions during native dependency upgrades. Other vulnerability/soundness advisories and yanked releases fail the audit; dependency updates must pass native tests, Clippy, and frontend checks.
+
+The GitHub Actions workflow runs checks on pull requests and pushes to `main`. It also runs the Rust dependency policy in a separate job. Local successful checks do not replace verification on the other desktop platforms.
+
 Run the verification suite before committing changes:
 
 ```bash
