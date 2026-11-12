@@ -1,0 +1,11 @@
+node_modules/
+dist/
+out/
+coverage/
+src-tauri/target/
+src-tauri/gen/
+src/lib/bindings.ts
+graphify-out/
+.dead-brain/
+bun.lock
+src-tauri/Cargo.lock
