@@ -16,6 +16,7 @@ export function NotebookWorkspace({ onBack, initialTarget, embedded = false, zoo
   const [layout, setLayout] = useState<NotebookLayout>({ pages: [], height: PAPER.height });
   const [localZoom, setLocalZoom] = useState(embedded ? .8 : 1);
   const [page, setPage] = useState(1);
+  const [spacePressed, setSpacePressed] = useState(false);
   const zoom = controlledZoom ?? localZoom;
   const changeZoom = onZoomChange ?? setLocalZoom;
   const viewport = useRef<HTMLElement | null>(null);
@@ -25,6 +26,33 @@ export function NotebookWorkspace({ onBack, initialTarget, embedded = false, zoo
   const saving = useRef(false);
   const file = notebook.session?.present;
   const exportedRevision = useRef('');
+
+  useEffect(() => {
+    const down = (event: KeyboardEvent) => {
+      const target = event.target;
+      if (event.code !== 'Space' || event.repeat || (target instanceof HTMLElement && (target.isContentEditable || target.closest('input, textarea, select, button')))) return;
+      setSpacePressed(true);
+      // Prevent Space from scrolling the canvas before a drag starts.
+      if (viewport.current?.contains(target as Node)) event.preventDefault();
+    };
+    const up = (event: KeyboardEvent) => { if (event.code === 'Space') setSpacePressed(false); };
+    const reset = () => {
+      setSpacePressed(false);
+      const element = viewport.current;
+      if (element && pan.current && element.hasPointerCapture(pan.current.id)) element.releasePointerCapture(pan.current.id);
+      pan.current = null;
+      if (element) delete element.dataset.panning;
+    };
+    window.addEventListener('keydown', down);
+    window.addEventListener('keyup', up);
+    window.addEventListener('blur', reset);
+    return () => {
+      window.removeEventListener('keydown', down);
+      window.removeEventListener('keyup', up);
+      window.removeEventListener('blur', reset);
+      reset();
+    };
+  }, []);
 
   const save = useCallback(async () => {
     const snapshot = latest.current.session?.present;
@@ -115,14 +143,17 @@ export function NotebookWorkspace({ onBack, initialTarget, embedded = false, zoo
       }
     }}>
     {notebook.error && <div role="alert" className="notebook-error">{notebook.error}<button type="button" onClick={() => notebook.setError(null)}>Dismiss</button></div>}
-    <main ref={viewport} className="notebook-paper-viewport" aria-label="Notebook paper"
+    <main ref={viewport} className="notebook-paper-viewport" aria-label="Notebook paper" data-hand-mode={spacePressed || undefined}
       onScroll={event => {
         const element = event.currentTarget;
         const stack = element.querySelector<HTMLElement>('.independent-paper-stack');
         if (stack) setPage(Math.min(pageCount, Math.max(1, Math.floor((element.scrollTop - stack.offsetTop + element.clientHeight / 2) / ((PAPER.height + PAPER.gap) * zoom)) + 1)));
       }}
       onPointerDownCapture={event => {
-        if (event.button !== 1 && !(event.button === 0 && !(event.target as HTMLElement).closest('.independent-paper-stack'))) return;
+        const target = event.target as HTMLElement;
+        if (target.closest('button, input, textarea, select, a')) return;
+        const background = !target.closest('.independent-paper-stack');
+        if (event.button !== 1 && !(event.button === 0 && (spacePressed || background))) return;
         event.preventDefault();
         event.stopPropagation();
         const element = event.currentTarget;

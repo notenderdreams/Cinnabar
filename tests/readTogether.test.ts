@@ -31,7 +31,7 @@ describe('read together page rows', () => {
     expect(dashboardSource).toContain('onOpenPdfPair(');
     expect(viewerSource).toContain('getTargetContainerForPoint');
     expect(viewerSource).toContain('handleSpaceOverlayMouseDown');
-    expect(viewerSource).toContain('onMouseDown={handleSpaceOverlayMouseDown}');
+    expect(viewerSource).toContain('onMouseDownCapture={isSpacePressed');
     expect(viewerSource).toContain('onActivePaneChange?.(pane)');
   });
 

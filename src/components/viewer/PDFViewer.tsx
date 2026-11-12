@@ -1290,6 +1290,11 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
   return (
     <main
       ref={companionPdfDoc ? undefined : viewerContainerRef}
+      onMouseDownCapture={isSpacePressed ? event => {
+        handleSpaceOverlayMouseDown(event);
+        event.stopPropagation();
+      } : undefined}
+      data-hand-mode={isSpacePressed || undefined}
       onMouseDown={companionPdfDoc ? undefined : handleStartPan}
       onPointerDown={companionPdfDoc ? undefined : handleViewerPointerDown}
       onPointerMove={companionPdfDoc ? undefined : handleViewerPointerMove}
@@ -1350,14 +1355,6 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
             </div>
           </div>
         </div>
-      )}
-
-      {/* Spacebar Pan Glass Interceptor (captures clicks everywhere over text/layers when space is held) */}
-      {isSpacePressed && (
-        <div
-          onMouseDown={handleSpaceOverlayMouseDown}
-          className="fixed inset-0 z-40 cursor-grab active:cursor-grabbing bg-transparent"
-        />
       )}
 
       {/* Dragging file overlay cue */}
