@@ -8,3 +8,4 @@ export * from './tauri/clipboard';
 export * from './tauri/platform';
 export * from './tauri/shortcuts';
 export * from './tauri/pdf';
+export * from './tauri/notebooks';

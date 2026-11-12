@@ -50,6 +50,7 @@ import {
 import { SettingsModal } from '../modals/SettingsModal';
 
 interface DashboardProps {
+  onOpenNotebook: () => void;
   onOpenPdf: (data: Uint8Array, fileName: string, filePath?: string, initialPageNumber?: number, documentId?: string) => Promise<boolean>;
   onOpenPdfPair: (
     primary: { data: Uint8Array; fileName: string; filePath?: string; initialPageNumber?: number; documentId?: string },
@@ -81,6 +82,7 @@ const SORT_OPTIONS: { value: SortOption; label: string; icon: React.FC<{ classNa
 ];
 
 export const Dashboard: React.FC<DashboardProps> = ({
+  onOpenNotebook,
   onOpenPdf,
   onOpenPdfPair,
   onSwitchToReader,
@@ -575,6 +577,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
         {/* Right Actions: Add Folder, Open File & Back to Reader Studio */}
         <div className="flex items-center gap-1.5 app-no-drag justify-self-end" data-tauri-drag-region="false">
+          <button type="button" className="btn-secondary" onClick={onOpenNotebook}>Notebook</button>
           <button
             onClick={onToggleTheme}
             className="btn-icon"

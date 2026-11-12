@@ -14,7 +14,7 @@ export type ToolType =
 
 export type ViewMode = 'continuous' | 'single' | 'spread';
 
-export type AppScreen = 'dashboard' | 'reader';
+export type AppScreen = 'dashboard' | 'reader' | 'notebook';
 
 export interface DocumentBookmark {
   id: string;

@@ -95,6 +95,32 @@ pub fn open_json_dialog() -> Option<OpenFileResult> {
 
 #[tauri::command]
 #[specta::specta]
+pub fn open_notebook_dialog() -> Option<OpenFileResult> {
+    let _guard = DialogGuard::try_acquire(&IS_JSON_DIALOG_OPEN)?;
+    let file = rfd::FileDialog::new()
+        .add_filter("Cinnabar Notebook", &["json"])
+        .set_title("Open Notebook")
+        .pick_file()?;
+    read_file(&file).map_err(log_error).ok()
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn save_notebook_dialog(content: String, default_name: String) -> SaveResult {
+    let _guard = match DialogGuard::try_acquire(&IS_SAVE_JSON_DIALOG_OPEN) {
+        Some(guard) => guard,
+        None => return SaveResult::failed(),
+    };
+    let path = rfd::FileDialog::new()
+        .add_filter("Cinnabar Notebook", &["json"])
+        .set_title("Save Notebook")
+        .set_file_name(&default_name)
+        .save_file();
+    save_to_selected_path(path, content.as_bytes())
+}
+
+#[tauri::command]
+#[specta::specta]
 pub fn read_file_from_path(file_path: String) -> Option<OpenFileResult> {
     read_file(Path::new(&file_path)).map_err(log_error).ok()
 }

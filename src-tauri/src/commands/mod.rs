@@ -17,6 +17,8 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
         documents::save_pdf_dialog,
         documents::write_pdf_file,
         documents::save_json_dialog,
+        documents::open_notebook_dialog,
+        documents::save_notebook_dialog,
         documents::read_file_from_path,
         documents::select_directory_dialog,
         documents::scan_directory_pdfs,

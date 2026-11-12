@@ -4,6 +4,7 @@ import { Sidebar } from './components/layout/Sidebar';
 import { Toolbar } from './components/layout/Toolbar';
 import { PDFViewer } from './components/viewer/PDFViewer';
 import { NotePanel } from './components/viewer/NotePanel';
+const NotebookWorkspace = React.lazy(() => import('./components/notebook/NotebookWorkspace').then(module => ({ default: module.NotebookWorkspace })));
 import { createAiClipboardAttachment } from './lib/ai/chatClipboard';
 import { appendAiNotebookText, getAiNotebookContext, insertAiNotebookImage } from './lib/ai/notebookActions';
 import { notebookKey, loadNotePageCount, notePageCount, editNotePages } from './lib/notes';
@@ -1233,8 +1234,13 @@ export function App() {
       )}
 
       {/* VIEW 1: DASHBOARD & SAVED DIRECTORIES LIBRARY */}
-      {currentScreen === 'dashboard' ? (
+      {currentScreen === 'notebook' ? (
+        <React.Suspense fallback={<div role="status">Opening notebook…</div>}>
+          <NotebookWorkspace onBack={() => setCurrentScreen('dashboard')} />
+        </React.Suspense>
+      ) : currentScreen === 'dashboard' ? (
         <Dashboard
+          onOpenNotebook={() => setCurrentScreen('notebook')}
           hasActiveDoc={Boolean(pdfDoc || lastActiveDoc)}
           activeDocName={docInfo?.fileName || lastActiveDoc?.fileName}
           isDarkTheme={isDarkTheme}
