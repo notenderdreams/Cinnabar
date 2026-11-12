@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import type { PDFDocumentProxy } from 'pdfjs-dist';
 import { PDFPage } from './PDFPage';
+import { SplitDivider } from '../ui/SplitDivider';
 import { UploadCloud } from 'lucide-react';
 import type { Annotation, HighlightStyle, LineHighlightStyle, ReadingTheme, TextNoteAnnotation, ToolType, ViewMode } from '../../lib/types/index';
 import type { AiExplanationAnnotation } from '../../lib/types/index';
@@ -156,6 +157,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
 }) => {
   const viewerContainerRef = useRef<HTMLDivElement | null>(null);
   const companionContainerRef = useRef<HTMLDivElement | null>(null);
+  const [split, setSplit] = useState(.5);
   const [isViewerDraggingFile, setIsViewerDraggingFile] = useState(false);
   const [isSpacePressed, setIsSpacePressed] = useState(false);
   const [isPanning, setIsPanning] = useState(false);
@@ -1379,7 +1381,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
             <section
               onPointerDownCapture={() => onActivePaneChange?.('primary')}
               onFocusCapture={() => onActivePaneChange?.('primary')}
-              className={`flex h-full w-1/2 min-w-0 flex-none flex-col overflow-hidden bg-[var(--workspace)] transition-shadow duration-150 ${
+              className={`flex h-full min-w-0 flex-1 flex-col overflow-hidden bg-[var(--workspace)] transition-shadow duration-150 ${
                 activePane === 'primary' ? 'shadow-[inset_0_0_0_1px_var(--primary)]' : ''
               }`}
               aria-label={`${primaryFileName} pages`}
@@ -1451,16 +1453,13 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
               </div>
             </section>
 
-            <div
-              className="relative z-30 w-px shrink-0 bg-[var(--border-strong)] shadow-[0_0_8px_rgba(0,0,0,0.18)]"
-              aria-hidden="true"
-              data-read-together-divider
-            />
+            <SplitDivider value={split} onChange={setSplit} label="Resize PDF panes" readTogether />
 
             <section
               onPointerDownCapture={() => onActivePaneChange?.('companion')}
               onFocusCapture={() => onActivePaneChange?.('companion')}
-              className={`flex h-full w-1/2 min-w-0 flex-none flex-col overflow-hidden bg-[var(--workspace)] transition-shadow duration-150 ${
+              style={{ flexBasis: `calc(${(1 - split) * 100}% - ${(1 - split) * 6}px)` }}
+              className={`flex h-full min-w-0 flex-none flex-col overflow-hidden bg-[var(--workspace)] transition-shadow duration-150 ${
                 activePane === 'companion' ? 'shadow-[inset_0_0_0_1px_var(--primary)]' : ''
               }`}
               aria-label={`${companionFileName || 'Companion PDF'} pages`}

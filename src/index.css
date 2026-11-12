@@ -2264,7 +2264,12 @@
 .notebook-library-message { font-size: 12px; color: var(--muted-foreground); padding: 8px 0; }
 .notebook-library-import { text-align: left; font-size: 12px; color: var(--muted-foreground); padding: 8px; }
 .reader-notebooks-panel { display: flex; flex-direction: column; flex: 0 0 360px; min-width: 320px; min-height: 0; overflow: hidden; border-left: 1px solid var(--border); background: var(--background); color: var(--foreground); }
-.reader-notebooks-panel.has-notebook { flex-basis: min(52vw, 780px); min-width: 400px; }
+.reader-notebooks-panel.has-notebook { flex-basis: min(52%, 780px); }
+.reader-notebooks-panel { min-width: min(320px, 45%); border-left: 0; }
+.reader-split-divider { position: relative; z-index: 30; flex: 0 0 6px; cursor: col-resize; touch-action: none; user-select: none; }
+.reader-split-divider::after { content: ''; position: absolute; inset: 0 2px; background: var(--border); }
+.reader-split-divider:hover::after, .reader-split-divider[data-resizing="true"]::after { background: var(--primary); }
+.reader-split-divider:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; }
 .reader-notebooks-panel.is-closed { display: none; }
 .reader-notebooks-heading { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--border); font-size: 13px; font-weight: 600; }
 .reader-notebooks-panel > .notebook-library { padding: 20px 16px; overflow: auto; }

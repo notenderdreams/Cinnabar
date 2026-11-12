@@ -1355,6 +1355,7 @@ export function App() {
             )}
 
             {/* Primary PDF Canvas Viewport */}
+            <div className="flex flex-1 min-w-0 overflow-hidden">
             <div className="flex-1 min-w-0 relative overflow-hidden flex bg-[var(--workspace)]">
               <div className={isNoteMode ? 'note-source-pane' : 'contents'}
                 onPointerDownCapture={() => { setNotePaneActive(false); setNotebookPaneActive(false); }}
@@ -1498,6 +1499,7 @@ export function App() {
             {hasOpenedNotebookPanel && <React.Suspense fallback={null}>
               <NotebookPanel zoom={notebookZoom} onZoomChange={setNotebookZoom} onActivate={activateNotebookPane} onDocumentChange={setPanelNotebook} pageRequest={notebookPageRequest} fitRequest={notebookFitRequest} isOpen={isNotebookPanelOpen && !isZenMode} onClose={closeNotebookPanel} />
             </React.Suspense>}
+            </div>
 
             {!isZenMode && !isNotebookPanelOpen && (
               <button
