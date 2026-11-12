@@ -8,7 +8,7 @@ import type {
   TextHighlightAnnotation,
   TextNoteAnnotation,
 } from '../types/index';
-import { isTauri, tauriSavePdf, tauriSaveJson } from '../../utils/tauriBridge';
+import { tauriSavePdf, tauriSaveJson } from '../../utils/tauriBridge';
 import { rasterizeStickyNote, rasterizePlainText } from '../annotations/textNoteRasterizer';
 
 // Robust helper to convert any color format (hex3, hex6, hex8, rgb, rgba, named colors) to RGB (0..1)
@@ -464,51 +464,15 @@ export async function exportAnnotatedPDF(
 }
 
 /**
- * Downloads or saves the generated PDF bytes via Tauri native dialog or Web Browser download
+ * Saves generated PDF bytes through the native dialog
  */
-export async function savePdfFile(
-  pdfBytes: Uint8Array,
-  fileName: string = 'document_annotated.pdf'
-): Promise<{ success: boolean; path?: string }> {
-  if (isTauri()) {
-    return await tauriSavePdf(pdfBytes, fileName);
-  }
-
-  // Web Browser fallback
-  const blob = new Blob([pdfBytes as unknown as BlobPart], { type: 'application/pdf' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = fileName;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 5000);
-  return { success: true };
+export async function savePdfFile(pdfBytes: Uint8Array, fileName = 'document_annotated.pdf'): Promise<{ success: boolean; path?: string }> {
+  return tauriSavePdf(pdfBytes, fileName);
 }
 
 /**
- * Saves annotations session as JSON file via Tauri native dialog or Web Browser
+ * Saves the annotation session through the native JSON dialog
  */
-export async function saveAnnotationsJson(
-  annotations: Annotation[],
-  fileName: string = 'annotations.json'
-): Promise<{ success: boolean; path?: string }> {
-  const jsonString = JSON.stringify(annotations, null, 2);
-
-  if (isTauri()) {
-    return await tauriSaveJson(jsonString, fileName);
-  }
-
-  // Web Browser fallback
-  const blob = new Blob([jsonString], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = fileName;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 5000);
-  return { success: true };
+export async function saveAnnotationsJson(annotations: Annotation[], fileName = 'annotations.json'): Promise<{ success: boolean; path?: string }> {
+  return tauriSaveJson(JSON.stringify(annotations, null, 2), fileName);
 }

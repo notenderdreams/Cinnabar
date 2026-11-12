@@ -1,5 +1,4 @@
-/** Public desktop interface. Capability modules own native calls and browser fallbacks. */
-export { isTauri } from './tauri/runtime';
+/** Public desktop interface. Capability modules own native calls. */
 export * from './tauri/library';
 export * from './tauri/ai';
 export * from './tauri/window';

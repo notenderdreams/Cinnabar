@@ -1,5 +1,5 @@
 import { commands } from '../../lib/bindings';
-import { isTauri, unwrapNativeResult } from './runtime';
+import { unwrapNativeResult } from './runtime';
 
 export interface DiscoveredAiProvider {
   id: string;
@@ -20,7 +20,7 @@ export type AiProviderStatus =
       availableProviders: DiscoveredAiProvider[];
     }
   | {
-      status: 'native_required' | 'missing_cli' | 'unauthenticated' | 'incompatible_cli';
+      status: 'missing_cli' | 'unauthenticated' | 'incompatible_cli';
       provider?: string | null;
       version?: string | null;
       executable?: string | null;
@@ -29,7 +29,6 @@ export type AiProviderStatus =
     };
 
 export type AiExplanationErrorCode =
-  | 'native_required'
   | 'missing_cli'
   | 'unauthenticated'
   | 'incompatible_cli'
@@ -50,7 +49,6 @@ export type AiExplanationResult =
   | { ok: false; code: AiExplanationErrorCode; message: string };
 
 const AI_ERROR_CODES = new Set<AiExplanationErrorCode>([
-  'native_required',
   'missing_cli',
   'unauthenticated',
   'incompatible_cli',
@@ -118,24 +116,10 @@ function normalizeExplanationResult(
 }
 
 export async function getAiProviderStatus(): Promise<AiProviderStatus> {
-  if (!isTauri()) {
-    return {
-      status: 'native_required',
-      message: 'Local CLI explanations require the Cinnabar desktop app.',
-      availableProviders: [],
-    };
-  }
   return normalizeProviderStatus(await commands.getAiProviderStatus());
 }
 
 export async function setAiProviderExecutable(executablePath: string): Promise<AiProviderStatus> {
-  if (!isTauri()) {
-    return {
-      status: 'native_required',
-      message: 'Local CLI explanations require the Cinnabar desktop app.',
-      availableProviders: [],
-    };
-  }
   return normalizeProviderStatus(await commands.setAiProviderExecutable(executablePath));
 }
 
@@ -143,20 +127,10 @@ export async function setAiProviderPreference(
   providerId: string,
   executablePath?: string | null,
 ): Promise<AiProviderStatus> {
-  if (!isTauri()) {
-    return {
-      status: 'native_required',
-      message: 'Local CLI explanations require the Cinnabar desktop app.',
-      availableProviders: [],
-    };
-  }
   return normalizeProviderStatus(await commands.setAiProviderPreference(providerId, executablePath ?? null));
 }
 
 export async function runAiExplanation(request: AiExplanationRequest): Promise<AiExplanationResult> {
-  if (!isTauri()) {
-    return { ok: false, code: 'native_required', message: 'Local CLI explanations require the Cinnabar desktop app.' };
-  }
   try {
     return normalizeExplanationResult(await commands.runAiExplanation({ ...request, responseFormat: request.responseFormat ?? null }));
   } catch (error) {
@@ -165,7 +139,6 @@ export async function runAiExplanation(request: AiExplanationRequest): Promise<A
 }
 
 export async function cancelAiExplanation(requestId: string): Promise<boolean> {
-  if (!isTauri()) return false;
   try {
     return await commands.cancelAiExplanation(requestId);
   } catch {

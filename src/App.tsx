@@ -43,7 +43,6 @@ import {
   saveViewMode,
 } from './lib/storage/storage';
 import {
-  isTauri,
   tauriOpenImage,
   tauriUpdateLibraryDocumentState,
   toggleFullscreenWindow,
@@ -132,8 +131,6 @@ export function App() {
     saveHighlightPalette({ colors: highlightColors, selectedIndex: selectedPaletteIndex });
   }, [highlightColors, selectedPaletteIndex]);
 
-  // Hidden File Inputs for Browser fallback
-  const imageInputRef = useRef<HTMLInputElement | null>(null);
 
   // Active Cursor coordinates over PDF pages for precise cursor pasting
   const cursorPosRef = useRef<{ pageNumber: number; x: number; y: number } | null>(null);
@@ -237,7 +234,7 @@ export function App() {
   } = useAnnotations(docKey, docInfo);
 
   useEffect(() => {
-    if (!isTauri() || !docInfo?.libraryId) return;
+    if (!docInfo?.libraryId) return;
     const timer = window.setTimeout(() => {
       void tauriUpdateLibraryDocumentState(docInfo.libraryId!, currentPage, annotations.length)
         .catch((error) => console.warn('Failed to update library reading state:', error));
@@ -359,12 +356,10 @@ export function App() {
 
   const {
     lastActiveDoc,
-    pdfInputRef,
     openPdfInReader,
     openPdfPairInReader,
     handleResumeReading,
     handleOpenPdf,
-    handlePdfInputChange,
   } = useDocumentSession({
     pdfDoc, docInfo, currentPage, loadPdf, closeCompanionPdf, loadCompanionPdf,
     onScreenChange: setCurrentScreen,
@@ -411,36 +406,15 @@ export function App() {
     [pdfDoc, addAttachedImage, isDarkTheme, notesActive, notes.addAttachedImage]
   );
 
-  // Open Image to Attach (Desktop native dialog or Browser File Input fallback)
+  // Attach an image from the native dialog.
   const handleOpenImage = async () => {
-    if (isTauri()) {
-      const imgData = await tauriOpenImage();
-      if (imgData) {
-        const cursor = notesActive ? noteCursorRef.current : cursorPosRef.current;
-        const targetPage = cursor?.pageNumber ?? (notesActive ? notebook.page : currentPage);
-        const cursorPos = cursor ? { x: cursor.x, y: cursor.y } : null;
-        await handleAddImage(imgData.dataUrl, targetPage, imgData.fileName, cursorPos);
-      }
-    } else {
-      imageInputRef.current?.click();
+    const imgData = await tauriOpenImage();
+    if (imgData) {
+      const cursor = notesActive ? noteCursorRef.current : cursorPosRef.current;
+      const targetPage = cursor?.pageNumber ?? (notesActive ? notebook.page : currentPage);
+      const cursorPos = cursor ? { x: cursor.x, y: cursor.y } : null;
+      await handleAddImage(imgData.dataUrl, targetPage, imgData.fileName, cursorPos);
     }
-  };
-
-  const handleImageInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = async () => {
-        if (typeof reader.result === 'string') {
-          const cursor = notesActive ? noteCursorRef.current : cursorPosRef.current;
-          const targetPage = cursor?.pageNumber ?? (notesActive ? notebook.page : currentPage);
-          const cursorPos = cursor ? { x: cursor.x, y: cursor.y } : null;
-          await handleAddImage(reader.result, targetPage, file.name, cursorPos);
-        }
-      };
-      reader.readAsDataURL(file);
-    }
-    e.target.value = '';
   };
 
   // Handle Drag & Drop of image directly onto a page canvas
@@ -1115,7 +1089,6 @@ export function App() {
   };
 
   useEffect(() => {
-    if (!isTauri()) return;
     const unsubscribe = listenToNativeMenuEvents((action) => {
       const h = menuHandlerRef.current;
       switch (action) {
@@ -1206,22 +1179,6 @@ export function App() {
       data-ui-theme={isDarkTheme ? 'dark' : 'light'}
       className="macos-window h-screen w-screen flex flex-col bg-[#1e1e24] text-[#f0f0f4] overflow-hidden select-none transition-colors duration-200"
     >
-      {/* Hidden File Inputs for Browser Fallback */}
-      <input
-        ref={pdfInputRef}
-        type="file"
-        accept="application/pdf,.pdf"
-        className="hidden"
-        onChange={handlePdfInputChange}
-      />
-      <input
-        ref={imageInputRef}
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={handleImageInputChange}
-      />
-
       {/* Floating Dynamic Feedback Toast */}
       {toastMessage && (
         <div className="fixed top-13 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#26262e]/95 border border-[#3e3e4c] text-xs text-zinc-100 shadow-2xl backdrop-blur-md animate-slide-down pointer-events-none">

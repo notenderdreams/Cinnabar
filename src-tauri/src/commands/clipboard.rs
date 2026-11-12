@@ -1,5 +1,21 @@
+use super::error::{command_error, CommandResult};
 use anyhow::{Context, Result};
 use base64::Engine;
+
+#[tauri::command]
+#[specta::specta]
+pub fn read_text_from_clipboard() -> CommandResult<Option<String>> {
+    read_text().map_err(command_error)
+}
+
+fn read_text() -> Result<Option<String>> {
+    let mut clipboard = arboard::Clipboard::new().context("failed to access the clipboard")?;
+    match clipboard.get_text() {
+        Ok(text) => Ok(Some(text)),
+        Err(arboard::Error::ContentNotAvailable) => Ok(None),
+        Err(error) => Err(error).context("failed to read clipboard text"),
+    }
+}
 
 #[tauri::command]
 #[specta::specta]

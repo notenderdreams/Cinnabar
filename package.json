@@ -9,20 +9,16 @@
   ],
   "scripts": {
     "dev": "tauri dev",
-    "dev:web": "bun run generate:bindings && vite",
+    "dev:frontend": "bun run generate:bindings && vite",
     "build": "tauri build",
-    "build:web": "bun run generate:bindings && tsc && vite build",
-    "generate:bindings": "cargo test --manifest-path src-tauri/Cargo.toml exports_typescript_bindings --quiet",
-    "preview": "vite preview"
+    "build:frontend": "bun run generate:bindings && tsc && vite build",
+    "generate:bindings": "cargo test --manifest-path src-tauri/Cargo.toml exports_typescript_bindings --quiet"
   },
   "dependencies": {
     "@cinnabar/notebook": "workspace:*",
     "@hugeicons/core-free-icons": "^4.3.0",
     "@hugeicons/react": "^1.1.10",
     "@tauri-apps/api": "^2.11.1",
-    "@tauri-apps/plugin-dialog": "^2.7.2",
-    "@tauri-apps/plugin-fs": "^2.5.1",
-    "@tauri-apps/plugin-opener": "^2.5.4",
     "@tiptap/core": "3.33.1",
     "@tiptap/pm": "3.33.1",
     "canvas-confetti": "^1.9.4",

@@ -1,7 +1,7 @@
 import type { PDFDocumentProxy } from 'pdfjs-dist';
 import { PDFDocument } from 'pdf-lib';
 import {
-  isTauri,
+  saveImageFile,
   tauriCopyImageToClipboard,
   tauriCopyTextToClipboard,
   tauriDeletePdfPage,
@@ -9,52 +9,10 @@ import {
 } from '../../utils/tauriBridge';
 
 /**
- * Universal clipboard text writer with native desktop bridge and browser fallback
+ * Copy text through the native desktop clipboard
  */
 export async function copyTextToClipboard(text: string): Promise<boolean> {
-  if (!text) return false;
-
-  // Strategy 1: Tauri native desktop pasteboard
-  if (isTauri()) {
-    try {
-      const nativeOk = await tauriCopyTextToClipboard(text);
-      if (nativeOk) return true;
-    } catch (e) {
-      console.warn('Tauri native copy text failed, trying browser clipboard:', e);
-    }
-  }
-
-  // Strategy 2: Async Clipboard API
-  if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
-    try {
-      await navigator.clipboard.writeText(text);
-      return true;
-    } catch (err) {
-      console.warn('navigator.clipboard.writeText failed, attempting execCommand fallback:', err);
-    }
-  }
-
-  // Strategy 3: Hidden textarea with execCommand('copy')
-  try {
-    const textArea = document.createElement('textarea');
-    textArea.value = text;
-    textArea.style.position = 'fixed';
-    textArea.style.left = '-9999px';
-    textArea.style.top = '-9999px';
-    textArea.style.opacity = '0';
-    textArea.setAttribute('readonly', '');
-    document.body.appendChild(textArea);
-    textArea.focus();
-    textArea.select();
-    textArea.setSelectionRange(0, 999999);
-    const successful = document.execCommand('copy');
-    document.body.removeChild(textArea);
-    if (successful) return true;
-  } catch (err) {
-    console.error('execCommand copy failed:', err);
-  }
-
-  return false;
+  return text ? tauriCopyTextToClipboard(text) : false;
 }
 
 /**
@@ -202,47 +160,13 @@ export async function capturePageCompositeCanvas(
 
 /**
  * Copy composite page image directly to system clipboard as image/png
- * (Uses native OS pasteboard in Tauri, and standard Clipboard API in browsers)
+ * Uses the native OS pasteboard
  */
 export async function copyPageImageToClipboard(
-  pageNumber: number | unknown,
-  pdfDoc?: PDFDocumentProxy | null,
-  pageIdPrefix: string = 'pdf-page'
+  pageNumber: number | unknown, pdfDoc?: PDFDocumentProxy | null, pageIdPrefix = 'pdf-page'
 ): Promise<boolean> {
   const canvas = await capturePageCompositeCanvas(pageNumber, pdfDoc, pageIdPrefix);
-  if (!canvas) return false;
-
-  const dataUrl = canvas.toDataURL('image/png');
-
-  // Strategy 1: Tauri native desktop pasteboard (macOS/Windows/Linux)
-  if (isTauri()) {
-    try {
-      const nativeOk = await tauriCopyImageToClipboard(dataUrl);
-      if (nativeOk) return true;
-    } catch (e) {
-      console.warn('Tauri native copy image failed, attempting browser clipboard:', e);
-    }
-  }
-
-  // Strategy 2: Modern Browser Async Clipboard API
-  if (navigator.clipboard && typeof ClipboardItem !== 'undefined') {
-    try {
-      const blobPromise = new Promise<Blob>((resolve, reject) => {
-        canvas.toBlob((blob) => {
-          if (blob) resolve(blob);
-          else reject(new Error('Canvas toBlob returned null'));
-        }, 'image/png');
-      });
-
-      const item = new ClipboardItem({ 'image/png': blobPromise });
-      await navigator.clipboard.write([item]);
-      return true;
-    } catch (clipErr) {
-      console.error('Browser ClipboardItem write failed:', clipErr);
-    }
-  }
-
-  return false;
+  return canvas ? tauriCopyImageToClipboard(canvas.toDataURL('image/png')) : false;
 }
 
 /**
@@ -308,33 +232,7 @@ export async function copyRegionImageToClipboard(
 
       const dataUrl = outputCanvas.toDataURL('image/png');
 
-      if (isTauri()) {
-        try {
-          const nativeOk = await tauriCopyImageToClipboard(dataUrl);
-          if (nativeOk) return true;
-        } catch (e) {
-          console.warn('Tauri native copy region image failed:', e);
-        }
-      }
-
-      if (navigator.clipboard && typeof ClipboardItem !== 'undefined') {
-        try {
-          const blobPromise = new Promise<Blob>((resolve, reject) => {
-            outputCanvas.toBlob((blob) => {
-              if (blob) resolve(blob);
-              else reject(new Error('Canvas toBlob returned null'));
-            }, 'image/png');
-          });
-
-          const item = new ClipboardItem({ 'image/png': blobPromise });
-          await navigator.clipboard.write([item]);
-          return true;
-        } catch (clipErr) {
-          console.error('Browser ClipboardItem write failed:', clipErr);
-        }
-      }
-
-      return false;
+      return await tauriCopyImageToClipboard(dataUrl);
     }
   } catch (err) {
     console.warn('DOM canvas crop failed, falling back to direct PDF render:', err);
@@ -378,22 +276,7 @@ export async function copyRegionImageToClipboard(
 
       const dataUrl = cropCanvas.toDataURL('image/png');
 
-      if (isTauri()) {
-        const nativeOk = await tauriCopyImageToClipboard(dataUrl);
-        if (nativeOk) return true;
-      }
-
-      if (navigator.clipboard && typeof ClipboardItem !== 'undefined') {
-        const blobPromise = new Promise<Blob>((resolve, reject) => {
-          cropCanvas.toBlob((blob) => {
-            if (blob) resolve(blob);
-            else reject(new Error('Canvas toBlob returned null'));
-          }, 'image/png');
-        });
-        const item = new ClipboardItem({ 'image/png': blobPromise });
-        await navigator.clipboard.write([item]);
-        return true;
-      }
+      return await tauriCopyImageToClipboard(dataUrl);
     } catch (err) {
       console.error('Direct offscreen region render failed:', err);
     } finally {
@@ -413,13 +296,11 @@ export async function deletePageFromPdf(
   pdfBytes: Uint8Array,
   pageNumber: number
 ): Promise<Uint8Array> {
-  if (isTauri()) {
-    try {
-      const nativeBytes = await tauriDeletePdfPage(pdfBytes, pageNumber);
-      if (nativeBytes) return nativeBytes;
-    } catch (err) {
-      console.warn('Native delete page failed, falling back to pdf-lib:', err);
-    }
+  try {
+    const nativeBytes = await tauriDeletePdfPage(pdfBytes, pageNumber);
+    if (nativeBytes) return nativeBytes;
+  } catch (err) {
+    console.warn('Native delete page failed, falling back to pdf-lib:', err);
   }
 
   const document = await PDFDocument.load(pdfBytes, { ignoreEncryption: true });
@@ -438,13 +319,11 @@ export async function addBlankPageBelow(
   pdfBytes: Uint8Array,
   pageNumber: number
 ): Promise<Uint8Array> {
-  if (isTauri()) {
-    try {
-      const nativeBytes = await tauriAddBlankPageBelow(pdfBytes, pageNumber);
-      if (nativeBytes) return nativeBytes;
-    } catch (err) {
-      console.warn('Native add blank page failed, falling back to pdf-lib:', err);
-    }
+  try {
+    const nativeBytes = await tauriAddBlankPageBelow(pdfBytes, pageNumber);
+    if (nativeBytes) return nativeBytes;
+  } catch (err) {
+    console.warn('Native add blank page failed, falling back to pdf-lib:', err);
   }
 
   const document = await PDFDocument.load(pdfBytes, { ignoreEncryption: true });
@@ -494,33 +373,13 @@ export function reindexAfterPageDeletion<T>(
 }
 
 /**
- * Download composite page image as high-res JPG (Optional standalone download action)
+ * Save composite page image through the native dialog
  */
 export async function downloadPageAsJpg(
-  pageNumber: number | unknown,
-  pdfDoc?: PDFDocumentProxy | null,
-  baseFileName: string = 'document'
+  pageNumber: number | unknown, pdfDoc?: PDFDocumentProxy | null, baseFileName = 'document'
 ): Promise<boolean> {
   const canvas = await capturePageCompositeCanvas(pageNumber, pdfDoc);
   if (!canvas) return false;
-
-  const safePageNum =
-    typeof pageNumber === 'number' && !isNaN(pageNumber)
-      ? Math.max(1, Math.floor(pageNumber))
-      : 1;
-
-  try {
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
-    const link = document.createElement('a');
-    link.href = dataUrl;
-    const cleanName = baseFileName.replace(/\.pdf$/i, '');
-    link.download = `${cleanName}_page_${safePageNum}.jpg`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    return true;
-  } catch (err) {
-    console.error('Failed to download JPG:', err);
-    return false;
-  }
+  const page = typeof pageNumber === 'number' && Number.isFinite(pageNumber) ? Math.max(1, Math.floor(pageNumber)) : 1;
+  return saveImageFile(canvas.toDataURL('image/jpeg', 0.95), `${baseFileName.replace(/\.pdf$/i, '')}_page_${page}.jpg`);
 }

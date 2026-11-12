@@ -1,11 +1,9 @@
 import { commands } from '../../lib/bindings';
-import { isTauri } from './runtime';
 
 export async function tauriDeletePdfPage(
   pdfBytes: Uint8Array,
   pageNumber: number
 ): Promise<Uint8Array | null> {
-  if (!isTauri()) return null;
   try {
     const res = await commands.deletePdfPageNative(Array.from(pdfBytes), pageNumber);
     if (res.status === 'ok') {
@@ -23,7 +21,6 @@ export async function tauriAddBlankPageBelow(
   pdfBytes: Uint8Array,
   pageNumber: number
 ): Promise<Uint8Array | null> {
-  if (!isTauri()) return null;
   try {
     const res = await commands.addBlankPageBelowNative(Array.from(pdfBytes), pageNumber);
     if (res.status === 'ok') {
@@ -40,7 +37,6 @@ export async function tauriAddBlankPageBelow(
 export async function tauriComputePdfFingerprint(
   pdfBytes: Uint8Array
 ): Promise<string | null> {
-  if (!isTauri()) return null;
   try {
     const res = await commands.computePdfFingerprint(Array.from(pdfBytes));
     if (res.status === 'ok') {
@@ -58,7 +54,6 @@ export async function tauriCompressImage(
   maxWidth = 1920,
   quality = 85
 ): Promise<string | null> {
-  if (!isTauri()) return null;
   try {
     const res = await commands.compressImageNative(dataUrl, maxWidth, quality);
     if (res.status === 'ok') {

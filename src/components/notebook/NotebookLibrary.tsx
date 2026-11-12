@@ -3,7 +3,7 @@ import { ArrowLeft, BookOpen, Plus, FolderOpen } from 'lucide-react';
 import { parseNotebookFile } from '@cinnabar/notebook';
 import { listLocalNotebooks, saveNotebookLocally, type NotebookSummary } from '../../lib/notebook/storage';
 import type { NotebookTarget } from '../../lib/notebook/navigation';
-import { isTauri, openNotebookFile } from '../../utils/tauriBridge';
+import { openNotebookFile } from '../../utils/tauriBridge';
 
 /** Shared notebook discovery for the home section and the reader's right panel. */
 export function NotebookLibrary({ onSelect, search = '' }: { onSelect: (target: NotebookTarget) => void; search?: string }) {
@@ -11,7 +11,6 @@ export function NotebookLibrary({ onSelect, search = '' }: { onSelect: (target: 
   const [showAll, setShowAll] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const input = useRef<HTMLInputElement>(null);
   const alive = useRef(false);
 
   useEffect(() => {
@@ -30,7 +29,6 @@ export function NotebookLibrary({ onSelect, search = '' }: { onSelect: (target: 
     } catch (failure) { if (alive.current) setError(`Could not open the notebook. ${String(failure)}`); }
   }
   async function chooseFile() {
-    if (!isTauri()) { input.current?.click(); return; }
     try { const content = await openNotebookFile(); if (content !== null && alive.current) await importFile(content); }
     catch (failure) { if (alive.current) setError(String(failure)); }
   }
@@ -57,11 +55,5 @@ export function NotebookLibrary({ onSelect, search = '' }: { onSelect: (target: 
         <button type="button" onClick={() => setShowAll(true)}><FolderOpen size={16} aria-hidden="true" />Open existing notebook</button>
       </div> : <button type="button" className="notebook-library-import" onClick={() => void chooseFile()}>Import notebook file…</button>}
     </>}
-    <input ref={input} hidden type="file" accept="application/json,.json" aria-label="Import notebook file" onChange={event => {
-      const file = event.target.files?.[0]; event.target.value = '';
-      if (!file) return;
-      if (file.size > 50_000_000) { setError('Notebook exceeds the 50 MB file limit.'); return; }
-      void file.text().then(importFile).catch(failure => { if (alive.current) setError(String(failure)); });
-    }} />
   </section>;
 }

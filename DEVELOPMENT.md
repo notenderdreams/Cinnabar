@@ -52,12 +52,12 @@ Launches the Tauri v2 desktop application with hot module reloading (HMR):
 bun run dev
 ```
 
-### 3. Run the Web Frontend Standalone
+### 3. Run the Frontend Dev Server for Tauri
 
-Runs the browser frontend in Vite for quick UI iteration:
+Runs the frontend server used by Tauri. This is not a supported standalone browser app:
 
 ```bash
-bun run dev:web
+bun run dev:frontend
 ```
 
 ---
@@ -80,8 +80,8 @@ cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
 # Type check
 bunx tsc --noEmit
 
-# Production web build
-bun run build:web
+# Production frontend build
+bun run build:frontend
 
 # Check formatting/whitespace
 git diff --check
@@ -91,9 +91,9 @@ git diff --check
 
 ## Building Binaries
 
-### Web Bundle
+### Frontend Assets for Tauri
 ```bash
-bun run build:web
+bun run build:frontend
 ```
 
 ### Native Desktop Application
@@ -119,7 +119,7 @@ The compiled platform-native installer/executable will be placed in `src-tauri/t
 │   │   ├── media/        # Image geometry and processing helpers
 │   │   └── theme/        # Reading theme behavior
 │   ├── utils/tauriBridge.ts # Public desktop interface
-│   ├── utils/tauri/      # Capability modules with native calls and browser fallbacks
+│   ├── utils/tauri/      # Capability modules with native calls
 │   ├── App.tsx           # Main application entry
 │   └── index.css         # Design system tokens and styles
 ├── src-tauri/
@@ -141,11 +141,11 @@ The compiled platform-native installer/executable will be placed in `src-tauri/t
 ```
 
 ### Native Tauri Bridge
-All desktop-specific operations (file dialogs, folder scanning, file reading/writing, clipboard access, external URL opening) must route through [`src/utils/tauriBridge.ts`](src/utils/tauriBridge.ts). Always maintain a safe fallback for the browser build when applicable.
+All desktop-specific operations (file dialogs, folder scanning, file reading/writing, clipboard access, external URL opening) must route through [`src/utils/tauriBridge.ts`](src/utils/tauriBridge.ts). Cinnabar runs only inside Tauri; use native file dialogs, clipboard access, window operations, and URL opening.
 
-The bridge re-exports capability modules in `src/utils/tauri/`. UI and domain callers use the public bridge; capability modules share runtime detection and result handling without importing the public bridge back into themselves. Domain types live in `src/lib/types/`; avoid adding compatibility re-exports in unrelated folders.
+The bridge re-exports capability modules in `src/utils/tauri/`. UI and domain callers use the public bridge; capability modules share native result handling without importing the public bridge back into themselves. Domain types live in `src/lib/types/`; avoid adding compatibility re-exports in unrelated folders.
 
-Native commands are registered once in [`src-tauri/src/commands/mod.rs`](src-tauri/src/commands/mod.rs). Specta generates their TypeScript interface at `src/lib/bindings.ts`. The generated file is ignored by Git and refreshed automatically by `bun run dev:web` and `bun run build:web`. Run it directly when needed:
+Native commands are registered once in [`src-tauri/src/commands/mod.rs`](src-tauri/src/commands/mod.rs). Specta generates their TypeScript interface at `src/lib/bindings.ts`. The generated file is ignored by Git and refreshed automatically by `bun run dev:frontend` and `bun run build:frontend`. Run it directly when needed:
 
 ```bash
 bun run generate:bindings
@@ -163,5 +163,5 @@ Cinnabar currently targets desktop platforms only. Do not add mobile-specific en
 
 1. **Keep it focused**: Scope PRs to single features, bug fixes, or performance improvements.
 2. **Follow the design system**: Adhere to the design tokens and visual guidelines in `src/index.css`.
-3. **Test both modes**: When touching file workflows, verify behavior in both desktop and browser fallbacks.
+3. **Test desktop workflows**: Verify native file dialogs, saves, clipboard operations, and window behavior. Mock native calls in frontend tests.
 4. **Preserve formatting & types**: Keep TypeScript strict and ensure `bun test` and `cargo test` pass.

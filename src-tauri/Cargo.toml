@@ -22,7 +22,6 @@ log = "0.4"
 tauri = { version = "2", features = [] }
 tauri-specta = { version = "=2.0.0-rc.25", features = ["derive", "typescript"] }
 tauri-plugin-log = "2"
-tauri-plugin-opener = "2"
 rfd = "0.15"
 base64 = "0.22"
 arboard = "3"

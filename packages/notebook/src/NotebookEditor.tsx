@@ -20,6 +20,7 @@ interface Props {
   canRedo: boolean;
   controlsHost: HTMLElement | null;
   onRequestControls?: () => void;
+  onPickImage?: () => Promise<File | null>;
 }
 function selectedBlock(editor: Editor) {
   const { $from } = editor.state.selection;
@@ -37,7 +38,6 @@ export function NotebookEditor(props: Props) {
   const [link, setLink] = useState('');
   const [caption, setCaption] = useState('');
   const [dragged, setDragged] = useState<number | null>(null);
-  const fileInput = useRef<HTMLInputElement>(null);
   const editor = useEditor({
     extensions: [...notebookExtensions(), PaperLayout.configure({ onLayout: (layout) => current.current.onLayout(layout) })],
     content: props.document.content,
@@ -150,7 +150,7 @@ export function NotebookEditor(props: Props) {
       case 'horizontalRule': chain.setHorizontalRule().run(); break;
       case 'table': chain.insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run(); break;
       case 'blockMath': chain.insertBlockMath({ latex: formula || 'x^2' }).run(); break;
-      case 'image': fileInput.current?.click(); break;
+      case 'image': void props.onPickImage?.().then(file => { if (file) insertImageFile(file); }); break;
       case 'sheetBreak': chain.insertContent({ type: 'sheetBreak' }).run(); break;
     }
   };
@@ -239,9 +239,6 @@ export function NotebookEditor(props: Props) {
         <label>Paper <input type="color" value={props.document.styles.background} onChange={(event) => documentStyle('background', event.target.value)} /></label>
         <button type="button" onClick={() => props.onChange({ ...props.document, styles: { ...neutralStyles } })}>Reset to neutral</button>
       </div></details>
-      <input ref={fileInput} type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden onChange={(event) => {
-        const file = event.target.files?.[0]; event.target.value = ''; if (file) insertImageFile(file);
-      }} />
     </div>, props.controlsHost)}
     <div className="notebook-editor-position" style={{ width: PAPER.contentWidth, minHeight: PAPER.contentHeight, left: PAPER.left * props.zoom, top: PAPER.top * props.zoom,
       transform: `scale(${props.zoom})`, pointerEvents: props.editable ? 'auto' : 'none' }}

@@ -6,7 +6,7 @@ import {
   reindexAfterPageDeletion,
 } from '../lib/pdf/pageExtractor';
 import { idbSaveActivePdf } from '../lib/storage/storage';
-import { isTauri, tauriWritePdf } from '../utils/tauriBridge';
+import { tauriWritePdf } from '../utils/tauriBridge';
 import type { usePDFDocument } from './usePDFDocument';
 import type { useAnnotations } from './useAnnotations';
 import type { useSnippets } from './useSnippets';
@@ -69,7 +69,7 @@ export function usePdfPageMutations({
         const updatedSnippets = reindexAfterPageDeletion(snippets, pageNumber);
         const nextPage = Math.min(pageNumber, pdfDoc.numPages - 1);
 
-        if (isTauri() && docInfo.filePath) {
+        if (docInfo.filePath) {
           const persisted = await tauriWritePdf(updatedBytes, docInfo.filePath);
           if (!persisted) {
             showToast('Could not save the page deletion to the PDF.', true);
@@ -97,7 +97,7 @@ export function usePdfPageMutations({
         replaceSnippets(updatedSnippets);
         onPageChanged(nextPage);
         showToast(
-          isTauri() && docInfo.filePath
+          docInfo.filePath
             ? `Page ${pageNumber} deleted and changes saved`
             : `Page ${pageNumber} deleted`
         );
@@ -135,7 +135,7 @@ export function usePdfPageMutations({
         const updatedAnnotations = reindexAfterPageInsertion(annotations, targetPage);
         const updatedSnippets = reindexAfterPageInsertion(snippets, targetPage);
 
-        if (isTauri() && docInfo.filePath) {
+        if (docInfo.filePath) {
           const persisted = await tauriWritePdf(updatedBytes, docInfo.filePath);
           if (!persisted) {
             showToast('Could not save the new page to the PDF.', true);
@@ -163,7 +163,7 @@ export function usePdfPageMutations({
         replaceSnippets(updatedSnippets);
         onPageChanged(newPageNumber);
         showToast(
-          isTauri() && docInfo.filePath
+          docInfo.filePath
             ? `Page ${newPageNumber} added and changes saved`
             : `Page ${newPageNumber} added`
         );

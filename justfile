@@ -7,14 +7,14 @@ install:
 run:
     bun run dev
 
-run-web:
-    bun run dev:web
+run-frontend:
+    bun run dev:frontend
 
 build:
     bun run build
 
-build-web:
-    bun run build:web
+build-frontend:
+    bun run build:frontend
 
 check:
     bun x tsc --noEmit

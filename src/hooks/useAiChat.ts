@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import type { PDFDocumentProxy } from 'pdfjs-dist';
 import type { AiChatAttachment, AiChatMessage, AiChatSession, DocumentInfo } from '../lib/types/index';
 import { extractPageText } from '../lib/pdf/pageExtractor';
-import { runAiExplanation, cancelAiExplanation, isTauri } from '../utils/tauriBridge';
+import { runAiExplanation, cancelAiExplanation } from '../utils/tauriBridge';
 import { notebookInstructions, parseNotebookReply, type AiNotebookContext, type AiNotebookWrite } from '../lib/ai/notebookActions';
 import { getChatRetry } from '../lib/ai/chatRetry';
 
@@ -280,48 +280,39 @@ export function useAiChat({ pdfDoc, docInfo, currentPage, notebook, onWriteNoteb
         let assistantError: string | undefined = undefined;
         if (activeRequestIdRef.current !== requestId) return;
 
-        if (isTauri()) {
-          const result = await runAiExplanation({
-            requestId,
-            prompt: fullPrompt,
-            pngDataUrl,
-            responseFormat: requestNotebook ? 'notebook' : undefined,
-          });
-          if (activeRequestIdRef.current !== requestId) return;
+        const result = await runAiExplanation({
+          requestId,
+          prompt: fullPrompt,
+          pngDataUrl,
+          responseFormat: requestNotebook ? 'notebook' : undefined,
+        });
+        if (activeRequestIdRef.current !== requestId) return;
 
-          if (result.ok) {
-            if (requestNotebook) {
-              const reply = parseNotebookReply(result.response);
-              assistantContent = reply.message;
-              if (reply.notebookText !== null || reply.notebookImage) {
-                const current = notebookRef.current;
-                if (current.isDocumentLoading || current.notebook?.docKey !== requestNotebook.docKey || !current.onWriteNotebook) {
-                  throw new Error('The document changed. No notes were added.');
-                }
-                let write: AiNotebookWrite;
-                if (reply.notebookImage) {
-                  const image = availableImages.find((attachment) => attachment.id === reply.notebookImage?.attachmentId);
-                  if (!image) throw new Error('The referenced image is unavailable. Attach it again and retry.');
-                  write = { type: 'image', image, action: reply.notebookImage };
-                } else write = { type: 'text', text: reply.notebookText! };
-                const receipt = await current.onWriteNotebook(requestNotebook.docKey, write,
-                  () => activeRequestIdRef.current === requestId && !notebookRef.current.isDocumentLoading && notebookRef.current.notebook?.docKey === requestNotebook.docKey);
-                if (activeRequestIdRef.current !== requestId) return;
-                assistantContent += `\n\n*${receipt}*`;
+        if (result.ok) {
+          if (requestNotebook) {
+            const reply = parseNotebookReply(result.response);
+            assistantContent = reply.message;
+            if (reply.notebookText !== null || reply.notebookImage) {
+              const current = notebookRef.current;
+              if (current.isDocumentLoading || current.notebook?.docKey !== requestNotebook.docKey || !current.onWriteNotebook) {
+                throw new Error('The document changed. No notes were added.');
               }
-            } else assistantContent = result.response;
-          } else {
-            assistantError = result.message || 'Failed to get AI response.';
-            assistantContent = `⚠️ **Error**: ${assistantError}`;
-            if (['missing_cli', 'unauthenticated', 'incompatible_cli'].includes(result.code)) assistantContent += '\n\n*Check the selected CLI in Settings > AI Assistant.*';
-          }
+              let write: AiNotebookWrite;
+              if (reply.notebookImage) {
+                const image = availableImages.find((attachment) => attachment.id === reply.notebookImage?.attachmentId);
+                if (!image) throw new Error('The referenced image is unavailable. Attach it again and retry.');
+                write = { type: 'image', image, action: reply.notebookImage };
+              } else write = { type: 'text', text: reply.notebookText! };
+              const receipt = await current.onWriteNotebook(requestNotebook.docKey, write,
+                () => activeRequestIdRef.current === requestId && !notebookRef.current.isDocumentLoading && notebookRef.current.notebook?.docKey === requestNotebook.docKey);
+              if (activeRequestIdRef.current !== requestId) return;
+              assistantContent += `\n\n*${receipt}*`;
+            }
+          } else assistantContent = result.response;
         } else {
-          // Web / browser fallback with rich realistic preview
-          await new Promise((r) => setTimeout(r, 600));
-          assistantContent = `### Analysis & Explanation\n\nRegarding your question about **${docName}**${
-            options?.includePageContext ? ` (Page ${targetPage})` : ''
-          }:\n\n> "${trimmed}"\n\nHere is a structured breakdown:\n\n1. **Core Concept**: The key takeaway highlights the primary mechanism discussed in this section.\n2. **Mathematical Formulation**:\n   $$\n   \\mathcal{L}(\\theta) = \\mathbb{E}_{x \\sim p_{data}} \\left[ \\log D_\\theta(x) \\right] + \\lambda \\cdot \\Omega(\\theta)\n   $$\n3. **Practical Application**: You can reference this directly in your annotations or extract snippets for further review.\n\n*Note: Running in browser dev mode. In desktop app, this queries your local CLI engine.*`;
-          if (requestNotebook) assistantContent += '\n\n*Notebook writing is available with the desktop AI. Preview replies do not change your notes.*';
+          assistantError = result.message || 'Failed to get AI response.';
+          assistantContent = `⚠️ **Error**: ${assistantError}`;
+          if (['missing_cli', 'unauthenticated', 'incompatible_cli'].includes(result.code)) assistantContent += '\n\n*Check the selected CLI in Settings > AI Assistant.*';
         }
 
         if (activeRequestIdRef.current !== requestId) return;

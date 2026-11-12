@@ -2,6 +2,7 @@ use super::dialog::{
     DialogGuard, IS_DIRECTORY_DIALOG_OPEN, IS_IMAGE_DIALOG_OPEN, IS_JSON_DIALOG_OPEN,
     IS_PDF_DIALOG_OPEN, IS_SAVE_JSON_DIALOG_OPEN, IS_SAVE_PDF_DIALOG_OPEN,
 };
+use super::error::{command_error, CommandResult};
 use crate::documents::{
     file_name, image_mime_type, log_error, read_file, save_to_selected_path, scan_directory,
     write_pdf, OpenFileResult, OpenImageResult, SaveResult, ScannedPdfResult,
@@ -102,6 +103,21 @@ pub fn open_notebook_dialog() -> Option<OpenFileResult> {
         .set_title("Open Notebook")
         .pick_file()?;
     read_file(&file).map_err(log_error).ok()
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn save_image_dialog(data_url: String, default_name: String) -> CommandResult<SaveResult> {
+    let (bytes, extension) = crate::media::decode_export_image(&data_url).map_err(command_error)?;
+    let Some(_guard) = DialogGuard::try_acquire(&IS_SAVE_JSON_DIALOG_OPEN) else {
+        return Ok(SaveResult::failed());
+    };
+    let path = rfd::FileDialog::new()
+        .add_filter("Image", &[extension])
+        .set_title("Save Image")
+        .set_file_name(&default_name)
+        .save_file();
+    Ok(save_to_selected_path(path, &bytes))
 }
 
 #[tauri::command]

@@ -1,6 +1,6 @@
 # Cinnabar Notebook
 
-Private TypeScript workspace package for structured typed notebooks. The host application supplies persistence and native/browser file access. Paper/chrome styles live in the application's `src/index.css`.
+Private TypeScript workspace package for structured typed notebooks. The host application supplies persistence and native file access. Paper/chrome styles live in the application's `src/index.css`.
 
 ## Public entry points
 

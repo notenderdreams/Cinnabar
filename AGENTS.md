@@ -2,7 +2,7 @@
 
 ## Project
 
-Cinnabar is a desktop PDF reader and annotation studio built with React 19, TypeScript, Vite, PDF.js, Tailwind CSS 4, and Tauri 2. It supports macOS, Windows, and Linux. The web build is a useful fallback and development target, but mobile is not supported.
+Cinnabar is a Tauri-only desktop PDF reader and annotation studio built with React 19, TypeScript, Vite, PDF.js, Tailwind CSS 4, and Tauri 2. It supports macOS, Windows, and Linux. Browser deployment and mobile are not supported. Vite serves and builds the frontend for Tauri; the frontend scripts support the desktop build, not a browser product.
 
 Use Bun for all JavaScript dependency and script commands. Keep the existing Vite and Tauri setup unless the task explicitly requires an architectural change.
 
@@ -17,10 +17,10 @@ Before implementing an unfamiliar feature, search GitHub, npm, and crates.io for
 ```sh
 bun install
 bun run dev                  # Tauri desktop app
-bun run dev:web              # Browser build with generated bindings
+bun run dev:frontend         # Frontend dev server for Tauri, with generated bindings
 bun test
 bunx tsc --noEmit
-bun run build:web
+bun run build:frontend
 bun run build
 
 cargo test --manifest-path src-tauri/Cargo.toml
@@ -28,7 +28,7 @@ cargo fmt --manifest-path src-tauri/Cargo.toml -- --check
 cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
 ```
 
-`bun run generate:bindings` regenerates the ignored `src/lib/bindings.ts` file. `dev:web` and `build:web` already run it.
+`bun run generate:bindings` regenerates the ignored `src/lib/bindings.ts` file. `dev:frontend` and `build:frontend` already run it.
 
 See `DEVELOPMENT.md` when setup, build prerequisites, or release output details are needed.
 
@@ -38,7 +38,7 @@ See `DEVELOPMENT.md` when setup, build prerequisites, or release output details 
 - `src/components/`: UI implementations grouped into viewer, annotations, dashboard, layout, modals, settings, AI, and shared UI folders.
 - `src/hooks/`: stateful PDF, document session, page mutation, annotation, snippet, keyboard, theme, and AI behavior.
 - `src/lib/`: domain implementations for PDF operations, annotations, AI, storage, snippets, media, and themes; shared types and generated bindings.
-- `src/utils/tauriBridge.ts`: public desktop interface; `src/utils/tauri/` owns native calls and browser fallbacks grouped by capability.
+- `src/utils/tauriBridge.ts`: public desktop interface; `src/utils/tauri/` owns native calls grouped by capability.
 - `tests/`: Bun tests for PDF behavior, persistence, rendering helpers, and state transitions.
 - `src-tauri/src/app.rs`: Tauri setup and Specta export.
 - `src-tauri/src/app/menu.rs`: native application menu definitions.
@@ -50,11 +50,13 @@ See `DEVELOPMENT.md` when setup, build prerequisites, or release output details 
 - `src-tauri/src/library/`: library state, database setup, migrations, queries, and file reconciliation.
 - `src-tauri/capabilities/`: desktop permissions.
 
+Ask the user before adding any new UI element. Keep the notebook clean, without additional headers, bottom bars, or decorative outlines.
+
 Use `src/index.css` as the source of truth when changing UI styles. Preserve accessibility, keyboard focus, and equivalent light/dark behavior; avoid duplicating a second styling system in components.
 
 ## Native boundary
 
-UI code accesses native behavior through `src/utils/tauriBridge.ts`. Keep browser fallbacks there and check `isTauri()` before native-only work. Avoid scattering Tauri imports or arbitrary local-path access through components.
+UI code accesses native behavior through `src/utils/tauriBridge.ts`. Use native Tauri behavior for product workflows. Do not add browser file pickers, download links, or browser-only fallback implementations. Keep native imports and local-path access in bridge modules rather than components. Retain DOM, canvas, PDF.js, and IndexedDB behavior used by the Tauri webview; these are desktop implementation tools.
 
 When adding or changing a Rust command:
 
@@ -62,7 +64,7 @@ When adding or changing a Rust command:
 2. Derive Specta types for command inputs and outputs.
 3. Register it once in `commands::specta_builder()`.
 4. Regenerate bindings; never hand-edit `src/lib/bindings.ts`.
-5. Adapt the generated command in `tauriBridge.ts` if the UI needs normalization or a browser fallback.
+5. Adapt the generated command in `tauriBridge.ts` if the UI needs normalization.
 
 Keep command adapters focused on Tauri inputs and outputs. Put document processing and persistence in the matching native domain module, use borrowed inputs when ownership is unnecessary, and expose only the visibility needed by callers.
 
@@ -94,12 +96,12 @@ Preserve the current safety properties when changing it: Codex prompts go throug
 
 Run checks proportional to the change:
 
-- TypeScript or React: `bunx tsc --noEmit`, relevant `bun test` coverage, `bun run build:web`.
+- TypeScript or React: `bunx tsc --noEmit`, relevant `bun test` coverage, `bun run build:frontend`.
 - Rust or native commands: Cargo tests, formatting, Clippy, plus the frontend checks because bindings may change.
 - Desktop workflows: `bun run dev` or `bun run build -- --no-bundle` when practical.
 - Every change: `git diff --check`.
 
-For file workflows, verify both the desktop path and browser fallback. For PDF rendering or annotations, exercise a multi-page document and confirm cancellation/cleanup paths, persistence, page changes, and export behavior affected by the change.
+For file workflows, verify the native desktop path. Browser automation may test frontend behavior with mocked native calls, but does not establish desktop workflow coverage. For PDF rendering or annotations, exercise a multi-page document and confirm cancellation/cleanup paths, persistence, page changes, and export behavior affected by the change.
 
 ## Repository hygiene
 

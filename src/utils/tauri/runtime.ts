@@ -4,7 +4,3 @@ export function unwrapNativeResult<T, E>(result: { status: 'ok'; data: T } | { s
   }
   return result.data;
 }
-
-export function isTauri(): boolean {
-  return typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
-}

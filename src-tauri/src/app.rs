@@ -38,7 +38,6 @@ pub fn run() -> Result<()> {
     export_bindings(&specta)?;
 
     tauri::Builder::default()
-        .plugin(tauri_plugin_opener::init())
         .manage(AiRunnerState::default())
         .setup(|app| {
             let data_dir = app

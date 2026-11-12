@@ -1,8 +1,11 @@
 import { commands } from '../../lib/bindings';
-import { isTauri } from './runtime';
+import { unwrapNativeResult } from './runtime';
+
+export async function readClipboardText(): Promise<string | null> {
+  return unwrapNativeResult(await commands.readTextFromClipboard());
+}
 
 export async function tauriCopyImageToClipboard(pngDataUrl: string): Promise<boolean> {
-  if (!isTauri()) return false;
   try {
     const res = await commands.copyImageToClipboard(pngDataUrl);
     return res;
@@ -12,7 +15,6 @@ export async function tauriCopyImageToClipboard(pngDataUrl: string): Promise<boo
   }
 }
 export async function tauriCopyTextToClipboard(text: string): Promise<boolean> {
-  if (!isTauri()) return false;
   try {
     const res = await commands.copyTextToClipboard(text);
     return res;

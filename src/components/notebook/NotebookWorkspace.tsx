@@ -4,7 +4,7 @@ import { PAPER, type NotebookLayout } from '@cinnabar/notebook/layout';
 import { serializeNotebook } from '@cinnabar/notebook';
 import { useNotebookSession } from '../../hooks/useNotebookSession';
 import type { NotebookTarget } from '../../lib/notebook/navigation';
-import { saveNotebookFile } from '../../utils/tauriBridge';
+import { saveNotebookFile, tauriOpenImage } from '../../utils/tauriBridge';
 
 export function NotebookWorkspace({ onBack, initialTarget, embedded = false }: {
   onBack: () => void; initialTarget?: NotebookTarget; embedded?: boolean;
@@ -64,6 +64,12 @@ export function NotebookWorkspace({ onBack, initialTarget, embedded = false }: {
           style={{ top: index * (PAPER.height + PAPER.gap) * zoom, width: PAPER.width * zoom, height: PAPER.height * zoom, background: file.document.styles.background }} />)}
         <NotebookEditor key={file.id} document={file.document} zoom={zoom} editable
           onChange={notebook.change} onLayout={setLayout} controlsHost={null}
+          onPickImage={async () => {
+            const image = await tauriOpenImage();
+            if (!image) return null;
+            const blob = await (await fetch(image.dataUrl)).blob();
+            return new File([blob], image.fileName, { type: blob.type });
+          }}
           undo={notebook.undo} redo={notebook.redo} canUndo={Boolean(notebook.session?.past.length)} canRedo={Boolean(notebook.session?.future.length)} />
       </div>}
     </main>

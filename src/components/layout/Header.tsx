@@ -15,7 +15,7 @@ import {
   NotebookPen,
 } from 'lucide-react';
 import type { DocumentInfo, ReadingTheme, ViewMode } from '../../lib/types/index';
-import { isTauri, handleTitlebarMouseDown } from '../../utils/tauriBridge';
+import { handleTitlebarMouseDown } from '../../utils/tauriBridge';
 
 interface HeaderProps {
   docInfo: DocumentInfo | null;
@@ -141,7 +141,7 @@ export const Header: React.FC<HeaderProps> = ({
     >
       <div className="reader-titlebar-left flex items-center gap-2.5 min-w-0" data-tauri-drag-region>
         {/* Spacer for native macOS traffic lights on desktop */}
-        {isTauri() && <div className="macos-window-controls-spacer shrink-0" aria-hidden="true" data-tauri-drag-region />}
+        <div className="macos-window-controls-spacer shrink-0" aria-hidden="true" data-tauri-drag-region />
 
         {onOpenDashboard && (
           <button

@@ -1,3 +1,4 @@
+import { saveImageFile } from '../../utils/tauriBridge';
 import React, { useState, useEffect } from 'react';
 import {
   X,
@@ -177,7 +178,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   };
 
   // 4. Export Current Page as Image
-  const handleExportPagePng = () => {
+  const handleExportPagePng = async () => {
     if (!hasOpenPdf) return;
     try {
       const pageEl = document.getElementById(`pdf-page-${currentPage}`);
@@ -187,12 +188,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
       if (!canvas) return;
 
       const dataUrl = canvas.toDataURL('image/png');
-      const a = document.createElement('a');
-      a.href = dataUrl;
-      a.download = `${fileName.replace(/\.pdf$/i, '')}_page_${currentPage}.png`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      if (!await saveImageFile(dataUrl, `${fileName.replace(/\.pdf$/i, '')}_page_${currentPage}.png`)) return;
 
       triggerConfetti();
       setSuccessMessage(`Exported Page ${currentPage} snapshot!`);

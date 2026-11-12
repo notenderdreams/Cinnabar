@@ -1,5 +1,5 @@
 import type { Annotation } from '../types/index';
-import { isTauri, tauriOpenJson, tauriSaveJson } from '../../utils/tauriBridge';
+import { tauriOpenJson, tauriSaveJson } from '../../utils/tauriBridge';
 import { validateNotebookDocument } from '../notebook/operations';
 
 /**
@@ -171,120 +171,21 @@ let isOpeningJsonDialog = false;
 let isExportingJson = false;
 
 /**
- * Opens a file picker (Tauri native dialog or browser input fallback) to select a JSON file.
+ * Opens the native file dialog to select an annotation JSON file.
  */
-export async function openAnnotationsJsonFile(): Promise<{
-  fileName: string;
-  content: string;
-} | null> {
-  if (isOpeningJsonDialog) {
-    return null;
-  }
+export async function openAnnotationsJsonFile(): Promise<{ fileName: string; content: string } | null> {
+  if (isOpeningJsonDialog) return null;
   isOpeningJsonDialog = true;
-  try {
-    if (isTauri()) {
-      const nativeResult = await tauriOpenJson();
-      if (nativeResult) {
-        return {
-          fileName: nativeResult.fileName,
-          content: nativeResult.content,
-        };
-      }
-      return null;
-    }
-
-    // Browser Web fallback
-    return await new Promise((resolve) => {
-      const input = document.createElement('input');
-      input.type = 'file';
-      input.accept = '.json,application/json';
-      input.style.display = 'none';
-
-      let resolved = false;
-      const cleanup = () => {
-        if (input.parentNode) {
-          document.body.removeChild(input);
-        }
-      };
-
-      input.onchange = async () => {
-        resolved = true;
-        const file = input.files?.[0];
-        cleanup();
-        if (!file) {
-          resolve(null);
-          return;
-        }
-        try {
-          const text = await file.text();
-          resolve({
-            fileName: file.name,
-            content: text,
-          });
-        } catch (err) {
-          console.error('Failed to read JSON file in browser:', err);
-          resolve(null);
-        }
-      };
-
-      input.oncancel = () => {
-        resolved = true;
-        cleanup();
-        resolve(null);
-      };
-
-      window.addEventListener(
-        'focus',
-        () => {
-          setTimeout(() => {
-            if (!resolved) {
-              cleanup();
-              resolve(null);
-            }
-          }, 1000);
-        },
-        { once: true }
-      );
-
-      document.body.appendChild(input);
-      input.click();
-    });
-  } finally {
-    isOpeningJsonDialog = false;
-  }
+  try { return await tauriOpenJson(); }
+  finally { isOpeningJsonDialog = false; }
 }
 
 /**
- * Exports annotations to a JSON file via Tauri native dialog or Web browser download.
+ * Exports annotations to a JSON file through the native dialog.
  */
-export async function exportAnnotationsJson(
-  annotations: Annotation[],
-  fileName: string = 'annotations.json'
-): Promise<{ success: boolean; path?: string }> {
-  if (isExportingJson) {
-    return { success: false };
-  }
+export async function exportAnnotationsJson(annotations: Annotation[], fileName = 'annotations.json'): Promise<{ success: boolean; path?: string }> {
+  if (isExportingJson) return { success: false };
   isExportingJson = true;
-  try {
-    const jsonString = JSON.stringify(annotations, null, 2);
-
-    if (isTauri()) {
-      const res = await tauriSaveJson(jsonString, fileName);
-      if (res.success) return res;
-    }
-
-    // Web Browser fallback
-    const blob = new Blob([jsonString], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = fileName;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(url), 5000);
-    return { success: true };
-  } finally {
-    isExportingJson = false;
-  }
+  try { return await tauriSaveJson(JSON.stringify(annotations, null, 2), fileName); }
+  finally { isExportingJson = false; }
 }

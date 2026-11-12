@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { Trash2, RotateCw, Sun, Moon, Copy, Check } from 'lucide-react';
 import type { AttachedImageAnnotation, ReadingTheme, ToolType } from '../../lib/types/index';
-import { isTauri, tauriCopyTextToClipboard } from '../../utils/tauriBridge';
+import { tauriCopyTextToClipboard } from '../../utils/tauriBridge';
 import { usesInvertedColorSpace } from '../../lib/theme/readingTheme';
 
 interface ImageOverlayProps {
@@ -155,22 +155,10 @@ export const ImageOverlay: React.FC<ImageOverlayProps> = ({
     e.stopPropagation();
     if (!annotation.extractedText) return;
     try {
-      if (isTauri()) {
-        await tauriCopyTextToClipboard(annotation.extractedText);
-      } else {
-        await navigator.clipboard.writeText(annotation.extractedText);
-      }
+      if (!await tauriCopyTextToClipboard(annotation.extractedText)) return;
       setCopiedText(true);
       setTimeout(() => setCopiedText(false), 2000);
-    } catch {
-      try {
-        await navigator.clipboard.writeText(annotation.extractedText);
-        setCopiedText(true);
-        setTimeout(() => setCopiedText(false), 2000);
-      } catch (err) {
-        console.error('Failed to copy text:', err);
-      }
-    }
+    } catch (error) { console.error('Failed to copy text:', error); }
   };
 
   return (

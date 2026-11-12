@@ -21,8 +21,6 @@ import {
 } from 'lucide-react';
 import type { DashboardPdfItem, ReadingTheme, SavedDirectory, ThemeSettings, ViewMode } from '../../lib/types/index';
 import {
-  isTauri,
-  tauriScanDirectoryPdfs,
   tauriReadFile,
   tauriListLibrary,
   tauriImportLibraryPdf,
@@ -36,12 +34,6 @@ import {
   handleTitlebarMouseDown,
 } from '../../utils/tauriBridge';
 import {
-  loadSavedDirectories,
-  saveSavedDirectories,
-  loadRecentDocs,
-  recordRecentDoc,
-  loadFavorites,
-  toggleFavorite as toggleStorageFavorite,
   loadLibraryFilter,
   saveLibraryFilter,
   loadLibrarySort,
@@ -100,10 +92,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
   viewMode,
   onChangeViewMode,
 }) => {
-  const [directories, setDirectories] = useState<SavedDirectory[]>(() => loadSavedDirectories());
+  const [directories, setDirectories] = useState<SavedDirectory[]>([]);
   const [pdfItems, setPdfItems] = useState<DashboardPdfItem[]>([]);
-  const [recentDocs, setRecentDocs] = useState<DashboardPdfItem[]>(() => loadRecentDocs());
-  const [favoriteIds, setFavoriteIds] = useState<string[]>(() => loadFavorites());
   const [activeFilter, setActiveFilter] = useState<FilterTab>(() => loadLibraryFilter());
   const [searchQuery, setSearchQuery] = useState('');
   const deferredSearchQuery = useDeferredValue(searchQuery);
@@ -114,7 +104,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [selectedPdfIds, setSelectedPdfIds] = useState<string[]>([]);
   const [isOpeningPair, setIsOpeningPair] = useState(false);
   const sortMenuRef = useRef<HTMLDivElement | null>(null);
-  const browserPdfInputRef = useRef<HTMLInputElement | null>(null);
 
   // Keyboard shortcut: Cmd+, / Ctrl+, / Ctrl+Cmd+, / Shift+, to toggle settings
   useEffect(() => {
@@ -174,62 +163,23 @@ export const Dashboard: React.FC<DashboardProps> = ({
     };
   }, [isSortOpen]);
 
-  // Auto-scan all saved directories
-  const scanAllDirectories = useCallback(async (dirList: SavedDirectory[]) => {
+  // Refresh the native catalog without maintaining a second library implementation.
+  const scanAllDirectories = useCallback(async () => {
     setIsScanning(true);
-    if (isTauri()) {
-      try {
-        const snapshot = await tauriRefreshLibrary();
-        setDirectories(snapshot.directories);
-        setPdfItems(snapshot.documents);
-      } finally {
-        setIsScanning(false);
-      }
-      return;
-    }
-    const allFound: DashboardPdfItem[] = [];
-    const updatedDirs = [...dirList];
-
-    for (let i = 0; i < updatedDirs.length; i++) {
-      const dir = updatedDirs[i];
-      if (isTauri()) {
-        const results = await tauriScanDirectoryPdfs(dir.path);
-        updatedDirs[i] = {
-          ...dir,
-          pdfCount: results.length,
-        };
-
-        results.forEach((res) => {
-          allFound.push({
-            id: res.file_path,
-            fileName: res.file_name,
-            filePath: res.file_path,
-            fileSize: res.file_size,
-            modifiedTimestamp: res.modified_timestamp,
-            directoryPath: dir.path,
-            numPages: res.num_pages ?? undefined,
-          });
-        });
-      }
-    }
-
-    setDirectories(updatedDirs);
-    saveSavedDirectories(updatedDirs);
-    setPdfItems(allFound);
-    setIsScanning(false);
+    try {
+      const snapshot = await tauriRefreshLibrary();
+      setDirectories(snapshot.directories);
+      setPdfItems(snapshot.documents);
+    } finally { setIsScanning(false); }
   }, []);
 
   // Refresh library snapshot whenever returning to Dashboard or on window focus
   const refreshLibrarySnapshot = useCallback(async () => {
-    if (isTauri()) {
-      try {
-        const snapshot = await tauriListLibrary();
-        setDirectories(snapshot.directories);
-        setPdfItems(snapshot.documents);
-      } catch (error) {
-        console.error('Failed to refresh library snapshot:', error);
-      }
-    }
+    try {
+      const snapshot = await tauriListLibrary();
+      setDirectories(snapshot.directories);
+      setPdfItems(snapshot.documents);
+    } catch (error) { console.error('Failed to refresh library:', error); }
   }, []);
 
   useEffect(() => {
@@ -240,90 +190,35 @@ export const Dashboard: React.FC<DashboardProps> = ({
     return () => window.removeEventListener('focus', handleFocus);
   }, [refreshLibrarySnapshot]);
 
-  // Load the durable catalog
-  useEffect(() => {
-    const initDirs = async () => {
-      if (isTauri()) {
-        try {
-          const snapshot = await tauriListLibrary();
-          setDirectories(snapshot.directories);
-          setPdfItems(snapshot.documents);
-          return;
-        } catch (error) {
-          console.error('Failed to initialize PDF library:', error);
-        }
-      }
-      const saved = loadSavedDirectories();
-      if (saved.length > 0) {
-        scanAllDirectories(saved);
-      }
-    };
-    initDirs();
-  }, [scanAllDirectories]);
+  useEffect(() => { void refreshLibrarySnapshot(); }, [refreshLibrarySnapshot]);
 
   // Handle Adding a new directory
   const handleAddDirectory = async () => {
-    if (isTauri()) {
-      const snapshot = await tauriImportLibraryFolder();
-      if (snapshot) {
-        setDirectories(snapshot.directories);
-        setPdfItems(snapshot.documents);
-      }
-    } else {
-      // Browser Web fallback directory name
-      const customName = prompt('Enter a directory / collection label:');
-      if (customName) {
-        const newDir: SavedDirectory = {
-          id: `dir_${Date.now()}`,
-          path: customName,
-          name: customName,
-          addedAt: Date.now(),
-          pdfCount: 0,
-        };
-        const updated = [...directories, newDir];
-        setDirectories(updated);
-        saveSavedDirectories(updated);
-      }
-    }
+    const snapshot = await tauriImportLibraryFolder();
+    if (snapshot) { setDirectories(snapshot.directories); setPdfItems(snapshot.documents); }
   };
 
   // Remove a saved directory
   const handleRemoveDirectory = async (dirId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (isTauri()) {
-      const snapshot = await tauriRemoveLibraryFolder(dirId, true);
-      setDirectories(snapshot.directories);
-      setPdfItems(snapshot.documents);
-      if (activeFilter === dirId) setActiveFilter('all');
-      return;
-    }
-    const updated = directories.filter((d) => d.id !== dirId);
-    setDirectories(updated);
-    saveSavedDirectories(updated);
-    if (activeFilter === dirId) {
-      setActiveFilter('all');
-    }
-    scanAllDirectories(updated);
+    const snapshot = await tauriRemoveLibraryFolder(dirId, true);
+    setDirectories(snapshot.directories);
+    setPdfItems(snapshot.documents);
+    if (activeFilter === dirId) setActiveFilter('all');
   };
 
   // Toggle favorite status
   const handleToggleFavorite = async (docId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (isTauri()) {
-      const item = pdfItems.find((document) => document.id === docId);
-      if (!item) return;
-      const favorite = !item.isFavorite;
-      await tauriSetLibraryFavorite(docId, favorite);
-      setPdfItems((items) => items.map((document) => document.id === docId ? { ...document, isFavorite: favorite } : document));
-      return;
-    }
-    toggleStorageFavorite(docId);
-    setFavoriteIds(loadFavorites());
+    const item = pdfItems.find(document => document.id === docId);
+    if (!item) return;
+    const favorite = !item.isFavorite;
+    await tauriSetLibraryFavorite(docId, favorite);
+    setPdfItems(items => items.map(document => document.id === docId ? { ...document, isFavorite: favorite } : document));
   };
 
   const handleRemoveDocument = async (docId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!isTauri()) return;
     await tauriRemoveLibraryDocument(docId);
     setPdfItems((items) => items.filter((document) => document.id !== docId));
     setSelectedPdfIds((items) => items.filter((id) => id !== docId));
@@ -331,7 +226,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   // Open PDF file handler
   const handleOpenItem = async (item: DashboardPdfItem) => {
-    if (isTauri() && item.filePath) {
+    if (item.filePath) {
       if (item.availability === 'missing') {
         const relinked = await tauriRelinkLibraryDocument(item.id);
         if (!relinked) return;
@@ -377,69 +272,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
     void handleOpenItem(item);
   };
 
-  // Browse standalone PDF from disk
   const handleBrowsePdf = async () => {
-    if (isTauri()) {
-      const imported = await tauriImportLibraryPdf();
-      if (imported) {
-        setPdfItems((items) => [imported, ...items.filter((item) => item.id !== imported.id)]);
-        await handleOpenItem(imported);
-      }
-    } else {
-      browserPdfInputRef.current?.click();
+    const imported = await tauriImportLibraryPdf();
+    if (imported) {
+      setPdfItems(items => [imported, ...items.filter(item => item.id !== imported.id)]);
+      await handleOpenItem(imported);
     }
   };
 
-  const handleBrowserPdfImport = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    event.target.value = '';
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = async () => {
-      if (!(reader.result instanceof ArrayBuffer)) return;
-      const item: DashboardPdfItem = {
-        id: file.name,
-        fileName: file.name,
-        filePath: file.name,
-        fileSize: file.size,
-        modifiedTimestamp: file.lastModified || Date.now(),
-      };
-      recordRecentDoc(item);
-      setRecentDocs(loadRecentDocs());
-      await onOpenPdf(new Uint8Array(reader.result), file.name);
-    };
-    reader.readAsArrayBuffer(file);
-  };
-
-  // Combine directory items with recent history items
-  const combinedItems = useMemo(() => {
-    if (isTauri()) return pdfItems;
-    const map = new Map<string, DashboardPdfItem>();
-
-    // 1. Add all scanned directory items
-    pdfItems.forEach((item) => {
-      map.set(item.filePath, item);
-    });
-
-    // 2. Overlay recent docs
-    recentDocs.forEach((rec) => {
-      const existing = map.get(rec.filePath);
-      if (existing) {
-        map.set(rec.filePath, {
-          ...existing,
-          ...rec,
-          modifiedTimestamp: existing.modifiedTimestamp,
-        });
-      } else {
-        map.set(rec.filePath, rec);
-      }
-    });
-
-    return Array.from(map.values()).map((item) => ({
-      ...item,
-      isFavorite: favoriteIds.includes(item.id || item.filePath),
-    }));
-  }, [pdfItems, recentDocs, favoriteIds]);
+  const combinedItems = pdfItems;
 
   // Filtered and sorted documents list
   const filteredItems = useMemo(() => {
@@ -488,7 +329,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       .map((id) => combinedItems.find((item) => itemKey(item) === id))
       .filter((item): item is NonNullable<typeof item> => item !== undefined);
     const [primaryItem, companionItem] = selectedItems;
-    if (!primaryItem || !companionItem || !isTauri()) return;
+    if (!primaryItem || !companionItem) return;
 
     setIsOpeningPair(true);
     try {
@@ -538,13 +379,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
   return (
     <div className="macos-window h-screen w-screen flex flex-col bg-[#1e1e24] text-[#f0f0f4] overflow-hidden select-none">
       {/* Top Studio App Header (macOS Tahoe Window Bar) */}
-      <input
-        ref={browserPdfInputRef}
-        type="file"
-        accept="application/pdf,.pdf"
-        className="hidden"
-        onChange={handleBrowserPdfImport}
-      />
       <header
         data-tauri-drag-region
         onMouseDown={handleTitlebarMouseDown}
@@ -553,7 +387,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         {/* Left window chrome */}
         <div className="flex items-center gap-2.5 justify-self-start" data-tauri-drag-region>
           {/* Spacer for native macOS traffic lights on desktop */}
-          {isTauri() && <div className="macos-window-controls-spacer shrink-0" aria-hidden="true" data-tauri-drag-region />}
+          <div className="macos-window-controls-spacer shrink-0" aria-hidden="true" data-tauri-drag-region />
         </div>
 
         {/* Center Search Input (dead center in titlebar) */}
@@ -687,7 +521,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   Folders
                 </span>
                 <button
-                  onClick={() => scanAllDirectories(directories)}
+                  onClick={() => scanAllDirectories()}
                   disabled={isScanning}
                   className="text-zinc-400 hover:text-zinc-200 p-1 rounded-md hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
                   title="Rescan directories"
@@ -923,8 +757,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   >
                     <Star className={`w-3.5 h-3.5 ${item.isFavorite ? 'fill-current' : ''}`} />
                   </button>
-                  {isTauri() && (
-                    <button
+                  <button
                       onClick={(event) => void handleRemoveDocument(item.id, event)}
                       className="library-document-list-favorite"
                       title="Remove from library (the PDF file is kept)"
@@ -932,7 +765,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
-                  )}
                   <ArrowRight className="library-document-list-arrow w-4 h-4 shrink-0" aria-hidden="true" />
                 </div>
               ))}

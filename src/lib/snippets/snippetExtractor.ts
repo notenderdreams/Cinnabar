@@ -1,6 +1,6 @@
 import type { PDFDocumentProxy } from 'pdfjs-dist';
 import type { SnippetEntry, SnippetImageEntry, StitchOptions } from '../types/index';
-import { isTauri, tauriCopyImageToClipboard } from '../../utils/tauriBridge';
+import { saveImageFile, tauriCopyImageToClipboard } from '../../utils/tauriBridge';
 
 /**
  * Crops a normalized rectangle region from a rendered PDF page DOM canvas.
@@ -454,69 +454,15 @@ export async function stitchSnippetsToCanvas(
 /**
  * Stitches all snippets into a single image and copies it to the system clipboard.
  */
-export async function copyStitchedSnippetsToClipboard(
-  snippets: SnippetEntry[],
-  options?: StitchOptions
-): Promise<boolean> {
+export async function copyStitchedSnippetsToClipboard(snippets: SnippetEntry[], options?: StitchOptions): Promise<boolean> {
   const canvas = await stitchSnippetsToCanvas(snippets, options);
-  if (!canvas) return false;
-
-  const dataUrl = canvas.toDataURL('image/png');
-
-  // Strategy 1: Tauri native desktop pasteboard (macOS/Windows/Linux)
-  if (isTauri()) {
-    try {
-      const nativeOk = await tauriCopyImageToClipboard(dataUrl);
-      if (nativeOk) return true;
-    } catch (e) {
-      console.warn('Tauri native copy stitched image failed, attempting browser clipboard:', e);
-    }
-  }
-
-  // Strategy 2: Modern Browser Async Clipboard API
-  if (typeof navigator !== 'undefined' && navigator.clipboard && typeof ClipboardItem !== 'undefined') {
-    try {
-      const blobPromise = new Promise<Blob>((resolve, reject) => {
-        canvas.toBlob((blob) => {
-          if (blob) resolve(blob);
-          else reject(new Error('Canvas toBlob returned null'));
-        }, 'image/png');
-      });
-
-      const item = new ClipboardItem({ 'image/png': blobPromise });
-      await navigator.clipboard.write([item]);
-      return true;
-    } catch (clipErr) {
-      console.error('Browser ClipboardItem write failed for stitched image:', clipErr);
-    }
-  }
-
-  return false;
+  return canvas ? tauriCopyImageToClipboard(canvas.toDataURL('image/png')) : false;
 }
 
 /**
  * Downloads the stitched snippets image as a PNG file.
  */
-export async function downloadStitchedSnippets(
-  snippets: SnippetEntry[],
-  baseFileName: string = 'cinnabar_snippets',
-  options?: StitchOptions
-): Promise<boolean> {
+export async function downloadStitchedSnippets(snippets: SnippetEntry[], baseFileName = 'cinnabar_snippets', options?: StitchOptions): Promise<boolean> {
   const canvas = await stitchSnippetsToCanvas(snippets, options);
-  if (!canvas) return false;
-
-  try {
-    const dataUrl = canvas.toDataURL('image/png');
-    const link = document.createElement('a');
-    link.href = dataUrl;
-    const cleanName = baseFileName.replace(/\.pdf$/i, '');
-    link.download = `${cleanName}_ai_digest.png`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    return true;
-  } catch (err) {
-    console.error('Failed to download stitched snippet image:', err);
-    return false;
-  }
+  return canvas ? saveImageFile(canvas.toDataURL('image/png'), `${baseFileName.replace(/\.pdf$/i, '')}_ai_digest.png`) : false;
 }

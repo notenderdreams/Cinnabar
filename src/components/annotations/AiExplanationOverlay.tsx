@@ -1,3 +1,4 @@
+import { readClipboardText, tauriCopyTextToClipboard } from '../../utils/tauriBridge';
 import React, { useEffect, useLayoutEffect, useRef, useState, useCallback } from 'react';
 import type { PDFDocumentProxy } from 'pdfjs-dist';
 import {
@@ -232,7 +233,7 @@ const AiExplanationCard: React.FC<CardItemProps> = React.memo(
 
     const handleCopyText = async (text: string) => {
       try {
-        await navigator.clipboard.writeText(text);
+        if (!await tauriCopyTextToClipboard(text)) return;
         setCopied(true);
         setTimeout(() => setCopied(false), 1500);
       } catch (err) {
@@ -242,7 +243,7 @@ const AiExplanationCard: React.FC<CardItemProps> = React.memo(
 
     const handleQuickPasteFromClipboard = async () => {
       try {
-        const text = await navigator.clipboard.readText();
+        const text = await readClipboardText();
         if (text && text.trim()) {
           const promptToUse = (promptText || annotation.prompt || DEFAULT_PROMPT).trim();
           onUpdate(annotation.id, {
@@ -565,7 +566,7 @@ const AiExplanationCard: React.FC<CardItemProps> = React.memo(
                         type="button"
                         onClick={async () => {
                           try {
-                            const text = await navigator.clipboard.readText();
+                            const text = await readClipboardText();
                             if (text) {
                               setPasteResp(text);
                             }

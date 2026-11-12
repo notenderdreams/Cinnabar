@@ -1,5 +1,4 @@
 import { commands } from '../../lib/bindings';
-import { isTauri } from './runtime';
 
 type NativeMenuHandler = (action: string) => void;
 const nativeMenuHandlers = new Set<NativeMenuHandler>();
@@ -9,7 +8,6 @@ let isSettingUpNativeMenu = false;
 export function listenToNativeMenuEvents(
   handler: NativeMenuHandler
 ): () => void {
-  if (!isTauri()) return () => {};
 
   // Each subscription owns its entry, even when callers reuse a callback.
   const subscription: NativeMenuHandler = (action) => handler(action);
@@ -54,7 +52,6 @@ export function listenToNativeMenuEvents(
 }
 
 export async function tauriGetRegisteredShortcuts(): Promise<import('../../lib/bindings').ShortcutBinding[]> {
-  if (!isTauri()) return [];
   try {
     return await commands.getRegisteredShortcuts();
   } catch (err) {
@@ -64,7 +61,6 @@ export async function tauriGetRegisteredShortcuts(): Promise<import('../../lib/b
 }
 
 export async function tauriTriggerShortcutAction(id: string): Promise<boolean> {
-  if (!isTauri()) return false;
   try {
     const res = await commands.triggerShortcutAction(id);
     return res.status === 'ok';

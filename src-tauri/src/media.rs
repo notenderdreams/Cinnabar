@@ -4,6 +4,24 @@ use anyhow::{Context, Result};
 use base64::Engine;
 use std::io::Cursor;
 
+pub(crate) fn decode_export_image(data_url: &str) -> Result<(Vec<u8>, &'static str)> {
+    let (header, encoded) = data_url.split_once(',').context("missing image data URL")?;
+    let (format, extension) = match header {
+        "data:image/png;base64" => (image::ImageFormat::Png, "png"),
+        "data:image/jpeg;base64" => (image::ImageFormat::Jpeg, "jpg"),
+        _ => anyhow::bail!("unsupported export image format"),
+    };
+    let bytes = base64::engine::general_purpose::STANDARD
+        .decode(encoded)
+        .context("invalid export image base64")?;
+    anyhow::ensure!(
+        image::guess_format(&bytes)? == format,
+        "image format does not match its data URL"
+    );
+    image::load_from_memory(&bytes).context("invalid export image")?;
+    Ok((bytes, extension))
+}
+
 /// Native image compression & downscaling
 pub(crate) fn compress_image(data_url: &str, max_width: u32, quality: u8) -> Result<String> {
     let encoded = data_url
@@ -54,6 +72,20 @@ pub(crate) fn compress_image(data_url: &str, max_width: u32, quality: u8) -> Res
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn image_exports_preserve_bytes_and_reject_invalid_formats() {
+        let source = source_image();
+        let (bytes, extension) = decode_export_image(&source).unwrap();
+        assert_eq!(extension, "png");
+        assert_eq!(
+            image::guess_format(&bytes).unwrap(),
+            image::ImageFormat::Png
+        );
+        assert!(decode_export_image(&source.replace("image/png", "image/jpeg")).is_err());
+        assert!(decode_export_image("data:image/png;base64,broken").is_err());
+        assert!(decode_export_image("data:text/plain;base64,aGVsbG8=").is_err());
+    }
 
     fn source_image() -> String {
         let image = image::RgbImage::from_pixel(8, 4, image::Rgb([20, 40, 60]));
