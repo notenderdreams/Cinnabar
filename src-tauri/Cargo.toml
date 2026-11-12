@@ -4,6 +4,8 @@ version = "0.1.0"
 description = "Desktop PDF Reader & Annotation Studio"
 authors = ["Cinnabar Team"]
 edition = "2021"
+publish = false
+license = "MIT"
 
 [lib]
 name = "cinnabar_lib"
@@ -29,8 +31,8 @@ image = { version = "0.25", default-features = false, features = ["png", "jpeg"]
 tokio = { version = "1", features = ["time", "rt", "sync"] }
 lopdf = { version = "0.44", default-features = false }
 sha2 = "0.10"
-rusqlite = { version = "0.37", features = ["bundled"] }
-rusqlite_migration = "2.3"
+rusqlite = { version = "0.41", features = ["bundled", "fallible_uint"] }
+rusqlite_migration = "2.7"
 uuid = { version = "1", features = ["v4"] }
 
 [profile.release]
