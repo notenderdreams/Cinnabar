@@ -140,6 +140,7 @@ export function App() {
     loadPdf,
     changePage,
     searchResults,
+    searchMatch,
     currentMatchIndex,
     isSearching,
     searchInDocument,
@@ -1384,6 +1385,7 @@ export function App() {
                 currentPage={currentPage}
                 numPages={pdfDoc?.numPages || 0}
                 pageNavRequest={pageNavRequest}
+                searchMatch={isSearchOpen ? searchMatch : null}
                 zoom={zoom}
                 viewMode={viewMode}
                 currentTheme={themeSettings.theme}

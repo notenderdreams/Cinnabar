@@ -2173,3 +2173,23 @@
 .notebook-document .notebook-inline-image { display: block; margin: 1.1em 0; text-align: center; }
 .notebook-document .notebook-inline-image img { display: block; width: 100%; height: auto; max-height: 18em; object-fit: contain; border-radius: 4px; }
 .notebook-document .notebook-inline-image .notebook-image-caption { display: block; margin-top: .5em; font-size: .85em; }
+.pdf-search-bar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 6.5rem max-content;
+  align-items: center;
+  gap: .5rem;
+  width: 27rem;
+}
+
+.pdf-search-field { min-width: 0; }
+.pdf-search-spinner { display: flex; flex: 0 0 .75rem; width: .75rem; }
+.pdf-search-status { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; text-align: center; }
+
+.pdf-search-match {
+  position: absolute;
+  z-index: 11;
+  pointer-events: none;
+  background: rgb(255 183 0 / 40%);
+  outline: 2px solid #d97706;
+  border-radius: 2px;
+}

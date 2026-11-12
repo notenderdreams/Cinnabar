@@ -281,6 +281,9 @@ export const PDFPageComponent: React.FC<PDFPageProps> = ({
 
           await textLayer.render();
           if (isCancelled) return;
+          textLayer.textDivs.forEach((span, index) => {
+            span.dataset.searchItem = String(index);
+          });
 
           unbindSelectionRef.current?.();
           unbindSelectionRef.current = bindTextLayerSelection(textLayerDiv);

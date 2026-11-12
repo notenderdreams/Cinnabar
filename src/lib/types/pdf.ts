@@ -44,4 +44,6 @@ export interface SearchMatch {
   pageNumber: number;
   matchIndex: number;
   snippet: string;
+  start: { itemIndex: number; offset: number };
+  end: { itemIndex: number; offset: number };
 }

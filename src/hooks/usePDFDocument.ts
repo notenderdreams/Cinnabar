@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import type { PDFDocumentProxy } from 'pdfjs-dist';
 import { pdfjsLib } from '../lib/pdf/pdfWorker';
 import { readPdfOverview, withPdfDeadline } from '../lib/pdf/documentOverview';
+import { findPageMatches } from '../lib/pdf/search';
 import type { DocumentInfo, PDFOutlineItem, SearchMatch } from '../lib/types/index';
 import {
   loadLastPageForDoc,
@@ -23,13 +24,16 @@ export function usePDFDocument() {
   // Search state
   const [searchResults, setSearchResults] = useState<SearchMatch[]>([]);
   const [currentMatchIndex, setCurrentMatchIndex] = useState<number>(-1);
+  const [searchMatch, setSearchMatch] = useState<SearchMatch | null>(null);
   const [isSearching, setIsSearching] = useState<boolean>(false);
+  const searchSequenceRef = useRef(0);
 
   const activeDocRef = useRef<PDFDocumentProxy | null>(null);
   const loadingTaskRef = useRef<ReturnType<typeof pdfjsLib.getDocument> | null>(null);
   const loadGenerationRef = useRef(0);
   useEffect(() => () => {
     loadGenerationRef.current += 1;
+    searchSequenceRef.current += 1;
     void loadingTaskRef.current?.destroy();
     void activeDocRef.current?.destroy();
   }, []);
@@ -45,6 +49,11 @@ export function usePDFDocument() {
       silent: boolean = false
     ) => {
       const generation = ++loadGenerationRef.current;
+      searchSequenceRef.current += 1;
+      setSearchResults([]);
+      setSearchMatch(null);
+      setCurrentMatchIndex(-1);
+      setIsSearching(false);
       if (loadingTaskRef.current) void loadingTaskRef.current.destroy();
       if (!silent) setIsLoading(true);
       setError(null);
@@ -154,22 +163,23 @@ export function usePDFDocument() {
     [pdfDoc, docKey, docInfo]
   );
 
-  const searchSequenceRef = useRef(0);
-
   // Full-Text Search
   const searchInDocument = useCallback(async (query: string) => {
     const currentSearchId = ++searchSequenceRef.current;
 
-    if (!pdfDoc || !query.trim()) {
+    if (!pdfDoc || pdfDoc !== activeDocRef.current || !query.trim()) {
       setSearchResults([]);
+      setSearchMatch(null);
       setCurrentMatchIndex(-1);
       setIsSearching(false);
       return;
     }
 
     setIsSearching(true);
+    setSearchMatch(null);
+    setSearchResults([]);
+    setCurrentMatchIndex(-1);
     const results: SearchMatch[] = [];
-    const lowerQuery = query.toLowerCase();
 
     for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
       if (searchSequenceRef.current !== currentSearchId) {
@@ -179,46 +189,12 @@ export function usePDFDocument() {
       try {
         const page = await pdfDoc.getPage(pageNum);
         if (searchSequenceRef.current !== currentSearchId) {
-          try {
-            page.cleanup();
-          } catch {}
           return;
         }
 
         const textContent = await page.getTextContent();
-        let fullPageText = '';
-        const items = textContent.items;
-        for (let i = 0; i < items.length; i++) {
-          const item = items[i];
-          if ('str' in item && item.str) {
-            fullPageText += (fullPageText.length > 0 ? ' ' : '') + item.str;
-          }
-        }
-
-        let matchPos = 0;
-        const lowerPageText = fullPageText.toLowerCase();
-        let occurrence = 0;
-
-        while ((matchPos = lowerPageText.indexOf(lowerQuery, matchPos)) !== -1) {
-          const start = Math.max(0, matchPos - 30);
-          const end = Math.min(fullPageText.length, matchPos + lowerQuery.length + 30);
-          const snippet =
-            (start > 0 ? '...' : '') +
-            fullPageText.slice(start, end) +
-            (end < fullPageText.length ? '...' : '');
-
-          results.push({
-            pageNumber: pageNum,
-            matchIndex: occurrence,
-            snippet,
-          });
-          occurrence++;
-          matchPos += lowerQuery.length;
-        }
-
-        try {
-          page.cleanup();
-        } catch {}
+        if (searchSequenceRef.current !== currentSearchId) return;
+        results.push(...findPageMatches(textContent.items, query, pageNum));
       } catch (err) {
         console.warn(`Search failed on page ${pageNum}:`, err);
       }
@@ -227,14 +203,17 @@ export function usePDFDocument() {
     if (searchSequenceRef.current === currentSearchId) {
       setSearchResults(results);
       setCurrentMatchIndex(results.length > 0 ? 0 : -1);
+      setSearchMatch(results[0] ?? null);
       setIsSearching(false);
+      if (results.length) changePage(results[0].pageNumber);
     }
-  }, [pdfDoc]);
+  }, [pdfDoc, changePage]);
 
   const nextSearchResult = useCallback(() => {
     if (searchResults.length === 0) return;
     const nextIdx = (currentMatchIndex + 1) % searchResults.length;
     setCurrentMatchIndex(nextIdx);
+    setSearchMatch({ ...searchResults[nextIdx] });
     changePage(searchResults[nextIdx].pageNumber);
   }, [searchResults, currentMatchIndex, changePage]);
 
@@ -242,6 +221,7 @@ export function usePDFDocument() {
     if (searchResults.length === 0) return;
     const prevIdx = (currentMatchIndex - 1 + searchResults.length) % searchResults.length;
     setCurrentMatchIndex(prevIdx);
+    setSearchMatch({ ...searchResults[prevIdx] });
     changePage(searchResults[prevIdx].pageNumber);
   }, [searchResults, currentMatchIndex, changePage]);
 
@@ -257,6 +237,7 @@ export function usePDFDocument() {
     loadPdf,
     changePage,
     searchResults,
+    searchMatch,
     currentMatchIndex,
     isSearching,
     searchInDocument,

@@ -14,6 +14,9 @@ import {
 } from '../../lib/ai/aiResponseDrag';
 import { isAnnotationHitByEraser } from '../../lib/annotations/eraserUtils';
 import { getReadTogetherPageRows } from '../../lib/pdf/readTogether';
+import type { SearchMatch } from '../../lib/types';
+import { getSearchMatchRange } from '../../lib/pdf/search';
+import { normalizeSelectionRects } from '../../lib/annotations/textHighlight';
 
 const EMPTY_ANNOTATIONS: Annotation[] = [];
 
@@ -41,6 +44,7 @@ interface PDFViewerProps {
   currentPage: number;
   numPages: number;
   pageNavRequest?: { page: number; timestamp: number } | null;
+  searchMatch?: SearchMatch | null;
   zoom: number;
   viewMode: ViewMode;
   currentTheme: ReadingTheme;
@@ -101,6 +105,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
   currentPage,
   numPages,
   pageNavRequest,
+  searchMatch,
   zoom,
   viewMode,
   currentTheme,
@@ -531,6 +536,66 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
       }
     }
   }, [currentPage, viewMode]);
+
+  // First reveal the lazy page, then center the exact text once its layer is ready.
+  useEffect(() => {
+    const container = viewerContainerRef.current;
+    if (!container || !searchMatch) return;
+    scrollToPage(searchMatch.pageNumber, 'instant');
+    let navigated = false;
+    const marks: HTMLElement[] = [];
+    const reveal = () => {
+      const page = container.querySelector<HTMLElement>(`#pdf-page-${searchMatch.pageNumber}`);
+      if (!page) return;
+      const range = getSearchMatchRange(page, searchMatch);
+      if (!range) return;
+      const pageRect = page.getBoundingClientRect();
+      const rects = normalizeSelectionRects(Array.from(range.getClientRects()), pageRect);
+      if (!rects.length) return;
+      marks.splice(0).forEach(mark => mark.remove());
+      for (const rect of rects) {
+        const mark = document.createElement('div');
+        mark.className = 'pdf-search-match';
+        Object.assign(mark.style, {
+          left: `${rect.x * 100}%`, top: `${rect.y * 100}%`,
+          width: `${rect.width * 100}%`, height: `${rect.height * 100}%`,
+        });
+        page.appendChild(mark);
+        marks.push(mark);
+      }
+      if (!navigated) {
+        navigated = true;
+        const target = range.getBoundingClientRect();
+        const viewport = container.getBoundingClientRect();
+        isProgrammaticScrollRef.current = true;
+        lastReportedPageRef.current = searchMatch.pageNumber;
+        container.scrollTo({
+          top: container.scrollTop + target.top - viewport.top - (container.clientHeight - target.height) / 2,
+          left: container.scrollLeft + target.left - viewport.left - (container.clientWidth - target.width) / 2,
+          behavior: 'instant',
+        });
+        if (programmaticScrollTimerRef.current) clearTimeout(programmaticScrollTimerRef.current);
+        programmaticScrollTimerRef.current = setTimeout(() => {
+          isProgrammaticScrollRef.current = false;
+        }, 150);
+      }
+    };
+    // Observe only text changes; search marks themselves must not retrigger this.
+    const observer = new MutationObserver(records => {
+      if (records.some(record => (record.target as Element).closest?.('[data-pdf-text-layer]'))) reveal();
+    });
+    observer.observe(container, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-search-item'] });
+    const resize = new ResizeObserver(reveal);
+    const targetPage = container.querySelector(`#pdf-page-${searchMatch.pageNumber}`);
+    if (targetPage) resize.observe(targetPage);
+    const frame = requestAnimationFrame(reveal);
+    return () => {
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+      resize.disconnect();
+      marks.forEach(mark => mark.remove());
+    };
+  }, [searchMatch, pdfDoc, viewMode, zoom, scrollToPage]);
 
   // Fit the active page inside the available viewport, then bring it into view.
   useEffect(() => {
