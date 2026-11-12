@@ -243,7 +243,7 @@ export function NotebookEditor(props: Props) {
         const file = event.target.files?.[0]; event.target.value = ''; if (file) insertImageFile(file);
       }} />
     </div>, props.controlsHost)}
-    <div className="notebook-editor-position" style={{ width: PAPER.contentWidth, left: PAPER.left * props.zoom, top: PAPER.top * props.zoom,
+    <div className="notebook-editor-position" style={{ width: PAPER.contentWidth, minHeight: PAPER.contentHeight, left: PAPER.left * props.zoom, top: PAPER.top * props.zoom,
       transform: `scale(${props.zoom})`, pointerEvents: props.editable ? 'auto' : 'none' }}
       onDragOver={(event) => { if (dragged !== null || event.dataTransfer.types.includes('application/x-cinnabar-block')) event.preventDefault(); }}
       onDrop={(event) => {

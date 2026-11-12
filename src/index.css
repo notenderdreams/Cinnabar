@@ -2200,7 +2200,8 @@
 .independent-paper-stack { position: relative; margin: 0 auto; }
 .independent-paper-sheet { position: absolute; left: 0; box-shadow: 0 2px 12px rgb(0 0 0 / 12%); pointer-events: none; }
 .notebook-editor-position { position: absolute; transform-origin: top left; user-select: text; }
-.notebook-block-document { outline: none; white-space: pre-wrap; overflow-wrap: anywhere; user-select: text; }
+.notebook-editor-position > div { min-height: inherit; }
+.notebook-block-document { min-height: inherit; outline: none; white-space: pre-wrap; overflow-wrap: anywhere; user-select: text; }
 .notebook-paper-gap:not(tr) { display: block; position: relative; pointer-events: none; user-select: none; }
 .notebook-block-handle { position: absolute; left: -28px; width: 22px; opacity: 0; cursor: grab; }
 .notebook-block-handle:hover, .notebook-block-handle:focus-visible { opacity: 1; }
