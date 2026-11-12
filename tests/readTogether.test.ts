@@ -1,5 +1,4 @@
 import { describe, expect, test } from 'bun:test';
-import { getReadTogetherPageRows } from '../src/lib/pdf/readTogether';
 
 describe('read together page rows', () => {
   test('wires a read-only companion PDF into the continuous viewer', async () => {

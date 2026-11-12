@@ -140,7 +140,7 @@ export async function cropCanvasRegion(
   return null;
 }
 
-export interface MeasuredStitchItem {
+interface MeasuredStitchItem {
   entry: SnippetEntry;
   height: number;
   imageWidth?: number;

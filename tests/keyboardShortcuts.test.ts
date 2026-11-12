@@ -136,7 +136,7 @@ describe('annotation keyboard shortcuts', () => {
   });
 
   test('Escape dismisses active inputs and modals before exiting fullscreen mode', async () => {
-    const [keyboardSource, appSource, overlaySource, canvasSource, noteSource, bridgeSource] =
+    const [keyboardSource, appSource, overlaySource, _canvasSource, noteSource, bridgeSource] =
       await Promise.all([
         projectFile('src/hooks/useKeyboard.ts'),
         projectFile('src/App.tsx'),

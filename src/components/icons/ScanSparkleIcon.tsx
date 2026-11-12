@@ -41,5 +41,3 @@ export const ScanSparkleIcon: React.FC<ScanSparkleIconProps> = ({
     </svg>
   );
 };
-
-export default ScanSparkleIcon;

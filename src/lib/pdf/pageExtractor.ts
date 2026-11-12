@@ -1,7 +1,6 @@
 import type { PDFDocumentProxy } from 'pdfjs-dist';
 import { PDFDocument } from 'pdf-lib';
 import {
-  saveImageFile,
   tauriCopyImageToClipboard,
   tauriCopyTextToClipboard,
   tauriDeletePdfPage,
@@ -81,7 +80,7 @@ export async function extractPageText(
 /**
  * Capture full composite page canvas (from DOM if rendered, or directly via PDF.js offscreen renderer)
  */
-export async function capturePageCompositeCanvas(
+async function capturePageCompositeCanvas(
   pageNumber: number | unknown,
   pdfDoc?: PDFDocumentProxy | null,
   pageIdPrefix: string = 'pdf-page',
@@ -360,24 +359,4 @@ export function reindexAfterPageDeletion<T>(entries: T[], deletedPageNumber: num
     if (pageNumber < deletedPageNumber) return [entry];
     return [{ ...entry, pageNumber: pageNumber - 1 }];
   });
-}
-
-/**
- * Save composite page image through the native dialog
- */
-export async function downloadPageAsJpg(
-  pageNumber: number | unknown,
-  pdfDoc?: PDFDocumentProxy | null,
-  baseFileName = 'document',
-): Promise<boolean> {
-  const canvas = await capturePageCompositeCanvas(pageNumber, pdfDoc);
-  if (!canvas) return false;
-  const page =
-    typeof pageNumber === 'number' && Number.isFinite(pageNumber)
-      ? Math.max(1, Math.floor(pageNumber))
-      : 1;
-  return saveImageFile(
-    canvas.toDataURL('image/jpeg', 0.95),
-    `${baseFileName.replace(/\.pdf$/i, '')}_page_${page}.jpg`,
-  );
 }

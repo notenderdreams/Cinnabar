@@ -1,0 +1,379 @@
+{
+  "packages/notebook/src/NotebookEditor.tsx": {
+    "@typescript-eslint/no-unsafe-argument": {
+      "count": 4
+    },
+    "@typescript-eslint/no-unsafe-assignment": {
+      "count": 11
+    },
+    "@typescript-eslint/no-unsafe-call": {
+      "count": 1
+    },
+    "@typescript-eslint/no-unsafe-member-access": {
+      "count": 5
+    },
+    "@typescript-eslint/no-unused-expressions": {
+      "count": 1
+    },
+    "jsx-a11y/interactive-supports-focus": {
+      "count": 1
+    }
+  },
+  "packages/notebook/src/document.ts": {
+    "@typescript-eslint/no-unsafe-argument": {
+      "count": 1
+    }
+  },
+  "packages/notebook/src/extensions.ts": {
+    "@typescript-eslint/no-base-to-string": {
+      "count": 1
+    },
+    "@typescript-eslint/no-unsafe-assignment": {
+      "count": 4
+    },
+    "@typescript-eslint/restrict-template-expressions": {
+      "count": 1
+    }
+  },
+  "packages/notebook/src/layout.ts": {
+    "@typescript-eslint/no-unsafe-return": {
+      "count": 1
+    }
+  },
+  "packages/notebook/src/session.ts": {
+    "@typescript-eslint/no-unsafe-argument": {
+      "count": 2
+    }
+  },
+  "src/App.tsx": {
+    "@typescript-eslint/no-floating-promises": {
+      "count": 1
+    },
+    "@typescript-eslint/no-misused-promises": {
+      "count": 2
+    },
+    "@typescript-eslint/no-redundant-type-constituents": {
+      "count": 2
+    },
+    "react-hooks/exhaustive-deps": {
+      "count": 5
+    }
+  },
+  "src/components/ai/AiChatPromptInput.tsx": {
+    "jsx-a11y/img-redundant-alt": {
+      "count": 1
+    }
+  },
+  "src/components/ai/AiSessionDrawer.tsx": {
+    "jsx-a11y/click-events-have-key-events": {
+      "count": 2
+    },
+    "jsx-a11y/no-autofocus": {
+      "count": 1
+    },
+    "jsx-a11y/no-noninteractive-element-interactions": {
+      "count": 1
+    },
+    "jsx-a11y/no-static-element-interactions": {
+      "count": 1
+    }
+  },
+  "src/components/annotations/AiExplanationOverlay.tsx": {
+    "jsx-a11y/click-events-have-key-events": {
+      "count": 2
+    },
+    "jsx-a11y/no-autofocus": {
+      "count": 2
+    },
+    "jsx-a11y/no-noninteractive-element-interactions": {
+      "count": 1
+    }
+  },
+  "src/components/annotations/AnnotationCanvas.tsx": {
+    "jsx-a11y/click-events-have-key-events": {
+      "count": 1
+    },
+    "jsx-a11y/no-static-element-interactions": {
+      "count": 4
+    },
+    "react-hooks/exhaustive-deps": {
+      "count": 1
+    }
+  },
+  "src/components/annotations/ImageOverlay.tsx": {
+    "jsx-a11y/click-events-have-key-events": {
+      "count": 1
+    },
+    "jsx-a11y/no-static-element-interactions": {
+      "count": 3
+    }
+  },
+  "src/components/annotations/TextFormattingToolbar.tsx": {
+    "@typescript-eslint/no-redundant-type-constituents": {
+      "count": 3
+    },
+    "jsx-a11y/click-events-have-key-events": {
+      "count": 1
+    },
+    "jsx-a11y/no-static-element-interactions": {
+      "count": 1
+    }
+  },
+  "src/components/annotations/TextNoteOverlay.tsx": {
+    "jsx-a11y/click-events-have-key-events": {
+      "count": 3
+    },
+    "jsx-a11y/no-static-element-interactions": {
+      "count": 6
+    }
+  },
+  "src/components/dashboard/Dashboard.tsx": {
+    "@typescript-eslint/no-redundant-type-constituents": {
+      "count": 3
+    },
+    "jsx-a11y/click-events-have-key-events": {
+      "count": 1
+    },
+    "jsx-a11y/no-static-element-interactions": {
+      "count": 2
+    }
+  },
+  "src/components/layout/Header.tsx": {
+    "jsx-a11y/no-static-element-interactions": {
+      "count": 1
+    }
+  },
+  "src/components/layout/Sidebar.tsx": {
+    "@typescript-eslint/require-await": {
+      "count": 2
+    },
+    "jsx-a11y/click-events-have-key-events": {
+      "count": 2
+    },
+    "jsx-a11y/no-static-element-interactions": {
+      "count": 2
+    },
+    "react-hooks/exhaustive-deps": {
+      "count": 1
+    }
+  },
+  "src/components/modals/ExportModal.tsx": {
+    "@typescript-eslint/no-floating-promises": {
+      "count": 1
+    }
+  },
+  "src/components/modals/SettingsModal.tsx": {
+    "jsx-a11y/click-events-have-key-events": {
+      "count": 2
+    },
+    "jsx-a11y/no-noninteractive-element-interactions": {
+      "count": 1
+    },
+    "jsx-a11y/no-static-element-interactions": {
+      "count": 1
+    }
+  },
+  "src/components/notebook/NotebookWorkspace.tsx": {
+    "jsx-a11y/no-noninteractive-element-interactions": {
+      "count": 1
+    },
+    "react-hooks/exhaustive-deps": {
+      "count": 4
+    }
+  },
+  "src/components/settings/AiTab.tsx": {
+    "jsx-a11y/click-events-have-key-events": {
+      "count": 2
+    },
+    "jsx-a11y/no-static-element-interactions": {
+      "count": 2
+    }
+  },
+  "src/components/ui/SplitDivider.tsx": {
+    "jsx-a11y/no-noninteractive-element-interactions": {
+      "count": 1
+    },
+    "jsx-a11y/no-noninteractive-tabindex": {
+      "count": 1
+    }
+  },
+  "src/components/viewer/NotePanel.tsx": {
+    "jsx-a11y/no-noninteractive-tabindex": {
+      "count": 1
+    }
+  },
+  "src/components/viewer/PDFPage.tsx": {
+    "@typescript-eslint/no-misused-promises": {
+      "count": 1
+    },
+    "jsx-a11y/click-events-have-key-events": {
+      "count": 2
+    },
+    "jsx-a11y/no-static-element-interactions": {
+      "count": 1
+    },
+    "react-hooks/exhaustive-deps": {
+      "count": 1
+    }
+  },
+  "src/components/viewer/PDFViewer.tsx": {
+    "jsx-a11y/no-static-element-interactions": {
+      "count": 2
+    },
+    "react-hooks/exhaustive-deps": {
+      "count": 1
+    }
+  },
+  "src/components/viewer/PageContextMenu.tsx": {
+    "jsx-a11y/interactive-supports-focus": {
+      "count": 1
+    }
+  },
+  "src/hooks/useAiChat.ts": {
+    "@typescript-eslint/no-unsafe-assignment": {
+      "count": 2
+    },
+    "@typescript-eslint/no-unsafe-call": {
+      "count": 1
+    },
+    "@typescript-eslint/no-unsafe-member-access": {
+      "count": 2
+    },
+    "@typescript-eslint/no-unsafe-return": {
+      "count": 1
+    }
+  },
+  "src/hooks/useAnnotations.ts": {
+    "@typescript-eslint/no-floating-promises": {
+      "count": 1
+    }
+  },
+  "src/hooks/useNotebookSession.ts": {
+    "react-hooks/exhaustive-deps": {
+      "count": 1
+    }
+  },
+  "src/hooks/usePDFDocument.ts": {
+    "@typescript-eslint/no-floating-promises": {
+      "count": 1
+    }
+  },
+  "src/hooks/useSnippets.ts": {
+    "@typescript-eslint/no-unsafe-assignment": {
+      "count": 2
+    },
+    "@typescript-eslint/no-unsafe-return": {
+      "count": 2
+    },
+    "react-hooks/exhaustive-deps": {
+      "count": 1
+    }
+  },
+  "src/hooks/useViewportZoom.ts": {
+    "react-hooks/exhaustive-deps": {
+      "count": 1
+    }
+  },
+  "src/lib/ai/aiResponseMarkdown.ts": {
+    "@typescript-eslint/no-unsafe-argument": {
+      "count": 1
+    },
+    "@typescript-eslint/no-unsafe-assignment": {
+      "count": 1
+    },
+    "@typescript-eslint/no-unsafe-call": {
+      "count": 7
+    },
+    "@typescript-eslint/no-unsafe-member-access": {
+      "count": 7
+    },
+    "no-useless-escape": {
+      "count": 4
+    }
+  },
+  "src/lib/ai/regionContext.ts": {
+    "@typescript-eslint/no-unnecessary-type-assertion": {
+      "count": 1
+    },
+    "@typescript-eslint/no-unsafe-argument": {
+      "count": 2
+    }
+  },
+  "src/lib/annotations/annotationTransfer.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    },
+    "@typescript-eslint/no-redundant-type-constituents": {
+      "count": 1
+    },
+    "@typescript-eslint/no-unsafe-assignment": {
+      "count": 1
+    },
+    "@typescript-eslint/no-unsafe-member-access": {
+      "count": 32
+    }
+  },
+  "src/lib/annotations/textNoteRasterizer.ts": {
+    "@typescript-eslint/no-misused-promises": {
+      "count": 1
+    }
+  },
+  "src/lib/notebook/operations.ts": {
+    "@typescript-eslint/no-unsafe-argument": {
+      "count": 4
+    },
+    "@typescript-eslint/no-unsafe-assignment": {
+      "count": 6
+    }
+  },
+  "src/lib/notebook/storage.ts": {
+    "@typescript-eslint/no-unsafe-assignment": {
+      "count": 2
+    }
+  },
+  "src/lib/pdf/documentOverview.ts": {
+    "@typescript-eslint/no-unsafe-argument": {
+      "count": 1
+    }
+  },
+  "src/lib/pdf/pageExtractor.ts": {
+    "@typescript-eslint/no-redundant-type-constituents": {
+      "count": 4
+    }
+  },
+  "src/lib/pdf/pdfExporter.ts": {
+    "@typescript-eslint/no-misused-promises": {
+      "count": 1
+    },
+    "@typescript-eslint/prefer-promise-reject-errors": {
+      "count": 2
+    },
+    "no-control-regex": {
+      "count": 1
+    }
+  },
+  "src/lib/snippets/snippetExtractor.ts": {
+    "@typescript-eslint/prefer-promise-reject-errors": {
+      "count": 1
+    }
+  },
+  "src/lib/storage/storage.ts": {
+    "@typescript-eslint/no-unsafe-assignment": {
+      "count": 5
+    },
+    "@typescript-eslint/no-unsafe-member-access": {
+      "count": 4
+    },
+    "@typescript-eslint/no-unsafe-return": {
+      "count": 3
+    },
+    "@typescript-eslint/prefer-promise-reject-errors": {
+      "count": 1
+    }
+  },
+  "src/lib/types/annotations.ts": {
+    "@typescript-eslint/no-redundant-type-constituents": {
+      "count": 9
+    }
+  }
+}

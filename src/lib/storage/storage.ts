@@ -74,7 +74,7 @@ function openIDB(): Promise<IDBDatabase> {
   });
 }
 
-export async function idbSaveAnnotations(
+async function idbSaveAnnotations(
   docKey: string,
   annotations: Annotation[],
   updatedAt = nextAnnotationSaveTimestamp(),
@@ -114,9 +114,7 @@ export async function idbSaveAnnotations(
   }
 }
 
-export async function idbLoadAnnotationRecord(
-  docKey: string,
-): Promise<StoredAnnotationRecord | null> {
+async function idbLoadAnnotationRecord(docKey: string): Promise<StoredAnnotationRecord | null> {
   try {
     const db = await openIDB();
     const tx = db.transaction(IDB_STORE_ANNOTATIONS, 'readonly');
@@ -135,10 +133,6 @@ export async function idbLoadAnnotationRecord(
   } catch {
     return null;
   }
-}
-
-export async function idbLoadAnnotations(docKey: string): Promise<Annotation[] | null> {
-  return (await idbLoadAnnotationRecord(docKey))?.annotations ?? null;
 }
 
 export async function idbSaveActivePdf(data: Uint8Array, fileName: string): Promise<boolean> {
@@ -185,27 +179,6 @@ export async function idbLoadActivePdf(): Promise<{ data: Uint8Array; fileName: 
     });
   } catch {
     return null;
-  }
-}
-
-export async function idbClearActivePdf(): Promise<boolean> {
-  try {
-    const db = await openIDB();
-    const tx = db.transaction(IDB_STORE_ACTIVE_PDF, 'readwrite');
-    const store = tx.objectStore(IDB_STORE_ACTIVE_PDF);
-    store.delete('active_pdf');
-    return new Promise((resolve) => {
-      tx.oncomplete = () => {
-        db.close();
-        resolve(true);
-      };
-      tx.onerror = () => {
-        db.close();
-        resolve(false);
-      };
-    });
-  } catch {
-    return false;
   }
 }
 
@@ -407,10 +380,7 @@ export function loadAnnotationRecordForDocSync(
   return null;
 }
 
-export function loadAnnotationsForDocSync(
-  docKey: string,
-  fallbackKeys: string[] = [],
-): Annotation[] {
+function loadAnnotationsForDocSync(docKey: string, fallbackKeys: string[] = []): Annotation[] {
   return loadAnnotationRecordForDocSync(docKey, fallbackKeys)?.annotations ?? [];
 }
 
@@ -432,13 +402,6 @@ export async function loadAnnotationRecordForDocAsync(
   }
 
   return null;
-}
-
-export async function loadAnnotationsForDocAsync(
-  docKey: string,
-  fallbackKeys: string[] = [],
-): Promise<Annotation[] | null> {
-  return (await loadAnnotationRecordForDocAsync(docKey, fallbackKeys))?.annotations ?? null;
 }
 
 export function loadAnnotationsForDoc(docKey: string): Annotation[] {
@@ -523,7 +486,7 @@ export function saveSavedDirectories(dirs: SavedDirectory[]): void {
   }
 }
 
-export function loadRecentDocs(): DashboardPdfItem[] {
+function loadRecentDocs(): DashboardPdfItem[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.RECENT_DOCS);
     return raw ? JSON.parse(raw) : [];
@@ -552,7 +515,7 @@ export function recordRecentDoc(doc: Omit<DashboardPdfItem, 'id'> & { id?: strin
   }
 }
 
-export function updateRecentDocLastPage(identifier: string, pageNumber: number): void {
+function updateRecentDocLastPage(identifier: string, pageNumber: number): void {
   try {
     const current = loadRecentDocs();
     const updated = current.map((doc) => {
@@ -576,27 +539,6 @@ export function updateRecentDocPageCount(identifier: string, numPages: number): 
     });
     localStorage.setItem(STORAGE_KEYS.RECENT_DOCS, JSON.stringify(updated));
   } catch {}
-}
-
-export function loadFavorites(): string[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEYS.FAVORITES);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-}
-
-export function toggleFavorite(docId: string): boolean {
-  try {
-    const current = loadFavorites();
-    const isFav = current.includes(docId);
-    const updated = isFav ? current.filter((id) => id !== docId) : [...current, docId];
-    localStorage.setItem(STORAGE_KEYS.FAVORITES, JSON.stringify(updated));
-    return !isFav;
-  } catch {
-    return false;
-  }
 }
 
 export function loadLibraryFilter(): string {

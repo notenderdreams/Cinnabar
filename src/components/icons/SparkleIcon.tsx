@@ -23,7 +23,3 @@ export const SparkleIcon: React.FC<GoogleGeminiIconProps> = ({
     />
   );
 };
-
-export const GeminiIcon = SparkleIcon;
-
-export default SparkleIcon;

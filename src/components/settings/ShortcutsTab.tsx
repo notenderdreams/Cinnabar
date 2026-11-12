@@ -1,4 +1,4 @@
-export const SHORTCUT_GROUPS = [
+const SHORTCUT_GROUPS = [
   {
     title: 'Reading Layout',
     items: [

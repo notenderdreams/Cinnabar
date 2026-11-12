@@ -1,13 +1,4 @@
-import type {
-  Annotation,
-  DrawingAnnotation,
-  LineHighlightAnnotation,
-  RectHighlightAnnotation,
-  TextHighlightAnnotation,
-  TextNoteAnnotation,
-  AiExplanationAnnotation,
-  AttachedImageAnnotation,
-} from '../types/index';
+import type { Annotation } from '../types/index';
 
 export function distToSegment(
   p: { x: number; y: number },
@@ -32,7 +23,7 @@ export function isAnnotationHitByEraser(
 ): boolean {
   const zoomScale = Math.max(0.1, scale);
   if (ann.type === 'pen' || ann.type === 'highlight-pen') {
-    const drawAnn = ann as DrawingAnnotation;
+    const drawAnn = ann;
     const threshold = eraseRadius + (drawAnn.strokeWidth || 4) * zoomScale;
     if (!drawAnn.points || drawAnn.points.length === 0) return false;
     if (drawAnn.points.length === 1) {
@@ -54,7 +45,7 @@ export function isAnnotationHitByEraser(
   }
 
   if (ann.type === 'highlight-line') {
-    const lineAnn = ann as LineHighlightAnnotation;
+    const lineAnn = ann;
     const x1 = lineAnn.startX * pageWidth;
     const y1 = lineAnn.startY * pageHeight;
     const x2 = lineAnn.endX * pageWidth;
@@ -64,7 +55,7 @@ export function isAnnotationHitByEraser(
   }
 
   if (ann.type === 'highlight-rect') {
-    const hRect = ann as RectHighlightAnnotation;
+    const hRect = ann;
     const rx = hRect.x * pageWidth;
     const ry = hRect.y * pageHeight;
     const rw = hRect.width * pageWidth;
@@ -78,7 +69,7 @@ export function isAnnotationHitByEraser(
   }
 
   if (ann.type === 'highlight-text') {
-    const textHighlight = ann as TextHighlightAnnotation;
+    const textHighlight = ann;
     return textHighlight.rects.some((rect) => {
       const rx = rect.x * pageWidth;
       const ry = rect.y * pageHeight;
@@ -94,14 +85,14 @@ export function isAnnotationHitByEraser(
   }
 
   if (ann.type === 'text-note') {
-    const note = ann as TextNoteAnnotation;
+    const note = ann;
     const nx = note.x * pageWidth;
     const ny = note.y * pageHeight;
     return Math.hypot(px - nx, py - ny) <= eraseRadius + 40;
   }
 
   if (ann.type === 'ai-explanation') {
-    const box = ann as AiExplanationAnnotation;
+    const box = ann;
     const rx = box.x * pageWidth;
     const ry = box.y * pageHeight;
     // Regionless AI responses (pinned from chat) anchor a tiny box at the card origin;
@@ -120,7 +111,7 @@ export function isAnnotationHitByEraser(
   }
 
   if (ann.type === 'image') {
-    const img = ann as AttachedImageAnnotation;
+    const img = ann;
     const rx = img.x * pageWidth;
     const ry = img.y * pageHeight;
     const rw = img.width * pageWidth;

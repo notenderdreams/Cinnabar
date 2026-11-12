@@ -671,7 +671,7 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
     if (!isInteractingRef.current) return;
 
     if (activeTool === 'highlight-line') {
-      let curX = x;
+      const curX = x;
       let curY = y;
       if (lineStart) {
         // Auto-snap horizontal line if vertical difference is small (within 10px)
@@ -735,7 +735,7 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
     }
 
     if (activeTool === 'highlight-line' && lineStart && lineCurrent) {
-      let endX = lineCurrent.x;
+      const endX = lineCurrent.x;
       let endY = lineCurrent.y;
       if (Math.abs(endY - lineStart.y) * pageHeight < 10) {
         endY = lineStart.y;
@@ -997,7 +997,7 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
         {pageAnnotations
           .filter((a) => a.type === 'highlight-line')
           .map((a) => {
-            const line = a as LineHighlightAnnotation;
+            const line = a;
             return (
               <line
                 key={`hl_${line.id}`}
@@ -1271,7 +1271,7 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
         {pageAnnotations
           .filter((a) => a.type === 'highlight-text')
           .map((a) => {
-            const textHighlight = a as TextHighlightAnnotation;
+            const textHighlight = a;
             const isSelected = selectedAnnotationId === textHighlight.id;
             return (
               <g
@@ -1320,7 +1320,7 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
         {pageAnnotations
           .filter((a) => a.type === 'highlight-rect')
           .map((a) => {
-            const rect = a as RectHighlightAnnotation;
+            const rect = a;
             const isSelected = selectedAnnotationId === rect.id;
             return (
               <g
@@ -1365,7 +1365,7 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
         {pageAnnotations
           .filter((a) => a.type === 'highlight-line')
           .map((a) => {
-            const line = a as LineHighlightAnnotation;
+            const line = a;
             return (
               <g
                 key={`hit_line_${line.id}`}
@@ -1437,9 +1437,7 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
             top: `${(selectedHighlight.y + selectedHighlight.height) * pageHeight}px`,
             transform: 'translate(-50%, -50%)',
           }}
-          onPointerDown={(e) =>
-            handleHighlightResizeStart(e, selectedHighlight as RectHighlightAnnotation)
-          }
+          onPointerDown={(e) => handleHighlightResizeStart(e, selectedHighlight)}
           onMouseDown={(e) => e.stopPropagation()}
           className="pointer-events-auto absolute z-40 h-3.5 w-3.5 cursor-nwse-resize touch-none rounded-full border-2 border-white bg-blue-500 shadow-md transition-transform select-none hover:scale-125"
           title="Drag to resize highlight"
@@ -1456,9 +1454,7 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
               top: `${selectedHighlight.startY * pageHeight}px`,
               transform: 'translate(-50%, -50%)',
             }}
-            onPointerDown={(e) =>
-              handleLineEndpointDragStart(e, selectedHighlight as LineHighlightAnnotation, 'start')
-            }
+            onPointerDown={(e) => handleLineEndpointDragStart(e, selectedHighlight, 'start')}
             onMouseDown={(e) => e.stopPropagation()}
             className="pointer-events-auto absolute z-40 h-3.5 w-3.5 cursor-move touch-none rounded-full border-2 border-white bg-blue-500 shadow-md transition-transform select-none hover:scale-125"
             title="Drag to adjust start point"
@@ -1470,9 +1466,7 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
               top: `${selectedHighlight.endY * pageHeight}px`,
               transform: 'translate(-50%, -50%)',
             }}
-            onPointerDown={(e) =>
-              handleLineEndpointDragStart(e, selectedHighlight as LineHighlightAnnotation, 'end')
-            }
+            onPointerDown={(e) => handleLineEndpointDragStart(e, selectedHighlight, 'end')}
             onMouseDown={(e) => e.stopPropagation()}
             className="pointer-events-auto absolute z-40 h-3.5 w-3.5 cursor-move touch-none rounded-full border-2 border-white bg-blue-500 shadow-md transition-transform select-none hover:scale-125"
             title="Drag to adjust end point"
@@ -1499,9 +1493,9 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
             <div
               onPointerDown={(e) => {
                 if (selectedHighlight.type === 'highlight-rect') {
-                  handleHighlightDragStart(e, selectedHighlight as RectHighlightAnnotation);
+                  handleHighlightDragStart(e, selectedHighlight);
                 } else if (selectedHighlight.type === 'highlight-line') {
-                  handleLineDragStart(e, selectedHighlight as LineHighlightAnnotation);
+                  handleLineDragStart(e, selectedHighlight);
                 }
               }}
               className="flex cursor-grab touch-none items-center justify-center rounded-md bg-black/8 px-1.5 py-1 text-[var(--muted-foreground)] transition-colors hover:bg-black/15 hover:text-[var(--foreground)] active:cursor-grabbing dark:bg-white/5 dark:hover:bg-white/10"

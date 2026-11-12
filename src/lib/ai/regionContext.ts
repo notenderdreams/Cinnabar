@@ -28,7 +28,7 @@ export function rectanglesIntersect(a: NormalizedRect, b: NormalizedRect): boole
   return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
 }
 
-export function sortRegionText(items: RegionTextItem[]): RegionTextItem[] {
+function sortRegionText(items: RegionTextItem[]): RegionTextItem[] {
   return [...items].sort((a, b) => {
     const lineTolerance = Math.max(a.height, b.height) * 0.55;
     return Math.abs(a.y - b.y) <= lineTolerance ? a.x - b.x : a.y - b.y;

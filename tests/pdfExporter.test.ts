@@ -1,11 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import { PDFDocument } from 'pdf-lib';
 import { exportAnnotatedPDF, parseColorToRgb, sanitizeWinAnsi } from '../src/lib/pdf/pdfExporter';
-import {
-  resolveNoteColor,
-  wrapTextLines,
-  NOTE_COLOR_PRESETS,
-} from '../src/lib/annotations/textNoteRasterizer';
+import { resolveNoteColor, wrapTextLines } from '../src/lib/annotations/textNoteRasterizer';
 import type {
   Annotation,
   RectHighlightAnnotation,

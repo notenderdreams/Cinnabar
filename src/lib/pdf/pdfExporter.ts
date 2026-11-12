@@ -1,14 +1,6 @@
 import { PDFDocument, rgb, degrees, StandardFonts, BlendMode, LineCapStyle } from 'pdf-lib';
-import type {
-  Annotation,
-  AttachedImageAnnotation,
-  DrawingAnnotation,
-  LineHighlightAnnotation,
-  RectHighlightAnnotation,
-  TextHighlightAnnotation,
-  TextNoteAnnotation,
-} from '../types/index';
-import { tauriSavePdf, tauriSaveJson } from '../../utils/tauriBridge';
+import type { Annotation } from '../types/index';
+import { tauriSavePdf } from '../../utils/tauriBridge';
 import { rasterizeStickyNote, rasterizePlainText } from '../annotations/textNoteRasterizer';
 
 // Robust helper to convert any color format (hex3, hex6, hex8, rgb, rgba, named colors) to RGB (0..1)
@@ -172,7 +164,7 @@ export async function exportAnnotatedPDF(
 
       // 2. Rectangle Highlights
       if (ann.type === 'highlight-rect') {
-        const hRect = ann as RectHighlightAnnotation;
+        const hRect = ann;
         const color = parseColorToRgb(hRect.color);
         const normWidth = Math.abs(hRect.width);
         const normHeight = Math.abs(hRect.height);
@@ -219,7 +211,7 @@ export async function exportAnnotatedPDF(
 
       // 3. Text Highlights (selection spans)
       else if (ann.type === 'highlight-text') {
-        const hText = ann as TextHighlightAnnotation;
+        const hText = ann;
         const color = parseColorToRgb(hText.color);
         for (const rect of hText.rects) {
           const normWidth = Math.abs(rect.width);
@@ -257,7 +249,7 @@ export async function exportAnnotatedPDF(
 
       // 4. Straight Line Highlights
       else if (ann.type === 'highlight-line') {
-        const lineAnn = ann as LineHighlightAnnotation;
+        const lineAnn = ann;
         const color = parseColorToRgb(lineAnn.color || '#ffe600');
         const startX = lineAnn.startX * pageWidth;
         const startY = pageHeight - lineAnn.startY * pageHeight;
@@ -281,7 +273,7 @@ export async function exportAnnotatedPDF(
 
       // 5. Freehand Drawings & Freehand Highlighters
       else if (ann.type === 'pen' || ann.type === 'highlight-pen') {
-        const drawAnn = ann as DrawingAnnotation;
+        const drawAnn = ann;
         const isHighlight = drawAnn.type === 'highlight-pen';
         const color = parseColorToRgb(drawAnn.color);
         const pts = drawAnn.points;
@@ -322,7 +314,7 @@ export async function exportAnnotatedPDF(
 
       // 6. Attached Images
       else if (ann.type === 'image') {
-        const imgAnn = ann as AttachedImageAnnotation;
+        const imgAnn = ann;
         try {
           const shouldInvertPixels = Boolean(
             imgAnn.invertInLightMode ?? imgAnn.attachedInInvertedMode,
@@ -350,7 +342,7 @@ export async function exportAnnotatedPDF(
 
       // 7. Text Notes (Include text, not the sticky note)
       else if (ann.type === 'text-note') {
-        const textAnn = ann as TextNoteAnnotation;
+        const textAnn = ann;
         const isPlainText = textAnn.kind === 'plain';
 
         // Include the text not the sticky note
@@ -480,14 +472,4 @@ export async function savePdfFile(
   fileName = 'document_annotated.pdf',
 ): Promise<{ success: boolean; path?: string }> {
   return tauriSavePdf(pdfBytes, fileName);
-}
-
-/**
- * Saves the annotation session through the native JSON dialog
- */
-export async function saveAnnotationsJson(
-  annotations: Annotation[],
-  fileName = 'annotations.json',
-): Promise<{ success: boolean; path?: string }> {
-  return tauriSaveJson(JSON.stringify(annotations, null, 2), fileName);
 }

@@ -2,7 +2,7 @@ import type React from 'react';
 import { commands } from '../../lib/bindings';
 import { unwrapNativeResult } from './runtime';
 
-export async function startDraggingWindow(): Promise<void> {
+async function startDraggingWindow(): Promise<void> {
   try {
     const { getCurrentWindow } = await import('@tauri-apps/api/window');
     await getCurrentWindow().startDragging();
@@ -11,7 +11,7 @@ export async function startDraggingWindow(): Promise<void> {
   }
 }
 
-export async function toggleMaximizeWindow(): Promise<void> {
+async function toggleMaximizeWindow(): Promise<void> {
   try {
     const { getCurrentWindow } = await import('@tauri-apps/api/window');
     await getCurrentWindow().toggleMaximize();

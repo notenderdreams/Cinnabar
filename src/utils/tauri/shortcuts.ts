@@ -1,5 +1,3 @@
-import { commands } from '../../lib/bindings';
-
 type NativeMenuHandler = (action: string) => void;
 const nativeMenuHandlers = new Set<NativeMenuHandler>();
 let globalNativeMenuUnlisten: (() => void) | null = null;
@@ -46,25 +44,4 @@ export function listenToNativeMenuEvents(handler: NativeMenuHandler): () => void
       unlisten();
     }
   };
-}
-
-export async function tauriGetRegisteredShortcuts(): Promise<
-  import('../../lib/bindings').ShortcutBinding[]
-> {
-  try {
-    return await commands.getRegisteredShortcuts();
-  } catch (err) {
-    console.error('Failed to get registered shortcuts:', err);
-    return [];
-  }
-}
-
-export async function tauriTriggerShortcutAction(id: string): Promise<boolean> {
-  try {
-    const res = await commands.triggerShortcutAction(id);
-    return res.status === 'ok';
-  } catch (err) {
-    console.error('Failed to trigger shortcut action:', err);
-    return false;
-  }
 }

@@ -33,33 +33,3 @@ export async function tauriAddBlankPageBelow(
     return null;
   }
 }
-
-export async function tauriComputePdfFingerprint(pdfBytes: Uint8Array): Promise<string | null> {
-  try {
-    const res = await commands.computePdfFingerprint(Array.from(pdfBytes));
-    if (res.status === 'ok') {
-      return res.data;
-    }
-    return null;
-  } catch (err) {
-    console.warn('Native compute fingerprint failed:', err);
-    return null;
-  }
-}
-
-export async function tauriCompressImage(
-  dataUrl: string,
-  maxWidth = 1920,
-  quality = 85,
-): Promise<string | null> {
-  try {
-    const res = await commands.compressImageNative(dataUrl, maxWidth, quality);
-    if (res.status === 'ok') {
-      return res.data;
-    }
-    return null;
-  } catch (err) {
-    console.warn('Native compress image failed:', err);
-    return null;
-  }
-}

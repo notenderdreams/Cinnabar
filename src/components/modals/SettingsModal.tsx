@@ -203,5 +203,3 @@ export function SettingsModal({
     </div>
   );
 }
-
-export default SettingsModal;

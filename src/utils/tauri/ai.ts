@@ -1,7 +1,7 @@
 import { commands } from '../../lib/bindings';
 import { unwrapNativeResult } from './runtime';
 
-export interface DiscoveredAiProvider {
+interface DiscoveredAiProvider {
   id: string;
   name: string;
   executable: string;
@@ -28,7 +28,7 @@ export type AiProviderStatus =
       availableProviders: DiscoveredAiProvider[];
     };
 
-export type AiExplanationErrorCode =
+type AiExplanationErrorCode =
   | 'missing_cli'
   | 'unauthenticated'
   | 'incompatible_cli'
@@ -119,10 +119,6 @@ function normalizeExplanationResult(
 
 export async function getAiProviderStatus(): Promise<AiProviderStatus> {
   return normalizeProviderStatus(await commands.getAiProviderStatus());
-}
-
-export async function setAiProviderExecutable(executablePath: string): Promise<AiProviderStatus> {
-  return normalizeProviderStatus(await commands.setAiProviderExecutable(executablePath));
 }
 
 export async function setAiProviderPreference(

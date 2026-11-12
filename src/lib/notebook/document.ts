@@ -11,14 +11,8 @@ import {
   notebookText,
   type NotebookDocument,
 } from '@cinnabar/notebook';
-export {
-  emptyNotebook,
-  identifyBlocks,
-  notebookText,
-  neutralStyles,
-  BLOCK_TYPES,
-} from '@cinnabar/notebook';
-export type { NotebookDocument, NotebookStyles } from '@cinnabar/notebook';
+export { emptyNotebook, identifyBlocks, notebookText } from '@cinnabar/notebook';
+export type { NotebookDocument } from '@cinnabar/notebook';
 
 const parser = unified().use(remarkParse).use(remarkGfm).use(remarkMath);
 export function markdownBlocks(

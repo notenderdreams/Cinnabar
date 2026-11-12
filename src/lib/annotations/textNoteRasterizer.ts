@@ -7,7 +7,7 @@ export interface NoteColorPreset {
   border: string;
 }
 
-export const NOTE_COLOR_PRESETS: readonly NoteColorPreset[] = [
+const NOTE_COLOR_PRESETS: readonly NoteColorPreset[] = [
   { name: 'Yellow', bg: '#fef08a', text: '#713f12', border: '#fde047' },
   { name: 'Amber', bg: '#fde68a', text: '#78350f', border: '#fcd34d' },
   { name: 'Green', bg: '#bbf7d0', text: '#14532d', border: '#86efac' },

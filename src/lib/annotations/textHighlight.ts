@@ -17,13 +17,6 @@ export interface ClientRectLike {
   height: number;
 }
 
-export interface NormalizedRect {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
-
 /**
  * Merges and smooths fragmented DOM selection client rects into unified horizontal line bars.
  * Fixes jitter, subpixel discrepancies, and breaks between words across line spans.
@@ -57,7 +50,7 @@ export function normalizeSelectionRects(
   validRects.sort((a, b) => a.top - b.top || a.left - b.left);
 
   // 3. Cluster rects into lines based on vertical overlap with multi-pass line merging
-  let lines: ClientRectLike[][] = [];
+  const lines: ClientRectLike[][] = [];
   for (const rect of validRects) {
     let matchedLine: ClientRectLike[] | null = null;
 
@@ -90,13 +83,13 @@ export function normalizeSelectionRects(
   }
 
   // Merge any lines that vertically overlap with each other
-  let mergedLines: ClientRectLike[][] = [];
+  const mergedLines: ClientRectLike[][] = [];
   for (const line of lines) {
     const lineTop = Math.min(...line.map((r) => r.top));
     const lineBottom = Math.max(...line.map((r) => r.bottom));
     const lineHeight = lineBottom - lineTop;
 
-    let targetGroup = mergedLines.find((group) => {
+    const targetGroup = mergedLines.find((group) => {
       const gTop = Math.min(...group.map((r) => r.top));
       const gBottom = Math.max(...group.map((r) => r.bottom));
       const gHeight = gBottom - gTop;

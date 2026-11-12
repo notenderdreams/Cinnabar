@@ -1,16 +1,5 @@
 import type { ReadingTheme } from '../types';
 
-export const HIGHLIGHT_COLOR_PRESETS = [
-  '#facc15',
-  '#fbbf24',
-  '#4ade80',
-  '#38bdf8',
-  '#fb7185',
-  '#c084fc',
-  '#f87171',
-  '#ffffff',
-] as const;
-
 export const READING_THEMES: {
   id: ReadingTheme;
   name: string;

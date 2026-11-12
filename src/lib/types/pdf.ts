@@ -16,13 +16,6 @@ export type ViewMode = 'continuous' | 'single' | 'spread';
 
 export type AppScreen = 'dashboard' | 'reader' | 'notebook';
 
-export interface DocumentBookmark {
-  id: string;
-  pageNumber: number;
-  title: string;
-  createdAt: number;
-}
-
 export interface PDFOutlineItem {
   title: string;
   pageNumber: number;

@@ -473,7 +473,7 @@ function wrapText(text: string, maxWidth: number, measureFn: (str: string) => nu
   return lines.length > 0 ? lines : [''];
 }
 
-export function renderAiExplanationCardToCanvas(
+function renderAiExplanationCardToCanvas(
   _prompt: string,
   response: string,
   isDark: boolean = false,

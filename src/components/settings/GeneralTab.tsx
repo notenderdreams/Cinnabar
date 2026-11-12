@@ -7,12 +7,11 @@ interface GeneralTabProps {
   onChangeViewMode?: (mode: ViewMode) => void;
 }
 
-export const VIEW_MODES: { id: ViewMode; label: string; icon: React.FC<{ className?: string }> }[] =
-  [
-    { id: 'continuous' as ViewMode, label: 'Continuous Scroll', icon: Layers },
-    { id: 'single' as ViewMode, label: 'Single Page', icon: FileText },
-    { id: 'spread' as ViewMode, label: 'Side by Side', icon: BookOpen },
-  ];
+const VIEW_MODES: { id: ViewMode; label: string; icon: React.FC<{ className?: string }> }[] = [
+  { id: 'continuous', label: 'Continuous Scroll', icon: Layers },
+  { id: 'single', label: 'Single Page', icon: FileText },
+  { id: 'spread', label: 'Side by Side', icon: BookOpen },
+];
 
 export function GeneralTab({ viewMode, onChangeViewMode }: GeneralTabProps) {
   return (

@@ -110,10 +110,9 @@ describe('getLineSpansAtTarget and selectFullLineAtTarget', () => {
     expect(lineSpans).not.toContain(span4);
 
     let setRangeCalled = false;
-    let selectedText = '';
     const mockSelection = {
       removeAllRanges: () => {},
-      addRange: (r: { startContainer: unknown; endContainer: unknown }) => {
+      addRange: (_range: { startContainer: unknown; endContainer: unknown }) => {
         setRangeCalled = true;
       },
     };
