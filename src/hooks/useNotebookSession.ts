@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createNotebook, editNotebook, openNotebookSession, undoNotebook, redoNotebook,
   type NotebookDocument, type NotebookFile, type NotebookSession } from '@cinnabar/notebook';
-import { listLocalNotebooks, loadNotebookLocally, saveNotebookLocally, type NotebookSummary } from '../lib/notebook/storage';
+import { listLocalNotebooks, loadNotebookLocally, saveNotebookLocally, touchNotebookLocally, type NotebookSummary } from '../lib/notebook/storage';
+import type { NotebookTarget } from '../lib/notebook/navigation';
 
-export function useNotebookSession() {
+export function useNotebookSession(initialTarget?: NotebookTarget) {
   const [session, setSession] = useState<NotebookSession | null>(null);
   const [notebooks, setNotebooks] = useState<NotebookSummary[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -27,14 +28,19 @@ export function useNotebookSession() {
     void listLocalNotebooks().then(async items => {
       if (run !== generation.current || !mounted.current) return;
       setNotebooks(items);
-      const file = items[0] ? await loadNotebookLocally(items[0].id) : createNotebook();
+      const id = initialTarget?.kind === 'existing' ? initialTarget.id : initialTarget?.kind === 'new' ? undefined : items[0]?.id;
+      const file = id ? await loadNotebookLocally(id) : createNotebook();
       if (run !== generation.current || !mounted.current) return;
-      savedRevision.current = items[0] ? file.revision : '';
+      if (id) await touchNotebookLocally(id).catch(() => {});
+      if (run !== generation.current || !mounted.current) return;
+      savedRevision.current = id ? file.revision : '';
       setSession(openNotebookSession(file));
     }).catch(failure => {
       if (run !== generation.current || !mounted.current) return;
       setError(String(failure));
-      setSession(openNotebookSession(createNotebook()));
+      setSaveStatus('Could not open notebook');
+      // A failed explicit open must not silently create an unrelated notebook.
+      if (initialTarget?.kind !== 'existing') setSession(openNotebookSession(createNotebook()));
     });
     return () => { mounted.current = false; generation.current += 1; };
   }, []);
@@ -55,7 +61,7 @@ export function useNotebookSession() {
     }).catch(failure => {
       if (!mounted.current || current.current?.present.id !== file.id) return;
       setSaveStatus('Not saved');
-      setStorageError(`Local save failed. Use Save file to keep your edits. ${String(failure)}`);
+      setStorageError(`Local save failed. Press Cmd/Ctrl+S to save your edits to a file. ${String(failure)}`);
     });
   }, [session, persist]);
 
@@ -71,6 +77,8 @@ export function useNotebookSession() {
     try {
       await queue.current;
       const file = await loadNotebookLocally(id);
+      if (run !== generation.current || !mounted.current) return;
+      await touchNotebookLocally(id).catch(() => {});
       if (run === generation.current && mounted.current) activate(file);
     } catch (failure) { if (mounted.current) setError(String(failure)); }
   }, [activate]);

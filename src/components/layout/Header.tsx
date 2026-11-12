@@ -44,8 +44,8 @@ interface HeaderProps {
   onPageChange: (page: number) => void;
   onCopyPageText?: () => void;
   onCopyPageJpg?: () => void;
-  isNoteMode?: boolean;
-  onToggleNoteMode?: () => void;
+  isNotebookPanelOpen?: boolean;
+  onToggleNotebooks?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -70,8 +70,8 @@ export const Header: React.FC<HeaderProps> = ({
   onPageChange,
   onCopyPageText,
   onCopyPageJpg,
-  isNoteMode = false,
-  onToggleNoteMode,
+  isNotebookPanelOpen = false,
+  onToggleNotebooks,
 }) => {
   const [pageInputText, setPageInputText] = React.useState<string>(String(currentPage));
 
@@ -222,6 +222,12 @@ export const Header: React.FC<HeaderProps> = ({
           >
             <Search className="w-3.5 h-3.5" />
           </button>
+          {onToggleNotebooks && <button type="button" onClick={onToggleNotebooks}
+            className={`macos-topbar-icon ${isNotebookPanelOpen ? 'text-[var(--primary)] bg-black/5 dark:bg-white/10' : ''}`}
+            title="Notebooks" aria-label="Notebooks" aria-pressed={isNotebookPanelOpen}
+            aria-expanded={isNotebookPanelOpen} aria-controls="reader-notebooks-panel">
+            <NotebookPen className="w-3.5 h-3.5" />
+          </button>}
           <button
             onClick={onToggleInvert}
             className="macos-topbar-icon"
@@ -246,7 +252,7 @@ export const Header: React.FC<HeaderProps> = ({
               transform: `translate3d(${viewModeIndicatorStyle.left}px, ${viewModeIndicatorStyle.top}px, 0)`,
               width: `${viewModeIndicatorStyle.width}px`,
               height: `${viewModeIndicatorStyle.height}px`,
-              opacity: isNoteMode ? 0 : viewModeIndicatorStyle.opacity,
+              opacity: viewModeIndicatorStyle.opacity,
             }}
           />
 
@@ -301,11 +307,6 @@ export const Header: React.FC<HeaderProps> = ({
           >
             <Columns2 className="w-3.5 h-3.5" />
           </button>
-          {onToggleNoteMode && <button type="button" onClick={onToggleNoteMode}
-            className={`relative z-10 p-1.5 rounded-md text-xs transition-colors ${isNoteMode ? 'bg-[var(--accent)] text-[var(--accent-foreground)]' : ''}`}
-            title="Read and take notes" aria-label="Note mode" aria-pressed={isNoteMode}>
-            <NotebookPen className="w-3.5 h-3.5" />
-          </button>}
         </div>
 
         <span className="reader-toolbar-divider hidden sm:block" aria-hidden="true" />

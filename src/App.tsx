@@ -4,7 +4,7 @@ import { Sidebar } from './components/layout/Sidebar';
 import { Toolbar } from './components/layout/Toolbar';
 import { PDFViewer } from './components/viewer/PDFViewer';
 import { NotePanel } from './components/viewer/NotePanel';
-const NotebookWorkspace = React.lazy(() => import('./components/notebook/NotebookWorkspace').then(module => ({ default: module.NotebookWorkspace })));
+import type { NotebookTarget } from './lib/notebook/navigation';
 import { createAiClipboardAttachment } from './lib/ai/chatClipboard';
 import { appendAiNotebookText, getAiNotebookContext, insertAiNotebookImage } from './lib/ai/notebookActions';
 import { notebookKey, loadNotePageCount, notePageCount, editNotePages } from './lib/notes';
@@ -69,6 +69,9 @@ import {
 import type { AiChatAttachment, AiExplanationAnnotation, Annotation, AppScreen, HighlightStyle, LineHighlightStyle, ToolType, ViewMode, StitchOptions } from './lib/types/index';
 import type { SidebarTabType } from './components/layout/Sidebar';
 
+const NotebookWorkspace = React.lazy(() => import('./components/notebook/NotebookWorkspace').then(module => ({ default: module.NotebookWorkspace })));
+const NotebookPanel = React.lazy(() => import('./components/notebook/NotebookPanel').then(module => ({ default: module.NotebookPanel })));
+
 export function App() {
   // Screen Routing: 'dashboard' (Library view) | 'reader' (PDF reader & annotation studio)
   const [currentScreen, setCurrentScreen] = useState<AppScreen>('dashboard');
@@ -89,6 +92,13 @@ export function App() {
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState<boolean>(false);
   const [isNoteMode, setIsNoteMode] = useState(false);
+  const [notebookTarget, setNotebookTarget] = useState<NotebookTarget>({ kind: 'new' });
+  const [isNotebookPanelOpen, setIsNotebookPanelOpen] = useState(false);
+  const [hasOpenedNotebookPanel, setHasOpenedNotebookPanel] = useState(false);
+  const closeNotebookPanel = useCallback(() => {
+    setIsNotebookPanelOpen(false);
+    document.querySelector<HTMLButtonElement>('button[aria-controls="reader-notebooks-panel"]')?.focus();
+  }, []);
   const [notePaneActive, setNotePaneActive] = useState(false);
   const notesActive = isNoteMode && notePaneActive;
   const [noteZoom, setNoteZoom] = useState(.8);
@@ -998,6 +1008,10 @@ export function App() {
         setIsSearchOpen(false);
         return;
       }
+      if (isNotebookPanelOpen) {
+        closeNotebookPanel();
+        return;
+      }
       if (isAiPanelOpen) {
         setIsAiPanelOpen(false);
         return;
@@ -1031,6 +1045,7 @@ export function App() {
     },
     onToggleAiPanel: () => {
       if (currentScreen === 'reader') {
+        setIsNotebookPanelOpen(false);
         setIsAiPanelOpen((prev) => !prev);
       }
     },
@@ -1236,11 +1251,11 @@ export function App() {
       {/* VIEW 1: DASHBOARD & SAVED DIRECTORIES LIBRARY */}
       {currentScreen === 'notebook' ? (
         <React.Suspense fallback={<div role="status">Opening notebook…</div>}>
-          <NotebookWorkspace onBack={() => setCurrentScreen('dashboard')} />
+          <NotebookWorkspace initialTarget={notebookTarget} onBack={() => setCurrentScreen('dashboard')} />
         </React.Suspense>
       ) : currentScreen === 'dashboard' ? (
         <Dashboard
-          onOpenNotebook={() => setCurrentScreen('notebook')}
+          onOpenNotebook={target => { setNotebookTarget(target); setCurrentScreen('notebook'); }}
           hasActiveDoc={Boolean(pdfDoc || lastActiveDoc)}
           activeDocName={docInfo?.fileName || lastActiveDoc?.fileName}
           isDarkTheme={isDarkTheme}
@@ -1283,16 +1298,13 @@ export function App() {
             onToggleShortcuts={() => setIsShortcutsModalOpen(true)}
             onChangeViewMode={handleChangeViewMode}
             onChangeZoom={notesActive ? setNoteZoom : activeReaderPane === 'companion' ? setCompanionZoom : setZoom}
-            isNoteMode={isNoteMode}
-            onToggleNoteMode={() => {
-              if (!isNoteMode) {
-                closeCompanionPdf();
-                setViewMode('continuous');
-                saveViewMode('continuous');
-                setIsSidebarOpen(false);
-                setFitPageRequest((request) => ({ id: (request?.id ?? 0) + 1, page: currentPage }));
-              }
-              setIsNoteMode((value) => !value);
+            isNotebookPanelOpen={isNotebookPanelOpen}
+            onToggleNotebooks={() => {
+              setHasOpenedNotebookPanel(true);
+              setIsNotebookPanelOpen(value => !value);
+              setIsNoteMode(false);
+              setNotePaneActive(false);
+              setIsAiPanelOpen(false);
             }}
             onFitPage={() => {
               if (notesActive) {
@@ -1515,9 +1527,13 @@ export function App() {
               />}
             </div>
 
-            {!isZenMode && (
+            {hasOpenedNotebookPanel && <React.Suspense fallback={null}>
+              <NotebookPanel isOpen={isNotebookPanelOpen && !isZenMode} onClose={closeNotebookPanel} />
+            </React.Suspense>}
+
+            {!isZenMode && !isNotebookPanelOpen && (
               <button
-                onClick={() => setIsAiPanelOpen(true)}
+                onClick={() => { setIsNotebookPanelOpen(false); setIsAiPanelOpen(true); }}
                 className={`macos-sidebar-collapse-control canvas-ai-toggle transition-all duration-200 ease-out ${
                   !isAiPanelOpen
                     ? 'opacity-100 translate-x-0 pointer-events-auto'

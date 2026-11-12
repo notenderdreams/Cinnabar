@@ -1,6 +1,6 @@
 import { parseNotebookFile, type NotebookFile } from '@cinnabar/notebook';
 
-export interface NotebookSummary { id: string; title: string; updatedAt: number }
+export interface NotebookSummary { id: string; title: string; updatedAt: number; lastOpenedAt?: number }
 
 function openStorage(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -29,7 +29,7 @@ export async function saveNotebookLocally(file: NotebookFile): Promise<void> {
     await new Promise<void>((resolve, reject) => {
       const tx = db.transaction(['documents', 'index'], 'readwrite');
       tx.objectStore('documents').put(file);
-      tx.objectStore('index').put({ id: file.id, title: file.title, updatedAt: file.updatedAt });
+      tx.objectStore('index').put({ id: file.id, title: file.title, updatedAt: file.updatedAt, lastOpenedAt: Date.now() });
       tx.oncomplete = () => resolve();
       tx.onabort = tx.onerror = () => reject(tx.error ?? new Error('Could not save the notebook.'));
     });
@@ -56,5 +56,22 @@ export async function loadNotebookLocally(id: string): Promise<NotebookFile> {
 
 export async function listLocalNotebooks(): Promise<NotebookSummary[]> {
   const items: NotebookSummary[] = await readStorage('index', store => store.getAll());
-  return items.sort((a, b) => b.updatedAt - a.updatedAt);
+  return items.sort((a, b) => (b.lastOpenedAt ?? b.updatedAt) - (a.lastOpenedAt ?? a.updatedAt));
+}
+
+/** Opening a notebook affects recency, without changing its accepted content or revision. */
+export async function touchNotebookLocally(id: string): Promise<void> {
+  const db = await openStorage();
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const tx = db.transaction('index', 'readwrite');
+      const store = tx.objectStore('index');
+      const request = store.get(id);
+      request.onsuccess = () => {
+        if (request.result) store.put({ ...request.result, lastOpenedAt: Date.now() });
+      };
+      tx.oncomplete = () => resolve();
+      tx.onabort = tx.onerror = () => reject(tx.error ?? new Error('Could not update notebook recency.'));
+    });
+  } finally { db.close(); }
 }

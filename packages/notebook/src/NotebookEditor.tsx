@@ -77,7 +77,7 @@ export function NotebookEditor(props: Props) {
       typing.current = { time: textInput ? now : 0, end: instance.state.selection.to, group: group ?? '' };
       current.current.onChange({ ...current.current.document, content: instance.getJSON() }, group);
       const { $from } = instance.state.selection;
-      slashRef.current = $from.parent.textContent === '/' ? $from.start() : null;
+      slashRef.current = current.current.controlsHost && $from.parent.textContent === '/' ? $from.start() : null;
       setSlash(slashRef.current);
       if (slashRef.current !== null) current.current.onRequestControls?.();
     },

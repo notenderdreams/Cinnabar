@@ -48,9 +48,11 @@ import {
   saveLibrarySort,
 } from '../../lib/storage/storage';
 import { SettingsModal } from '../modals/SettingsModal';
+import { NotebookLibrary } from '../notebook/NotebookLibrary';
+import type { NotebookTarget } from '../../lib/notebook/navigation';
 
 interface DashboardProps {
-  onOpenNotebook: () => void;
+  onOpenNotebook: (target: NotebookTarget) => void;
   onOpenPdf: (data: Uint8Array, fileName: string, filePath?: string, initialPageNumber?: number, documentId?: string) => Promise<boolean>;
   onOpenPdfPair: (
     primary: { data: Uint8Array; fileName: string; filePath?: string; initialPageNumber?: number; documentId?: string },
@@ -139,6 +141,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       activeFilter !== 'all' &&
       activeFilter !== 'recent' &&
       activeFilter !== 'favorites' &&
+      activeFilter !== 'notebooks' &&
       directories.length > 0 &&
       !directories.some((d) => d.id === activeFilter)
     ) {
@@ -561,7 +564,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search library documents..."
+              placeholder={activeFilter === 'notebooks' ? 'Search notebooks...' : 'Search library documents...'}
               className="bg-transparent text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 border-0 outline-none w-full font-sans"
             />
             {searchQuery && (
@@ -577,7 +580,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
         {/* Right Actions: Add Folder, Open File & Back to Reader Studio */}
         <div className="flex items-center gap-1.5 app-no-drag justify-self-end" data-tauri-drag-region="false">
-          <button type="button" className="btn-secondary" onClick={onOpenNotebook}>Notebook</button>
           <button
             onClick={onToggleTheme}
             className="btn-icon"
@@ -618,6 +620,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-zinc-400 px-2 py-1">
                 Library Views
               </span>
+              <button type="button" onClick={() => setActiveFilter('notebooks')}
+                aria-current={activeFilter === 'notebooks' ? 'page' : undefined}
+                className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${activeFilter === 'notebooks'
+                  ? 'bg-blue-500/15 text-blue-400 font-semibold'
+                  : 'text-zinc-400 hover:text-zinc-200 hover:bg-black/5 dark:hover:bg-white/5'}`}>
+                <BookOpen className="w-3.5 h-3.5" /><span>Notebooks</span>
+              </button>
 
               <button
                 onClick={() => setActiveFilter('all')}
@@ -743,6 +752,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
         {/* Main Document Library Content */}
         <main className="macos-content flex-1 p-6 overflow-y-auto flex flex-col gap-5">
+          {activeFilter === 'notebooks' ? <>
+            <h1 className="text-sm font-semibold text-[var(--foreground)]">Notebooks</h1>
+            <NotebookLibrary onSelect={onOpenNotebook} search={deferredSearchQuery} />
+          </> : <>
           {/* Controls Bar: Title, Count, Layout, Sorting */}
           <div className="flex items-center justify-between border-b border-[var(--border)] pb-3">
             <div className="flex items-center gap-2">
@@ -939,6 +952,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               )}
             </div>
           )}
+          </>}
         </main>
       </div>
 

@@ -15,6 +15,10 @@ Portable files identify themselves as `cinnabar-notebook` version 1 and contain 
 
 The legacy modules in `src/lib/notebook` retain annotation-format compatibility. They are not the persistence format for new independent notebooks. Existing PDF-linked notes remain untouched by opening a new notebook.
 
+Notebook discovery lives in the host: the library has a Notebooks section, and the PDF reader has a notebook button beside Search. Both show recent notebooks and a full existing-notebook list. Selecting one in the reader keeps the PDF visible and opens the editor in the right panel. Opening a saved notebook updates its local recency metadata without changing its accepted content or revision.
+
+The notebook workspace has no top header, bottom bar, or formatting panel. Typing autosaves; Escape returns to notebook discovery, and Cmd/Ctrl+S retains portable file saving. Settings and visible formatting controls are deferred. Ask the user before adding any UI element.
+
 AI proposal review, source references, legacy-to-independent migration, and PDF/print export are later work. The package currently provides snapshot-based document edits and grouped history; a full anchored-operation interface is not implemented yet.
 
 Run the repository's Bun tests and frontend checks from the root. `tests/notebookSession.test.ts` exercises independent identity, portable round-trips, validation, and history behavior.
