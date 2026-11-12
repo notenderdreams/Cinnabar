@@ -33,9 +33,12 @@ export function useColorTheme() {
     }));
   }, []);
 
-  const updateSetting = useCallback(<K extends keyof ThemeSettings>(key: K, value: ThemeSettings[K]) => {
-    setSettings((prev) => ({ ...prev, [key]: value }));
-  }, []);
+  const updateSetting = useCallback(
+    <K extends keyof ThemeSettings>(key: K, value: ThemeSettings[K]) => {
+      setSettings((prev) => ({ ...prev, [key]: value }));
+    },
+    [],
+  );
 
   const resetFilters = useCallback(() => {
     setSettings((prev) => ({

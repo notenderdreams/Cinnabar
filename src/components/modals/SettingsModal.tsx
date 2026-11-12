@@ -1,11 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import {
-  X,
-  Sliders,
-  Palette,
-  Keyboard,
-  Info,
-} from 'lucide-react';
+import { X, Sliders, Palette, Keyboard, Info } from 'lucide-react';
 import type { ReadingTheme, ThemeSettings, ViewMode } from '../../lib/types/index';
 import {
   getAiProviderStatus,
@@ -114,27 +108,30 @@ export function SettingsModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in select-none"
+      className="animate-fade-in fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm select-none"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
       aria-labelledby="settings-dialog-title"
     >
       <div
-        className="w-full max-w-2xl h-[500px] max-h-[90vh] bg-[var(--card)] border border-[var(--border)] rounded-2xl shadow-2xl overflow-hidden flex p-1.5 gap-2 animate-scale-up"
+        className="animate-scale-up flex h-[500px] max-h-[90vh] w-full max-w-2xl gap-2 overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--card)] p-1.5 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Left Segmented Navigation Sidebar (Cutout Inset Panel) */}
-        <aside className="w-44 flex flex-col shrink-0 select-none macos-sidebar bg-[var(--workspace)] border border-[var(--border)] rounded-xl p-1.5 shadow-xs overflow-hidden">
+        <aside className="macos-sidebar flex w-44 shrink-0 flex-col overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--workspace)] p-1.5 shadow-xs select-none">
           {/* Sidebar Title Header */}
-          <div className="h-8 px-2 flex items-center shrink-0">
-            <h2 id="settings-dialog-title" className="text-xs font-semibold text-[var(--foreground)] tracking-tight">
+          <div className="flex h-8 shrink-0 items-center px-2">
+            <h2
+              id="settings-dialog-title"
+              className="text-xs font-semibold tracking-tight text-[var(--foreground)]"
+            >
               Settings
             </h2>
           </div>
 
           {/* Navigation Items */}
-          <div className="flex flex-col gap-0.5 flex-1 overflow-y-auto">
+          <div className="flex flex-1 flex-col gap-0.5 overflow-y-auto">
             {NAV_ITEMS.map((item) => {
               const Icon = item.icon;
               const isSelected = activeTab === item.id;
@@ -143,13 +140,15 @@ export function SettingsModal({
                   key={item.id}
                   type="button"
                   onClick={() => setActiveTab(item.id)}
-                  className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                  className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all ${
                     isSelected
-                      ? 'bg-blue-600 text-white font-semibold shadow-xs'
-                      : 'text-zinc-400 hover:text-[var(--foreground)] hover:bg-black/5 dark:hover:bg-white/5'
+                      ? 'bg-blue-600 font-semibold text-white shadow-xs'
+                      : 'text-zinc-400 hover:bg-black/5 hover:text-[var(--foreground)] dark:hover:bg-white/5'
                   }`}
                 >
-                  <Icon className={`w-3.5 h-3.5 shrink-0 ${isSelected ? 'text-white' : 'text-zinc-400'}`} />
+                  <Icon
+                    className={`h-3.5 w-3.5 shrink-0 ${isSelected ? 'text-white' : 'text-zinc-400'}`}
+                  />
                   <span className="truncate">{item.label}</span>
                 </button>
               );
@@ -158,19 +157,21 @@ export function SettingsModal({
         </aside>
 
         {/* Right Main Option View */}
-        <div className="flex-1 relative flex flex-col min-w-0 min-h-0 bg-transparent overflow-hidden">
+        <div className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-transparent">
           {/* Close Button at top-right */}
           <button
             type="button"
             onClick={onClose}
-            className="absolute top-2.5 right-2.5 z-10 w-6.5 h-6.5 rounded-md flex items-center justify-center text-zinc-400 hover:text-[var(--foreground)] hover:bg-[var(--secondary)] transition-colors"
+            className="absolute top-2.5 right-2.5 z-10 flex h-6.5 w-6.5 items-center justify-center rounded-md text-zinc-400 transition-colors hover:bg-[var(--secondary)] hover:text-[var(--foreground)]"
             title="Close Settings (Esc)"
             aria-label="Close Settings"
           >
-            <X className="w-3.5 h-3.5" />
+            <X className="h-3.5 w-3.5" />
           </button>
 
-          <main className={`flex-1 overflow-y-auto flex flex-col text-xs text-[var(--foreground)] ${activeTab === 'about' ? 'p-0' : 'p-3.5 pr-8 gap-4'}`}>
+          <main
+            className={`flex flex-1 flex-col overflow-y-auto text-xs text-[var(--foreground)] ${activeTab === 'about' ? 'p-0' : 'gap-4 p-3.5 pr-8'}`}
+          >
             {activeTab === 'general' && (
               <GeneralTab viewMode={viewMode} onChangeViewMode={onChangeViewMode} />
             )}

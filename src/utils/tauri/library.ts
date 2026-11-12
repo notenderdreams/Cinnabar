@@ -8,9 +8,7 @@ export interface LibrarySnapshot {
   documents: DashboardPdfItem[];
 }
 
-const normalizeLibrarySnapshot = (
-  snapshot: NativeLibrarySnapshot,
-): LibrarySnapshot => {
+const normalizeLibrarySnapshot = (snapshot: NativeLibrarySnapshot): LibrarySnapshot => {
   const folderPaths = new Map(snapshot.folders.map((folder) => [folder.id, folder.path]));
   return {
     directories: snapshot.folders.map((folder) => ({
@@ -58,27 +56,49 @@ export async function tauriRefreshLibrary(): Promise<LibrarySnapshot> {
   return normalizeLibrarySnapshot(unwrapNativeResult(await commands.refreshLibrary()));
 }
 
-export async function tauriRemoveLibraryFolder(folderId: string, keepDocuments = true): Promise<LibrarySnapshot> {
-  return normalizeLibrarySnapshot(unwrapNativeResult(await commands.removeLibraryFolder(folderId, keepDocuments)));
+export async function tauriRemoveLibraryFolder(
+  folderId: string,
+  keepDocuments = true,
+): Promise<LibrarySnapshot> {
+  return normalizeLibrarySnapshot(
+    unwrapNativeResult(await commands.removeLibraryFolder(folderId, keepDocuments)),
+  );
 }
 
 export async function tauriRemoveLibraryDocument(documentId: string): Promise<void> {
   unwrapNativeResult(await commands.removeLibraryDocument(documentId));
 }
 
-export async function tauriSetLibraryFavorite(documentId: string, favorite: boolean): Promise<void> {
+export async function tauriSetLibraryFavorite(
+  documentId: string,
+  favorite: boolean,
+): Promise<void> {
   unwrapNativeResult(await commands.setLibraryFavorite(documentId, favorite));
 }
 
-export async function tauriTouchLibraryDocument(documentId: string, lastReadPage?: number, annotationCount?: number): Promise<void> {
-  unwrapNativeResult(await commands.touchLibraryDocument(documentId, lastReadPage ?? null, annotationCount ?? null));
+export async function tauriTouchLibraryDocument(
+  documentId: string,
+  lastReadPage?: number,
+  annotationCount?: number,
+): Promise<void> {
+  unwrapNativeResult(
+    await commands.touchLibraryDocument(documentId, lastReadPage ?? null, annotationCount ?? null),
+  );
 }
 
-export async function tauriUpdateLibraryDocumentState(documentId: string, lastReadPage: number, annotationCount: number): Promise<void> {
-  unwrapNativeResult(await commands.updateLibraryDocumentState(documentId, lastReadPage, annotationCount));
+export async function tauriUpdateLibraryDocumentState(
+  documentId: string,
+  lastReadPage: number,
+  annotationCount: number,
+): Promise<void> {
+  unwrapNativeResult(
+    await commands.updateLibraryDocumentState(documentId, lastReadPage, annotationCount),
+  );
 }
 
-export async function tauriRelinkLibraryDocument(documentId: string): Promise<DashboardPdfItem | null> {
+export async function tauriRelinkLibraryDocument(
+  documentId: string,
+): Promise<DashboardPdfItem | null> {
   const document = unwrapNativeResult(await commands.relinkLibraryDocument(documentId));
   if (!document) return null;
   return normalizeLibrarySnapshot({ folders: [], documents: [document] }).documents[0];

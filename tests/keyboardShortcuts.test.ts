@@ -48,7 +48,7 @@ describe('annotation keyboard shortcuts', () => {
         preventDefault: noop,
         stopPropagation: noop,
       } as unknown as KeyboardEvent,
-      options
+      options,
     );
 
     expect(escapeCalls).toBe(0);
@@ -82,9 +82,7 @@ describe('annotation keyboard shortcuts', () => {
     expect(appSource).toContain("if (addHighlightsFromSelection('underline', false)) return;");
     expect(appSource).toContain("handleSelectTool('highlight-line')");
     expect(appSource).toContain("setLineHighlightStyle('underline')");
-    expect(modalSource).toContain(
-      "{ keys: ['U'], desc: 'Underline Selected Text / Tool' }"
-    );
+    expect(modalSource).toContain("{ keys: ['U'], desc: 'Underline Selected Text / Tool' }");
   });
 
   test('number keys select palette colors and recolor a selected highlight', async () => {
@@ -94,11 +92,13 @@ describe('annotation keyboard shortcuts', () => {
       projectFile('src/components/layout/Toolbar.tsx'),
     ]);
 
-    expect(keyboardSource).toContain("if (/^[1-8]$/.test(e.key))");
+    expect(keyboardSource).toContain('if (/^[1-8]$/.test(e.key))');
     expect(keyboardSource).toContain('options.onSelectHighlightColor?.(Number(e.key) - 1)');
     expect(appSource).toContain('setSelectedColor(color);');
     expect(appSource).toContain("selectedAnnotation.type === 'highlight-text'");
-    expect(appSource).toContain('(notesActive ? notes.updateAnnotation : updateAnnotation)(selectedAnnotation.id, { color });');
+    expect(appSource).toContain(
+      '(notesActive ? notes.updateAnnotation : updateAnnotation)(selectedAnnotation.id, { color });',
+    );
     expect(appSource).not.toContain('if (!isHighlightTool(activeTool)) return;');
     expect(appSource).toContain('setSelectedColor(selectedAnnotation.color);');
     expect(appSource).toContain('colorPresets={highlightColors}');
@@ -109,9 +109,14 @@ describe('annotation keyboard shortcuts', () => {
     expect(toolbarSource).toContain('<Palette className="h-4 w-4" aria-hidden="true" />');
     expect(toolbarSource).not.toContain('fill={selectedColor}');
     expect(toolbarSource).toContain('aria-label="Choose a custom color"');
-    expect(toolbarSource).toContain(
-      'text-[9px] leading-none font-mono font-semibold text-[var(--muted-foreground)]'
-    );
+    for (const token of [
+      'text-[9px]',
+      'leading-none',
+      'font-mono',
+      'font-semibold',
+      'text-[var(--muted-foreground)]',
+    ])
+      expect(toolbarSource).toContain(token);
     expect(toolbarSource).not.toContain('text-white mix-blend-difference');
   });
 
@@ -214,7 +219,7 @@ describe('annotation keyboard shortcuts', () => {
         preventDefault: noop,
         stopPropagation: noop,
       } as unknown as KeyboardEvent,
-      options
+      options,
     );
 
     expect(toggleCalls).toBe(1);
@@ -258,7 +263,7 @@ describe('annotation keyboard shortcuts', () => {
         preventDefault: noop,
         stopPropagation: noop,
       } as unknown as KeyboardEvent,
-      options
+      options,
     );
 
     // Ctrl+Cmd+,
@@ -275,7 +280,7 @@ describe('annotation keyboard shortcuts', () => {
         preventDefault: noop,
         stopPropagation: noop,
       } as unknown as KeyboardEvent,
-      options
+      options,
     );
 
     // Cmd+Shift+, (which yields key '<' and code 'Comma' on US keyboards)
@@ -292,7 +297,7 @@ describe('annotation keyboard shortcuts', () => {
         preventDefault: noop,
         stopPropagation: noop,
       } as unknown as KeyboardEvent,
-      options
+      options,
     );
 
     // Ctrl+Shift+, (Windows/Linux)
@@ -309,7 +314,7 @@ describe('annotation keyboard shortcuts', () => {
         preventDefault: noop,
         stopPropagation: noop,
       } as unknown as KeyboardEvent,
-      options
+      options,
     );
 
     expect(settingsCalls).toBe(4);
@@ -352,7 +357,7 @@ describe('annotation keyboard shortcuts', () => {
         preventDefault: noop,
         stopPropagation: noop,
       } as unknown as KeyboardEvent,
-      options
+      options,
     );
 
     handleKeyboardShortcut(
@@ -368,7 +373,7 @@ describe('annotation keyboard shortcuts', () => {
         preventDefault: noop,
         stopPropagation: noop,
       } as unknown as KeyboardEvent,
-      options
+      options,
     );
 
     expect(addPageCalls).toBe(2);

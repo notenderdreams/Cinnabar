@@ -1,10 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { PDFDocument } from 'pdf-lib';
-import {
-  exportAnnotatedPDF,
-  parseColorToRgb,
-  sanitizeWinAnsi,
-} from '../src/lib/pdf/pdfExporter';
+import { exportAnnotatedPDF, parseColorToRgb, sanitizeWinAnsi } from '../src/lib/pdf/pdfExporter';
 import {
   resolveNoteColor,
   wrapTextLines,
@@ -65,7 +61,9 @@ describe('pdfExporter color parsing and WinAnsi sanitization', () => {
   test('sanitizes unicode characters that crash WinAnsi Helvetica', () => {
     const raw = '“Smart quotes” and ‘single quotes’ — em-dash & ellipsis… and bullet •';
     const sanitized = sanitizeWinAnsi(raw);
-    expect(sanitized).toBe('"Smart quotes" and \'single quotes\' - em-dash & ellipsis... and bullet *');
+    expect(sanitized).toBe(
+      '"Smart quotes" and \'single quotes\' - em-dash & ellipsis... and bullet *',
+    );
   });
 });
 
@@ -331,11 +329,15 @@ describe('exportAnnotatedPDF baking and highlights', () => {
     expect(loadedSticky.getPageCount()).toBe(1);
 
     // 3. Optional inclusion of sticky note when explicitly requested
-    const stickyIncludedBytes = await exportAnnotatedPDF(original, stickyNoteOnly, { includeStickyNotes: true });
+    const stickyIncludedBytes = await exportAnnotatedPDF(original, stickyNoteOnly, {
+      includeStickyNotes: true,
+    });
     expect(stickyIncludedBytes.length).toBeGreaterThan(stickyDefaultBytes.length);
 
     // 4. Disabling text notes completely
-    const excludedResultBytes = await exportAnnotatedPDF(original, plainTextOnly, { includeTextNotes: false });
+    const excludedResultBytes = await exportAnnotatedPDF(original, plainTextOnly, {
+      includeTextNotes: false,
+    });
     expect(excludedResultBytes.length).toBeLessThan(plainResultBytes.length);
   });
 

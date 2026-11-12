@@ -6,7 +6,7 @@ export type AiJobState =
 export function transitionAiJob(
   jobs: Record<string, AiJobState>,
   annotationId: string,
-  next: AiJobState | null
+  next: AiJobState | null,
 ): Record<string, AiJobState> {
   const updated = { ...jobs };
   if (next) updated[annotationId] = next;

@@ -5,7 +5,15 @@ import { centerPageInViewport, fitPageZoom } from '../../lib/pdf/fitViewport';
 import { PDFPage } from './PDFPage';
 import { SplitDivider } from '../ui/SplitDivider';
 import { UploadCloud } from 'lucide-react';
-import type { Annotation, HighlightStyle, LineHighlightStyle, ReadingTheme, TextNoteAnnotation, ToolType, ViewMode } from '../../lib/types/index';
+import type {
+  Annotation,
+  HighlightStyle,
+  LineHighlightStyle,
+  ReadingTheme,
+  TextNoteAnnotation,
+  ToolType,
+  ViewMode,
+} from '../../lib/types/index';
 import type { AiExplanationAnnotation } from '../../lib/types/index';
 import type { AiJobState } from '../../hooks/useAiExplanations';
 import { findFocalPageNumber, shouldRestoreViewerPosition } from '../../lib/pdf/viewerPosition';
@@ -73,14 +81,23 @@ interface PDFViewerProps {
   onChangeLineHighlightStyle: (style: LineHighlightStyle) => void;
   onDeleteAnnotation: (id: string) => void;
   onImageDrop: (pageNumber: number, file: File) => void;
-  onAiResponseDrop?: (pageNumber: number, x: number, y: number, prompt: string, response: string) => void;
+  onAiResponseDrop?: (
+    pageNumber: number,
+    x: number,
+    y: number,
+    prompt: string,
+    response: string,
+  ) => void;
   onPdfFileDrop: (file: File) => void;
   onOpenPdfClick: () => void;
   onChangeZoom: (newZoom: number) => void;
   fitPageRequest?: { id: number; page: number } | null;
   companionFitRequest?: { id: number } | null;
   onCursorMove?: (pageNumber: number, normalizedX: number, normalizedY: number) => void;
-  onCaptureSnippet?: (pageNumber: number, rect: { x: number; y: number; width: number; height: number }) => void;
+  onCaptureSnippet?: (
+    pageNumber: number,
+    rect: { x: number; y: number; width: number; height: number },
+  ) => void;
   aiJobs: Record<string, AiJobState>;
   onAiBoxCreated: (annotationId: string) => void;
   onSubmitAi: (annotation: AiExplanationAnnotation, prompt: string) => void;
@@ -161,11 +178,16 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
 }) => {
   const viewerContainerRef = useRef<HTMLDivElement | null>(null);
   const companionContainerRef = useRef<HTMLDivElement | null>(null);
-  const [split, setSplit] = useState(.5);
+  const [split, setSplit] = useState(0.5);
   const [isViewerDraggingFile, setIsViewerDraggingFile] = useState(false);
   const [isSpacePressed, setIsSpacePressed] = useState(false);
   const [isPanning, setIsPanning] = useState(false);
-  const panStartRef = useRef<{ x: number; y: number; scrollLeft: number; scrollTop: number } | null>(null);
+  const panStartRef = useRef<{
+    x: number;
+    y: number;
+    scrollLeft: number;
+    scrollTop: number;
+  } | null>(null);
 
   // Programmatic scroll flags to eliminate feedback loops between scroll events and onPageChange
   const isProgrammaticScrollRef = useRef(false);
@@ -187,7 +209,10 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
   const pendingCompanionFit = useRef<{ page: number; zoom: number } | null>(null);
   const fitInteraction = useRef(0);
 
-  const [viewerAiDragPos, setViewerAiDragPos] = useState<{ clientX: number; clientY: number } | null>(null);
+  const [viewerAiDragPos, setViewerAiDragPos] = useState<{
+    clientX: number;
+    clientY: number;
+  } | null>(null);
 
   // Clear drag affordance state when a drag ends or is cancelled anywhere (including outside the viewer)
   useEffect(() => {
@@ -204,12 +229,15 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
     };
   }, []);
 
-  useEffect(() => () => {
-    if (companionProgrammaticTimerRef.current) {
-      clearTimeout(companionProgrammaticTimerRef.current);
-    }
-    fitCenteringCleanupRef.current?.();
-  }, []);
+  useEffect(
+    () => () => {
+      if (companionProgrammaticTimerRef.current) {
+        clearTimeout(companionProgrammaticTimerRef.current);
+      }
+      fitCenteringCleanupRef.current?.();
+    },
+    [],
+  );
 
   const prevAnnotationsByPageRef = useRef<Map<number, Annotation[]>>(new Map());
 
@@ -279,7 +307,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
         }
       });
     },
-    [annotationsByPage, onDeleteAnnotation, zoom]
+    [annotationsByPage, onDeleteAnnotation, zoom],
   );
 
   useEffect(() => {
@@ -357,10 +385,13 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
         if (programmaticScrollTimerRef.current) {
           clearTimeout(programmaticScrollTimerRef.current);
         }
-        programmaticScrollTimerRef.current = setTimeout(() => {
-          isProgrammaticScrollRef.current = false;
-          lastReportedPageRef.current = targetPage;
-        }, behavior === 'smooth' ? 600 : 80);
+        programmaticScrollTimerRef.current = setTimeout(
+          () => {
+            isProgrammaticScrollRef.current = false;
+            lastReportedPageRef.current = targetPage;
+          },
+          behavior === 'smooth' ? 600 : 80,
+        );
 
         const targetRect = pageEl.getBoundingClientRect();
         const contRect = container.getBoundingClientRect();
@@ -376,7 +407,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
         lastReportedPageRef.current = targetPage;
       }
     },
-    [pdfDoc, numPages, viewMode]
+    [pdfDoc, numPages, viewMode],
   );
 
   const centerFittedPage = useCallback((pageNumber: number, followResize = false) => {
@@ -483,7 +514,8 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
         lastReportedPageRef.current = anchorPage;
         const pageEl = document.getElementById(`pdf-page-${anchorPage}`);
         if (pageEl) {
-          preResizeOffset = pageEl.getBoundingClientRect().top - container.getBoundingClientRect().top;
+          preResizeOffset =
+            pageEl.getBoundingClientRect().top - container.getBoundingClientRect().top;
         }
       }
 
@@ -493,7 +525,8 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
         if (currentContainer && preResizeOffset !== null && viewMode === 'continuous') {
           const pageEl = document.getElementById(`pdf-page-${anchorPage}`);
           if (pageEl) {
-            const currentOffset = pageEl.getBoundingClientRect().top - currentContainer.getBoundingClientRect().top;
+            const currentOffset =
+              pageEl.getBoundingClientRect().top - currentContainer.getBoundingClientRect().top;
             const delta = currentOffset - preResizeOffset;
             if (Math.abs(delta) > 1) {
               currentContainer.scrollTop += delta;
@@ -550,13 +583,15 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
       const pageRect = page.getBoundingClientRect();
       const rects = normalizeSelectionRects(Array.from(range.getClientRects()), pageRect);
       if (!rects.length) return;
-      marks.splice(0).forEach(mark => mark.remove());
+      marks.splice(0).forEach((mark) => mark.remove());
       for (const rect of rects) {
         const mark = document.createElement('div');
         mark.className = 'pdf-search-match';
         Object.assign(mark.style, {
-          left: `${rect.x * 100}%`, top: `${rect.y * 100}%`,
-          width: `${rect.width * 100}%`, height: `${rect.height * 100}%`,
+          left: `${rect.x * 100}%`,
+          top: `${rect.y * 100}%`,
+          width: `${rect.width * 100}%`,
+          height: `${rect.height * 100}%`,
         });
         page.appendChild(mark);
         marks.push(mark);
@@ -568,8 +603,16 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
         isProgrammaticScrollRef.current = true;
         lastReportedPageRef.current = searchMatch.pageNumber;
         container.scrollTo({
-          top: container.scrollTop + target.top - viewport.top - (container.clientHeight - target.height) / 2,
-          left: container.scrollLeft + target.left - viewport.left - (container.clientWidth - target.width) / 2,
+          top:
+            container.scrollTop +
+            target.top -
+            viewport.top -
+            (container.clientHeight - target.height) / 2,
+          left:
+            container.scrollLeft +
+            target.left -
+            viewport.left -
+            (container.clientWidth - target.width) / 2,
           behavior: 'instant',
         });
         if (programmaticScrollTimerRef.current) clearTimeout(programmaticScrollTimerRef.current);
@@ -579,10 +622,16 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
       }
     };
     // Observe only text changes; search marks themselves must not retrigger this.
-    const observer = new MutationObserver(records => {
-      if (records.some(record => (record.target as Element).closest?.('[data-pdf-text-layer]'))) reveal();
+    const observer = new MutationObserver((records) => {
+      if (records.some((record) => (record.target as Element).closest?.('[data-pdf-text-layer]')))
+        reveal();
     });
-    observer.observe(container, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-search-item'] });
+    observer.observe(container, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['data-search-item'],
+    });
     const resize = new ResizeObserver(reveal);
     const targetPage = container.querySelector(`#pdf-page-${searchMatch.pageNumber}`);
     if (targetPage) resize.observe(targetPage);
@@ -591,7 +640,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
       cancelAnimationFrame(frame);
       observer.disconnect();
       resize.disconnect();
-      marks.forEach(mark => mark.remove());
+      marks.forEach((mark) => mark.remove());
     };
   }, [searchMatch, pdfDoc, viewMode, zoom, scrollToPage]);
 
@@ -609,9 +658,10 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
 
     // The toolbar's current-page prop can trail the scroll position by a render.
     // Fit the page visibly being read, then center that same page after scaling.
-    const targetPage = viewMode === 'continuous'
-      ? getFocalPageInContainer(container, lastReportedPageRef.current)
-      : fitPageRequest.page;
+    const targetPage =
+      viewMode === 'continuous'
+        ? getFocalPageInContainer(container, lastReportedPageRef.current)
+        : fitPageRequest.page;
     lastFitPageRequestRef.current = fitPageRequest.id;
     isProgrammaticScrollRef.current = true;
     if (programmaticScrollTimerRef.current) {
@@ -625,7 +675,12 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
       if (cancelled || interaction !== fitInteraction.current) return;
 
       const viewport = page.getViewport({ scale: 1 });
-      const roundedZoom = fitPageZoom(container.clientWidth, container.clientHeight, viewport.width, viewport.height);
+      const roundedZoom = fitPageZoom(
+        container.clientWidth,
+        container.clientHeight,
+        viewport.width,
+        viewport.height,
+      );
       if (roundedZoom === zoom) {
         centerFittedPage(targetPage, true);
       } else {
@@ -642,15 +697,27 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
   // A fit action must scroll after the zoom effect has finished preserving the focal point.
   useEffect(() => {
     const container = companionContainerRef.current;
-    if (!companionFitRequest || lastCompanionFit.current === companionFitRequest.id || !container || !companionPdfDoc || !onCompanionZoomChange) return;
+    if (
+      !companionFitRequest ||
+      lastCompanionFit.current === companionFitRequest.id ||
+      !container ||
+      !companionPdfDoc ||
+      !onCompanionZoomChange
+    )
+      return;
     lastCompanionFit.current = companionFitRequest.id;
     const pageNumber = getFocalPageInContainer(container, companionLastReportedPageRef.current);
     let cancelled = false;
     const interaction = fitInteraction.current;
-    void companionPdfDoc.getPage(pageNumber).then(page => {
+    void companionPdfDoc.getPage(pageNumber).then((page) => {
       if (cancelled || interaction !== fitInteraction.current) return;
       const size = page.getViewport({ scale: 1 });
-      const fitted = fitPageZoom(container.clientWidth, container.clientHeight, size.width, size.height);
+      const fitted = fitPageZoom(
+        container.clientWidth,
+        container.clientHeight,
+        size.width,
+        size.height,
+      );
       pendingCompanionFit.current = { page: pageNumber, zoom: fitted };
       onCompanionZoomChange(fitted);
       if (fitted === companionZoom) {
@@ -659,7 +726,9 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
         pendingCompanionFit.current = null;
       }
     });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [companionFitRequest, companionPdfDoc, companionZoom, onCompanionZoomChange]);
 
   useEffect(() => {
@@ -786,7 +855,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
           }
           const overlap = Math.max(
             0,
-            Math.min(rect.bottom, containerRect.bottom) - Math.max(rect.top, containerRect.top)
+            Math.min(rect.bottom, containerRect.bottom) - Math.max(rect.top, containerRect.top),
           );
           if (overlap > largestOverlap) {
             largestOverlap = overlap;
@@ -860,12 +929,30 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
     };
   }, [companionPdfDoc, pdfDoc]);
 
-  useViewportZoom(viewerContainerRef, zoom, onChangeZoom, pdfDoc, `${viewMode}-${Boolean(companionPdfDoc)}`, '[data-pdf-page-number]', () => onActivePaneChange?.('primary'));
-  useViewportZoom(companionContainerRef, companionZoom, onCompanionZoomChange, companionPdfDoc, viewMode, '[data-pdf-page-number]', () => onActivePaneChange?.('companion'));
+  useViewportZoom(
+    viewerContainerRef,
+    zoom,
+    onChangeZoom,
+    pdfDoc,
+    `${viewMode}-${Boolean(companionPdfDoc)}`,
+    '[data-pdf-page-number]',
+    () => onActivePaneChange?.('primary'),
+  );
+  useViewportZoom(
+    companionContainerRef,
+    companionZoom,
+    onCompanionZoomChange,
+    companionPdfDoc,
+    viewMode,
+    '[data-pdf-page-number]',
+    () => onActivePaneChange?.('companion'),
+  );
 
   // A user's scroll/pinch takes ownership from any outstanding fit operation.
   useEffect(() => {
-    const containers = [viewerContainerRef.current, companionContainerRef.current].filter((element): element is HTMLDivElement => element !== null);
+    const containers = [viewerContainerRef.current, companionContainerRef.current].filter(
+      (element): element is HTMLDivElement => element !== null,
+    );
     const interruptFit = () => {
       fitInteraction.current += 1;
       fitCenteringCleanupRef.current?.();
@@ -873,8 +960,11 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
       pendingFitScrollPageRef.current = null;
       pendingCompanionFit.current = null;
     };
-    containers.forEach(element => element.addEventListener('wheel', interruptFit, { passive: true }));
-    return () => containers.forEach(element => element.removeEventListener('wheel', interruptFit));
+    containers.forEach((element) =>
+      element.addEventListener('wheel', interruptFit, { passive: true }),
+    );
+    return () =>
+      containers.forEach((element) => element.removeEventListener('wheel', interruptFit));
   }, [pdfDoc, companionPdfDoc, viewMode]);
 
   // Mouse Wheel: Pinch-to-zoom and intuitive single-page turn on boundary scroll
@@ -892,7 +982,8 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
         const now = Date.now();
         if (now - lastWheelPageTurnTime < 350) return;
 
-        const isAtBottom = container.scrollTop + container.clientHeight >= container.scrollHeight - 10;
+        const isAtBottom =
+          container.scrollTop + container.clientHeight >= container.scrollHeight - 10;
         const isAtTop = container.scrollTop <= 10;
 
         if (e.deltaY > 40 && isAtBottom && currentPage < numPages) {
@@ -907,10 +998,22 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
 
     container.addEventListener('wheel', handleWheel, { passive: false });
     return () => container.removeEventListener('wheel', handleWheel);
-  }, [zoom, onChangeZoom, viewMode, pdfDoc, currentPage, numPages, onPageChange, onActivePaneChange]);
+  }, [
+    zoom,
+    onChangeZoom,
+    viewMode,
+    pdfDoc,
+    currentPage,
+    numPages,
+    onPageChange,
+    onActivePaneChange,
+  ]);
 
   const getTargetContainerForPoint = useCallback(
-    (clientX: number, clientY: number): { container: HTMLDivElement | null; pane: 'primary' | 'companion' } => {
+    (
+      clientX: number,
+      clientY: number,
+    ): { container: HTMLDivElement | null; pane: 'primary' | 'companion' } => {
       if (!companionPdfDoc) {
         return { container: viewerContainerRef.current, pane: 'primary' };
       }
@@ -950,14 +1053,14 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
 
       return { container: primaryEl, pane: 'primary' };
     },
-    [companionPdfDoc]
+    [companionPdfDoc],
   );
 
   // Handle Mouse Down for Panning (Spacebar + Left Click, Middle Click, or Background Canvas Drag)
   const startPanInContainer = (
     e: React.MouseEvent,
     container: HTMLDivElement | null,
-    allowAnnotationTools: boolean
+    allowAnnotationTools: boolean,
   ) => {
     if (!container) return;
     const isMiddleClick = e.button === 1;
@@ -970,9 +1073,10 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
       target.closest?.('.textLayer') ||
       target.closest?.('button') ||
       target.closest?.('input') ||
-      target.closest?.('textarea')
+      target.closest?.('textarea'),
     );
-    const isNoteCreationTool = (activeTool === 'text' || activeTool === 'sticky-note') && !allowAnnotationTools;
+    const isNoteCreationTool =
+      (activeTool === 'text' || activeTool === 'sticky-note') && !allowAnnotationTools;
     const isBackgroundClick =
       e.button === 0 &&
       !isSpacePressed &&
@@ -1042,9 +1146,9 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
     if (!container) return null;
 
     // Only anchor to primary document pages; the read-only companion has no annotations
-    const pageElements = Array.from(container.querySelectorAll<HTMLElement>('[data-pdf-page-number]')).filter(
-      (el) => !el.id.startsWith('companion-pdf-page-')
-    );
+    const pageElements = Array.from(
+      container.querySelectorAll<HTMLElement>('[data-pdf-page-number]'),
+    ).filter((el) => !el.id.startsWith('companion-pdf-page-'));
     let bestEl: HTMLElement | null = null;
     let minDistance = Infinity;
 
@@ -1118,9 +1222,19 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
         const aiResponsePayload = extractAiResponseDragPayload(e.dataTransfer);
         if (aiResponsePayload) {
           e.preventDefault();
-          const dropTarget = findNearestPageForDrop(e.clientX, e.clientY, e.currentTarget as HTMLElement);
+          const dropTarget = findNearestPageForDrop(
+            e.clientX,
+            e.clientY,
+            e.currentTarget as HTMLElement,
+          );
           if (dropTarget) {
-            onAiResponseDrop(dropTarget.pageNumber, dropTarget.x, dropTarget.y, aiResponsePayload.prompt, aiResponsePayload.response);
+            onAiResponseDrop(
+              dropTarget.pageNumber,
+              dropTarget.x,
+              dropTarget.y,
+              aiResponsePayload.prompt,
+              aiResponsePayload.response,
+            );
           }
         }
       }
@@ -1163,7 +1277,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
         target.closest?.('.textLayer') ||
         target.closest?.('button') ||
         target.closest?.('input') ||
-        target.closest?.('textarea')
+        target.closest?.('textarea'),
       );
 
       if (!isPageOrControl && pdfDoc && numPages > 0) {
@@ -1208,7 +1322,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
             fontSize: 14,
             fontFamily: 'sans',
             align: 'left',
-            width: activeTool === 'sticky-note' ? 0.20 : undefined,
+            width: activeTool === 'sticky-note' ? 0.2 : undefined,
             createdAt: Date.now(),
           };
           onAddAnnotation(newNote);
@@ -1241,33 +1355,31 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
-        className="flex-1 flex flex-col items-center justify-center p-6 bg-[#1c1c22] relative overflow-hidden"
+        className="relative flex flex-1 flex-col items-center justify-center overflow-hidden bg-[#1c1c22] p-6"
       >
-        <div className="max-w-md w-full p-7 rounded-xl bg-[#24242b] border border-[#383846] text-center flex flex-col items-center gap-5 relative z-10 shadow-2xl animate-slide-up">
-          <div className="w-12 h-12 rounded-xl bg-[#2d2d36] border border-[#404050] flex items-center justify-center text-zinc-300">
-            <UploadCloud className="w-6 h-6" />
+        <div className="animate-slide-up relative z-10 flex w-full max-w-md flex-col items-center gap-5 rounded-xl border border-[#383846] bg-[#24242b] p-7 text-center shadow-2xl">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-[#404050] bg-[#2d2d36] text-zinc-300">
+            <UploadCloud className="h-6 w-6" />
           </div>
 
           <div className="flex flex-col gap-1">
-            <h2 className="text-base font-semibold text-zinc-100 tracking-tight">
+            <h2 className="text-base font-semibold tracking-tight text-zinc-100">
               Open or Drop a PDF Document
             </h2>
-            <p className="text-xs text-zinc-400 leading-relaxed">
-              Fast, smooth PDF reading with mouse zoom/pan, dark invert, text selection & native export.
+            <p className="text-xs leading-relaxed text-zinc-400">
+              Fast, smooth PDF reading with mouse zoom/pan, dark invert, text selection & native
+              export.
             </p>
           </div>
 
           <div className="w-full">
-            <button
-              onClick={onOpenPdfClick}
-              className="btn-primary w-full py-2.5"
-            >
-              <UploadCloud className="w-4 h-4" />
+            <button onClick={onOpenPdfClick} className="btn-primary w-full py-2.5">
+              <UploadCloud className="h-4 w-4" />
               <span>Browse PDF File</span>
             </button>
           </div>
 
-          <div className="text-[10px] text-zinc-500 font-mono">
+          <div className="font-mono text-[10px] text-zinc-500">
             Drag & drop any .pdf file directly into the window
           </div>
         </div>
@@ -1279,20 +1391,24 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
   const cursorStyle = isPanning
     ? 'cursor-grabbing'
     : isSpacePressed
-    ? 'cursor-grab'
-    : activeTool === 'eraser'
-    ? 'cursor-none'
-    : activeTool === 'text'
-    ? 'cursor-text'
-    : 'cursor-default';
+      ? 'cursor-grab'
+      : activeTool === 'eraser'
+        ? 'cursor-none'
+        : activeTool === 'text'
+          ? 'cursor-text'
+          : 'cursor-default';
 
   return (
     <main
       ref={companionPdfDoc ? undefined : viewerContainerRef}
-      onMouseDownCapture={isSpacePressed ? event => {
-        handleSpaceOverlayMouseDown(event);
-        event.stopPropagation();
-      } : undefined}
+      onMouseDownCapture={
+        isSpacePressed
+          ? (event) => {
+              handleSpaceOverlayMouseDown(event);
+              event.stopPropagation();
+            }
+          : undefined
+      }
       data-hand-mode={isSpacePressed || undefined}
       onMouseDown={companionPdfDoc ? undefined : handleStartPan}
       onPointerDown={companionPdfDoc ? undefined : handleViewerPointerDown}
@@ -1301,8 +1417,8 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      className={`pdf-viewer-viewport flex-1 bg-[#1c1c22] relative select-none ${
-        companionPdfDoc ? 'overflow-hidden' : 'overflow-y-auto overflow-x-auto'
+      className={`pdf-viewer-viewport relative flex-1 bg-[#1c1c22] select-none ${
+        companionPdfDoc ? 'overflow-hidden' : 'overflow-x-auto overflow-y-auto'
       } ${cursorStyle}`}
     >
       {/* Visual Eraser Brush Circle Indicator - Single global indicator across all pages */}
@@ -1315,7 +1431,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
             height: '36px',
             transform: 'translate(-50%, -50%)',
           }}
-          className="fixed pointer-events-none rounded-full border-2 border-red-400/80 bg-red-500/20 shadow-md backdrop-blur-2xs animate-pulse-glow z-50"
+          className="backdrop-blur-2xs animate-pulse-glow pointer-events-none fixed z-50 rounded-full border-2 border-red-400/80 bg-red-500/20 shadow-md"
         />
       )}
 
@@ -1327,29 +1443,31 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
             top: `${viewerAiDragPos.clientY + 14}px`,
             width: '380px',
           }}
-          className="fixed z-50 pointer-events-none macos-ai-popover ai-response-card-drag-preview"
+          className="macos-ai-popover ai-response-card-drag-preview pointer-events-none fixed z-50"
           aria-hidden="true"
         >
-          <div className="flex items-center justify-between gap-2 px-3.5 py-2 border-b border-[var(--border)] shrink-0 select-none bg-[var(--popover)]/80 backdrop-blur-md rounded-t-xl">
+          <div className="flex shrink-0 items-center justify-between gap-2 rounded-t-xl border-b border-[var(--border)] bg-[var(--popover)]/80 px-3.5 py-2 backdrop-blur-md select-none">
             <div className="flex items-center gap-1.5 text-xs font-semibold">
-              <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-              <span className="text-[var(--foreground)] font-medium tracking-tight">AI Assistant</span>
-              <span className="text-[9.5px] font-medium font-mono text-purple-400 bg-purple-500/15 border border-purple-500/30 px-1.5 py-0.2 rounded-md">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-blue-500" />
+              <span className="font-medium tracking-tight text-[var(--foreground)]">
+                AI Assistant
+              </span>
+              <span className="py-0.2 rounded-md border border-purple-500/30 bg-purple-500/15 px-1.5 font-mono text-[9.5px] font-medium text-purple-400">
                 Cinnabar AI
               </span>
             </div>
-            <span className="text-[9.5px] font-semibold text-blue-500 dark:text-blue-400 bg-blue-500/15 px-2 py-0.5 rounded-full border border-blue-500/30">
+            <span className="rounded-full border border-blue-500/30 bg-blue-500/15 px-2 py-0.5 text-[9.5px] font-semibold text-blue-500 dark:text-blue-400">
               Drop to pin card
             </span>
           </div>
 
-          <div className="p-3.5 space-y-2 bg-[var(--popover)]/90 backdrop-blur-md rounded-b-xl border border-dashed border-blue-500/40">
+          <div className="space-y-2 rounded-b-xl border border-dashed border-blue-500/40 bg-[var(--popover)]/90 p-3.5 backdrop-blur-md">
             {getActiveAiResponseDrag()?.prompt && (
-              <div className="text-[11px] text-blue-500 dark:text-blue-400 bg-blue-500/10 border border-blue-500/20 px-2.5 py-1 rounded-md italic line-clamp-1">
+              <div className="line-clamp-1 rounded-md border border-blue-500/20 bg-blue-500/10 px-2.5 py-1 text-[11px] text-blue-500 italic dark:text-blue-400">
                 "{getActiveAiResponseDrag()?.prompt}"
               </div>
             )}
-            <div className="text-xs text-[var(--foreground)] opacity-85 line-clamp-3 leading-relaxed">
+            <div className="line-clamp-3 text-xs leading-relaxed text-[var(--foreground)] opacity-85">
               {getActiveAiResponseDrag()?.response || 'Placing AI response card…'}
             </div>
           </div>
@@ -1358,8 +1476,8 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
 
       {/* Dragging file overlay cue */}
       {isViewerDraggingFile && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-50 flex flex-col items-center justify-center text-white pointer-events-none animate-fade-in">
-          <UploadCloud className="w-16 h-16 text-blue-400 animate-bounce mb-4" />
+        <div className="animate-fade-in pointer-events-none fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/70 text-white backdrop-blur-md">
+          <UploadCloud className="mb-4 h-16 w-16 animate-bounce text-blue-400" />
           <h3 className="text-xl font-bold">Drop PDF or Image to Open / Attach</h3>
         </div>
       )}
@@ -1369,7 +1487,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
         className={
           companionPdfDoc
             ? 'h-full w-full'
-            : 'canvas-background-layer w-max min-w-full min-h-full flex flex-col items-center justify-start px-[50vw] sm:px-[60vw] py-6 box-border'
+            : 'canvas-background-layer box-border flex min-h-full w-max min-w-full flex-col items-center justify-start px-[50vw] py-6 sm:px-[60vw]'
         }
       >
         {/* READ TOGETHER: TWO DOCUMENTS IN ONE CONTINUOUS, PAGE-ALIGNED STREAM */}
@@ -1384,11 +1502,13 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
               aria-label={`${primaryFileName} pages`}
               data-active-pane={activePane === 'primary' || undefined}
             >
-              <div className={`z-20 flex shrink-0 items-center justify-center gap-2 border-b px-3 py-2 text-center text-[11px] font-medium backdrop-blur-xl ${
-                activePane === 'primary'
-                  ? 'border-blue-400/60 bg-blue-500/20 text-white font-semibold shadow-sm'
-                  : 'border-[var(--border)] bg-[var(--popover)]/90 text-[var(--foreground)]'
-              }`}>
+              <div
+                className={`z-20 flex shrink-0 items-center justify-center gap-2 border-b px-3 py-2 text-center text-[11px] font-medium backdrop-blur-xl ${
+                  activePane === 'primary'
+                    ? 'border-blue-400/60 bg-blue-500/20 font-semibold text-white shadow-sm'
+                    : 'border-[var(--border)] bg-[var(--popover)]/90 text-[var(--foreground)]'
+                }`}
+              >
                 <span className="truncate">{primaryFileName}</span>
               </div>
               <div
@@ -1399,51 +1519,51 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
                 onPointerLeave={handleViewerPointerLeave}
                 className="min-h-0 flex-1 overflow-auto"
               >
-                <div className="canvas-workspace-area flex w-max min-w-full min-h-full flex-col items-center justify-start gap-3 px-[40vw] py-6 box-border">
+                <div className="canvas-workspace-area box-border flex min-h-full w-max min-w-full flex-col items-center justify-start gap-3 px-[40vw] py-6">
                   {getReadTogetherPageRows(numPages, 0).map((pageNum) => (
                     <PDFPage
-                    key={pageNum}
-                    pdfDoc={pdfDoc}
-                    pageNumber={pageNum}
-                    scale={zoom}
-                    currentTheme={currentTheme}
-                    filterClass={filterClass}
-                    customFilterStyle={customFilterStyle}
-                    activeTool={activeTool}
-                    selectedColor={selectedColor}
-                    highlightColors={highlightColors}
-                    strokeWidth={strokeWidth}
-                    opacity={opacity}
-                    highlightStyle={highlightStyle}
-                    lineHighlightStyle={lineHighlightStyle}
-                    annotations={annotationsByPage.get(pageNum) || EMPTY_ANNOTATIONS}
-                    selectedAnnotationId={selectedAnnotationId}
-                    onSelectAnnotation={onSelectAnnotation}
-                    onAddAnnotation={onAddAnnotation}
-                    onUpdateAnnotation={onUpdateAnnotation}
-                    onChangeHighlightStyle={onChangeHighlightStyle}
-                    onChangeLineHighlightStyle={onChangeLineHighlightStyle}
-                    onDeleteAnnotation={onDeleteAnnotation}
-                    onImageDrop={onImageDrop}
-                    onAiResponseDrop={onAiResponseDrop}
-                    onCursorMove={onCursorMove}
-                    onCaptureSnippet={onCaptureSnippet}
-                    aiJobs={aiJobs}
-                    onAiBoxCreated={onAiBoxCreated}
-                    onSubmitAi={onSubmitAi}
-                    onCancelAi={onCancelAi}
-                    onCloseAi={onCloseAi}
-                    onAddPageBelow={onAddPageBelow}
-                    onDeletePage={onDeletePage}
-                    onCopyPageText={onCopyPageText}
-                    onCopyPageImage={onCopyPageImage}
-                    onAskAiAboutPage={onAskAiAboutPage}
-                    onCopySelectedText={onCopySelectedText}
-                    onAttachTextToAi={onAttachTextToAi}
-                    onHighlightSelection={onHighlightSelection}
-                    onSelectTool={onSelectTool}
-                    showToast={showToast}
-                    isFlush
+                      key={pageNum}
+                      pdfDoc={pdfDoc}
+                      pageNumber={pageNum}
+                      scale={zoom}
+                      currentTheme={currentTheme}
+                      filterClass={filterClass}
+                      customFilterStyle={customFilterStyle}
+                      activeTool={activeTool}
+                      selectedColor={selectedColor}
+                      highlightColors={highlightColors}
+                      strokeWidth={strokeWidth}
+                      opacity={opacity}
+                      highlightStyle={highlightStyle}
+                      lineHighlightStyle={lineHighlightStyle}
+                      annotations={annotationsByPage.get(pageNum) || EMPTY_ANNOTATIONS}
+                      selectedAnnotationId={selectedAnnotationId}
+                      onSelectAnnotation={onSelectAnnotation}
+                      onAddAnnotation={onAddAnnotation}
+                      onUpdateAnnotation={onUpdateAnnotation}
+                      onChangeHighlightStyle={onChangeHighlightStyle}
+                      onChangeLineHighlightStyle={onChangeLineHighlightStyle}
+                      onDeleteAnnotation={onDeleteAnnotation}
+                      onImageDrop={onImageDrop}
+                      onAiResponseDrop={onAiResponseDrop}
+                      onCursorMove={onCursorMove}
+                      onCaptureSnippet={onCaptureSnippet}
+                      aiJobs={aiJobs}
+                      onAiBoxCreated={onAiBoxCreated}
+                      onSubmitAi={onSubmitAi}
+                      onCancelAi={onCancelAi}
+                      onCloseAi={onCloseAi}
+                      onAddPageBelow={onAddPageBelow}
+                      onDeletePage={onDeletePage}
+                      onCopyPageText={onCopyPageText}
+                      onCopyPageImage={onCopyPageImage}
+                      onAskAiAboutPage={onAskAiAboutPage}
+                      onCopySelectedText={onCopySelectedText}
+                      onAttachTextToAi={onAttachTextToAi}
+                      onHighlightSelection={onHighlightSelection}
+                      onSelectTool={onSelectTool}
+                      showToast={showToast}
+                      isFlush
                     />
                   ))}
                 </div>
@@ -1462,11 +1582,13 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
               aria-label={`${companionFileName || 'Companion PDF'} pages`}
               data-active-pane={activePane === 'companion' || undefined}
             >
-              <div className={`z-20 flex shrink-0 items-center justify-center gap-2 border-b px-3 py-2 text-center text-[11px] font-medium backdrop-blur-xl ${
-                activePane === 'companion'
-                  ? 'border-blue-400/60 bg-blue-500/20 text-white font-semibold shadow-sm'
-                  : 'border-[var(--border)] bg-[var(--popover)]/90 text-[var(--foreground)]'
-              }`}>
+              <div
+                className={`z-20 flex shrink-0 items-center justify-center gap-2 border-b px-3 py-2 text-center text-[11px] font-medium backdrop-blur-xl ${
+                  activePane === 'companion'
+                    ? 'border-blue-400/60 bg-blue-500/20 font-semibold text-white shadow-sm'
+                    : 'border-[var(--border)] bg-[var(--popover)]/90 text-[var(--foreground)]'
+                }`}
+              >
                 <span className="truncate">{companionFileName || 'Companion PDF'}</span>
               </div>
               <div
@@ -1474,47 +1596,47 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
                 onMouseDown={handleStartCompanionPan}
                 className="min-h-0 flex-1 overflow-auto"
               >
-                <div className="canvas-workspace-area flex w-max min-w-full min-h-full flex-col items-center justify-start gap-3 px-[40vw] py-6 box-border">
+                <div className="canvas-workspace-area box-border flex min-h-full w-max min-w-full flex-col items-center justify-start gap-3 px-[40vw] py-6">
                   {getReadTogetherPageRows(companionPdfDoc.numPages, 0).map((pageNum) => (
                     <PDFPage
-                    key={pageNum}
-                    pdfDoc={companionPdfDoc}
-                    pageNumber={pageNum}
-                    scale={companionZoom}
-                    currentTheme={currentTheme}
-                    filterClass={filterClass}
-                    customFilterStyle={customFilterStyle}
-                    activeTool="select"
-                    selectedColor={selectedColor}
-                    highlightColors={highlightColors}
-                    strokeWidth={strokeWidth}
-                    opacity={opacity}
-                    highlightStyle={highlightStyle}
-                    lineHighlightStyle={lineHighlightStyle}
-                    annotations={EMPTY_ANNOTATIONS}
-                    selectedAnnotationId={null}
-                    onSelectAnnotation={() => {}}
-                    onAddAnnotation={() => {}}
-                    onUpdateAnnotation={() => {}}
-                    onChangeHighlightStyle={() => {}}
-                    onChangeLineHighlightStyle={() => {}}
-                    onDeleteAnnotation={() => {}}
-                    onImageDrop={() => {}}
-                    aiJobs={{}}
-                    onAiBoxCreated={() => {}}
-                    onSubmitAi={() => {}}
-                    onCancelAi={() => {}}
-                    onCloseAi={() => {}}
-                    onAddPageBelow={() => {}}
-                    onDeletePage={() => {}}
-                    onCopyPageText={() => {}}
-                    onCopyPageImage={() => {}}
-                    onAskAiAboutPage={() => {}}
-                    onSelectTool={onSelectTool}
-                    showToast={showToast}
-                    isFlush
-                    isReadOnly
-                    pageIdPrefix="companion-pdf-page"
+                      key={pageNum}
+                      pdfDoc={companionPdfDoc}
+                      pageNumber={pageNum}
+                      scale={companionZoom}
+                      currentTheme={currentTheme}
+                      filterClass={filterClass}
+                      customFilterStyle={customFilterStyle}
+                      activeTool="select"
+                      selectedColor={selectedColor}
+                      highlightColors={highlightColors}
+                      strokeWidth={strokeWidth}
+                      opacity={opacity}
+                      highlightStyle={highlightStyle}
+                      lineHighlightStyle={lineHighlightStyle}
+                      annotations={EMPTY_ANNOTATIONS}
+                      selectedAnnotationId={null}
+                      onSelectAnnotation={() => {}}
+                      onAddAnnotation={() => {}}
+                      onUpdateAnnotation={() => {}}
+                      onChangeHighlightStyle={() => {}}
+                      onChangeLineHighlightStyle={() => {}}
+                      onDeleteAnnotation={() => {}}
+                      onImageDrop={() => {}}
+                      aiJobs={{}}
+                      onAiBoxCreated={() => {}}
+                      onSubmitAi={() => {}}
+                      onCancelAi={() => {}}
+                      onCloseAi={() => {}}
+                      onAddPageBelow={() => {}}
+                      onDeletePage={() => {}}
+                      onCopyPageText={() => {}}
+                      onCopyPageImage={() => {}}
+                      onAskAiAboutPage={() => {}}
+                      onSelectTool={onSelectTool}
+                      showToast={showToast}
+                      isFlush
+                      isReadOnly
+                      pageIdPrefix="companion-pdf-page"
                     />
                   ))}
                 </div>
@@ -1577,7 +1699,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
 
         {/* SINGLE PAGE VIEW MODE */}
         {viewMode === 'single' && (
-          <div className="canvas-workspace-area flex flex-col items-center justify-center relative pb-6">
+          <div className="canvas-workspace-area relative flex flex-col items-center justify-center pb-6">
             <PDFPage
               pdfDoc={pdfDoc}
               pageNumber={currentPage}
@@ -1624,7 +1746,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
 
         {/* TWO-PAGE SPREAD VIEW MODE */}
         {viewMode === 'spread' && (
-          <div className="canvas-workspace-area flex flex-col items-center justify-center relative pb-6">
+          <div className="canvas-workspace-area relative flex flex-col items-center justify-center pb-6">
             <div className="flex items-start justify-center gap-1">
               {/* Left Page */}
               <PDFPage
@@ -1701,7 +1823,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
                   onChangeLineHighlightStyle={onChangeLineHighlightStyle}
                   onDeleteAnnotation={onDeleteAnnotation}
                   onImageDrop={onImageDrop}
-                onAiResponseDrop={onAiResponseDrop}
+                  onAiResponseDrop={onAiResponseDrop}
                   onCursorMove={onCursorMove}
                   onCaptureSnippet={onCaptureSnippet}
                   aiJobs={aiJobs}

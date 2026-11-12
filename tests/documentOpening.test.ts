@@ -16,9 +16,11 @@ describe('document opening', () => {
     const sessionSource = await projectFile('src/hooks/useDocumentSession.ts');
     expect(appSource).toContain('useDocumentSession({');
     expect(sessionSource).toContain('const loaded = await loadPdf(');
-    expect(sessionSource).toContain("if (loaded) {\n        void idbSaveActivePdf(bytes, fileName);\n        onScreenChange('reader');");
+    expect(sessionSource).toContain(
+      "if (loaded) {\n        void idbSaveActivePdf(bytes, fileName);\n        onScreenChange('reader');",
+    );
     expect(sessionSource.indexOf('const loaded = await loadPdf(')).toBeLessThan(
-      sessionSource.indexOf('void idbSaveActivePdf(bytes, fileName)')
+      sessionSource.indexOf('void idbSaveActivePdf(bytes, fileName)'),
     );
   });
 });

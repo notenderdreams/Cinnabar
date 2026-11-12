@@ -102,7 +102,8 @@ describe('aiResponseDrag', () => {
   });
 
   test('extractPlainTextPreview strips markdown formatting and truncates cleanly', () => {
-    const md = '## Heading\nThis is **bold** and *italic* with `code block`.\n```ts\nconst x = 1;\n```\nCheck [link](https://example.com).';
+    const md =
+      '## Heading\nThis is **bold** and *italic* with `code block`.\n```ts\nconst x = 1;\n```\nCheck [link](https://example.com).';
     const preview = extractPlainTextPreview(md, 120);
     expect(preview.includes('##')).toBe(false);
     expect(preview.includes('**')).toBe(false);
@@ -110,7 +111,10 @@ describe('aiResponseDrag', () => {
     expect(preview.includes('[code]')).toBe(true);
     expect(preview.includes('link')).toBe(true);
 
-    const truncated = extractPlainTextPreview('A very long sentence that exceeds the small limit requested', 15);
+    const truncated = extractPlainTextPreview(
+      'A very long sentence that exceeds the small limit requested',
+      15,
+    );
     expect(truncated.endsWith('…')).toBe(true);
     expect(truncated.length <= 16).toBe(true);
   });

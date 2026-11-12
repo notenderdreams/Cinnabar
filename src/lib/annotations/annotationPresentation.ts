@@ -10,9 +10,7 @@ export interface AnnotationListPresentation {
 
 const compact = (value: string): string => value.replace(/\s+/g, ' ').trim();
 
-export function getAnnotationListPresentation(
-  annotation: Annotation
-): AnnotationListPresentation {
+export function getAnnotationListPresentation(annotation: Annotation): AnnotationListPresentation {
   if (annotation.type === 'ai-explanation') {
     const response = compact(annotation.response || '');
     const prompt = compact(annotation.prompt || '');
@@ -51,7 +49,7 @@ export function getAnnotationListPresentation(
           y: annotation.y,
           width: annotation.width,
           height: annotation.height,
-        })
+        }),
       );
     }
     const title =
@@ -80,7 +78,7 @@ export function getAnnotationListPresentation(
           y: minY,
           width: w,
           height: h,
-        })
+        }),
       );
     }
     return {
@@ -109,7 +107,7 @@ export function getAnnotationListPresentation(
           y: minY,
           width: Math.max(0.01, maxX - minX),
           height: Math.max(0.01, maxY - minY),
-        })
+        }),
       );
     }
     return {

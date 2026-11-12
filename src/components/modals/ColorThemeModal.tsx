@@ -86,23 +86,18 @@ export const ColorThemeModal: React.FC<ColorThemeModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in text-xs">
-      <div className="w-full max-w-md bg-[var(--popover)] border border-[var(--border)] rounded-2xl p-5 shadow-2xl flex flex-col gap-4 animate-slide-down">
+    <div className="animate-fade-in fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 text-xs backdrop-blur-xs">
+      <div className="animate-slide-down flex w-full max-w-md flex-col gap-4 rounded-2xl border border-[var(--border)] bg-[var(--popover)] p-5 shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex flex-col">
-            <h3 className="text-sm font-semibold text-zinc-100 tracking-tight">
+            <h3 className="text-sm font-semibold tracking-tight text-zinc-100">
               Reading Themes & Color Invert
             </h3>
-            <p className="text-[11px] text-zinc-400">
-              Select reading palette and adjust luminance
-            </p>
+            <p className="text-[11px] text-zinc-400">Select reading palette and adjust luminance</p>
           </div>
-          <button
-            onClick={onClose}
-            className="btn-icon w-7 h-7"
-          >
-            <X className="w-4 h-4" />
+          <button onClick={onClose} className="btn-icon h-7 w-7">
+            <X className="h-4 w-4" />
           </button>
         </div>
 
@@ -114,36 +109,32 @@ export const ColorThemeModal: React.FC<ColorThemeModalProps> = ({
               <button
                 key={t.id}
                 onClick={() => onSelectTheme(t.id)}
-                className={`p-2.5 rounded-xl border text-left flex flex-col gap-1 transition-all ${
+                className={`flex flex-col gap-1 rounded-xl border p-2.5 text-left transition-all ${
                   isSelected
-                    ? 'border-blue-500/80 bg-blue-500/10 ring-1 ring-blue-500 shadow-xs'
+                    ? 'border-blue-500/80 bg-blue-500/10 shadow-xs ring-1 ring-blue-500'
                     : 'border-[var(--border)] bg-[var(--secondary)] hover:bg-[var(--card)]'
                 }`}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
                     <span
-                      className={`w-3.5 h-3.5 rounded-full border border-white/20 shadow-xs ${t.bgPreview}`}
+                      className={`h-3.5 w-3.5 rounded-full border border-white/20 shadow-xs ${t.bgPreview}`}
                     />
-                    <span className="font-medium text-zinc-200 text-xs">
-                      {t.name}
-                    </span>
+                    <span className="text-xs font-medium text-zinc-200">{t.name}</span>
                   </div>
-                  {isSelected && <Check className="w-3.5 h-3.5 text-blue-500" />}
+                  {isSelected && <Check className="h-3.5 w-3.5 text-blue-500" />}
                 </div>
-                <p className="text-[10px] text-zinc-400 leading-tight">
-                  {t.desc}
-                </p>
+                <p className="text-[10px] leading-tight text-zinc-400">{t.desc}</p>
               </button>
             );
           })}
         </div>
 
         {/* Brightness & Contrast Sliders */}
-        <div className="p-3.5 rounded-xl bg-[var(--secondary)] border border-[var(--border)] flex flex-col gap-3">
+        <div className="flex flex-col gap-3 rounded-xl border border-[var(--border)] bg-[var(--secondary)] p-3.5">
           <div className="flex items-center justify-between font-medium text-zinc-300">
             <span>Document Brightness</span>
-            <span className="font-mono text-zinc-400 text-[11px]">{settings.brightness}%</span>
+            <span className="font-mono text-[11px] text-zinc-400">{settings.brightness}%</span>
           </div>
           <input
             type="range"
@@ -151,12 +142,12 @@ export const ColorThemeModal: React.FC<ColorThemeModalProps> = ({
             max="140"
             value={settings.brightness}
             onChange={(e) => onUpdateSetting('brightness', parseInt(e.target.value, 10))}
-            className="w-full accent-blue-500 cursor-pointer h-1"
+            className="h-1 w-full cursor-pointer accent-blue-500"
           />
 
-          <div className="flex items-center justify-between font-medium text-zinc-300 mt-1">
+          <div className="mt-1 flex items-center justify-between font-medium text-zinc-300">
             <span>Document Contrast</span>
-            <span className="font-mono text-zinc-400 text-[11px]">{settings.contrast}%</span>
+            <span className="font-mono text-[11px] text-zinc-400">{settings.contrast}%</span>
           </div>
           <input
             type="range"
@@ -164,24 +155,18 @@ export const ColorThemeModal: React.FC<ColorThemeModalProps> = ({
             max="150"
             value={settings.contrast}
             onChange={(e) => onUpdateSetting('contrast', parseInt(e.target.value, 10))}
-            className="w-full accent-blue-500 cursor-pointer h-1"
+            className="h-1 w-full cursor-pointer accent-blue-500"
           />
         </div>
 
         {/* Footer Actions */}
         <div className="flex items-center justify-between pt-1">
-          <button
-            onClick={onResetFilters}
-            className="btn-ghost text-xs"
-          >
-            <RotateCcw className="w-3 h-3" />
+          <button onClick={onResetFilters} className="btn-ghost text-xs">
+            <RotateCcw className="h-3 w-3" />
             <span>Reset</span>
           </button>
 
-          <button
-            onClick={onClose}
-            className="btn-primary"
-          >
+          <button onClick={onClose} className="btn-primary">
             Apply & Close
           </button>
         </div>

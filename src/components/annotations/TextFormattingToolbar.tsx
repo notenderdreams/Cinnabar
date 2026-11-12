@@ -46,7 +46,7 @@ export const TextFormattingToolbar: React.FC<TextFormattingToolbarProps> = ({
 
   return (
     <div
-      className="absolute -top-9 left-0 z-50 flex items-center gap-1.5 p-1 px-1.5 rounded-lg bg-[var(--popover)]/95 border border-[var(--border)] shadow-xl backdrop-blur-md pointer-events-auto select-none"
+      className="pointer-events-auto absolute -top-9 left-0 z-50 flex items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--popover)]/95 p-1 px-1.5 shadow-xl backdrop-blur-md select-none"
       onMouseDown={(e) => {
         e.stopPropagation();
         e.preventDefault();
@@ -59,7 +59,7 @@ export const TextFormattingToolbar: React.FC<TextFormattingToolbarProps> = ({
     >
       {/* 1. Alignment Icons */}
       {onChangeAlign && (
-        <div className="flex items-center gap-0.5 pr-1.5 border-r border-[var(--border)]">
+        <div className="flex items-center gap-0.5 border-r border-[var(--border)] pr-1.5">
           <button
             type="button"
             onClick={() => onChangeAlign('left')}
@@ -67,7 +67,7 @@ export const TextFormattingToolbar: React.FC<TextFormattingToolbarProps> = ({
             title="Align Left"
             aria-label="Align Left"
           >
-            <AlignLeft className="w-3.5 h-3.5" />
+            <AlignLeft className="h-3.5 w-3.5" />
           </button>
           <button
             type="button"
@@ -76,7 +76,7 @@ export const TextFormattingToolbar: React.FC<TextFormattingToolbarProps> = ({
             title="Align Center"
             aria-label="Align Center"
           >
-            <AlignCenter className="w-3.5 h-3.5" />
+            <AlignCenter className="h-3.5 w-3.5" />
           </button>
           <button
             type="button"
@@ -85,14 +85,14 @@ export const TextFormattingToolbar: React.FC<TextFormattingToolbarProps> = ({
             title="Align Right"
             aria-label="Align Right"
           >
-            <AlignRight className="w-3.5 h-3.5" />
+            <AlignRight className="h-3.5 w-3.5" />
           </button>
         </div>
       )}
 
       {/* 2. Font Family Icons */}
       {onChangeFontFamily && (
-        <div className="flex items-center gap-0.5 pr-1.5 border-r border-[var(--border)]">
+        <div className="flex items-center gap-0.5 border-r border-[var(--border)] pr-1.5">
           <button
             type="button"
             onClick={() => onChangeFontFamily('sans')}
@@ -100,7 +100,7 @@ export const TextFormattingToolbar: React.FC<TextFormattingToolbarProps> = ({
             title="Sans-serif Font"
             aria-label="Sans-serif Font"
           >
-            <span className="font-sans font-semibold text-[11px] leading-none">Ag</span>
+            <span className="font-sans text-[11px] leading-none font-semibold">Ag</span>
           </button>
           <button
             type="button"
@@ -109,7 +109,7 @@ export const TextFormattingToolbar: React.FC<TextFormattingToolbarProps> = ({
             title="Serif Font"
             aria-label="Serif Font"
           >
-            <span className="font-serif font-bold text-[11px] leading-none">Ag</span>
+            <span className="font-serif text-[11px] leading-none font-bold">Ag</span>
           </button>
           <button
             type="button"
@@ -118,43 +118,43 @@ export const TextFormattingToolbar: React.FC<TextFormattingToolbarProps> = ({
             title="Monospace Font"
             aria-label="Monospace Font"
           >
-            <span className="font-mono font-medium text-[11px] leading-none">Ag</span>
+            <span className="font-mono text-[11px] leading-none font-medium">Ag</span>
           </button>
         </div>
       )}
 
       {/* 3. Font Size Controls */}
       {onChangeFontSize && (
-        <div className="flex items-center gap-0.5 pr-1.5 border-r border-[var(--border)]">
+        <div className="flex items-center gap-0.5 border-r border-[var(--border)] pr-1.5">
           <button
             type="button"
             disabled={fontSize <= 8}
             onClick={() => onChangeFontSize(Math.max(8, fontSize - 2))}
-            className={`${btnBase} ${fontSize <= 8 ? 'opacity-30 cursor-not-allowed' : ''}`}
+            className={`${btnBase} ${fontSize <= 8 ? 'cursor-not-allowed opacity-30' : ''}`}
             title="Decrease Font Size"
             aria-label="Decrease Font Size"
           >
-            <AArrowDown className="w-3.5 h-3.5" />
+            <AArrowDown className="h-3.5 w-3.5" />
           </button>
-          <span className="font-mono text-[10.5px] px-1 text-zinc-300 font-medium min-w-[16px] text-center">
+          <span className="min-w-[16px] px-1 text-center font-mono text-[10.5px] font-medium text-zinc-300">
             {fontSize}
           </span>
           <button
             type="button"
             disabled={fontSize >= 48}
             onClick={() => onChangeFontSize(Math.min(48, fontSize + 2))}
-            className={`${btnBase} ${fontSize >= 48 ? 'opacity-30 cursor-not-allowed' : ''}`}
+            className={`${btnBase} ${fontSize >= 48 ? 'cursor-not-allowed opacity-30' : ''}`}
             title="Increase Font Size"
             aria-label="Increase Font Size"
           >
-            <AArrowUp className="w-3.5 h-3.5" />
+            <AArrowUp className="h-3.5 w-3.5" />
           </button>
         </div>
       )}
 
       {/* 4. Color Swatches */}
       {onChangeColor && (
-        <div className="flex items-center gap-1 pr-1.5 border-r border-[var(--border)]">
+        <div className="flex items-center gap-1 border-r border-[var(--border)] pr-1.5">
           {colors.map((c) => {
             const isChosen = color.toLowerCase() === c.toLowerCase();
             return (
@@ -162,10 +162,10 @@ export const TextFormattingToolbar: React.FC<TextFormattingToolbarProps> = ({
                 key={c}
                 type="button"
                 onClick={() => onChangeColor(c)}
-                className={`w-3.5 h-3.5 rounded-full border transition-transform hover:scale-115 ${
+                className={`h-3.5 w-3.5 rounded-full border transition-transform hover:scale-115 ${
                   isChosen
-                    ? 'ring-2 ring-blue-500 scale-115 border-white/80'
-                    : 'border-black/30 dark:border-white/30 hover:border-white/60'
+                    ? 'scale-115 border-white/80 ring-2 ring-blue-500'
+                    : 'border-black/30 hover:border-white/60 dark:border-white/30'
                 }`}
                 style={{ backgroundColor: c }}
                 title={`Text color: ${c}`}
@@ -181,11 +181,11 @@ export const TextFormattingToolbar: React.FC<TextFormattingToolbarProps> = ({
         <button
           type="button"
           onClick={onDelete}
-          className="w-5 h-5 rounded flex items-center justify-center text-zinc-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+          className="flex h-5 w-5 items-center justify-center rounded text-zinc-400 transition-colors hover:bg-red-500/10 hover:text-red-400"
           title="Delete Text"
           aria-label="Delete Text"
         >
-          <Trash2 className="w-3.5 h-3.5" />
+          <Trash2 className="h-3.5 w-3.5" />
         </button>
       )}
 
@@ -194,11 +194,11 @@ export const TextFormattingToolbar: React.FC<TextFormattingToolbarProps> = ({
         <button
           type="button"
           onClick={onDone}
-          className="w-5 h-5 rounded flex items-center justify-center text-zinc-400 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors"
+          className="flex h-5 w-5 items-center justify-center rounded text-zinc-400 transition-colors hover:bg-emerald-500/10 hover:text-emerald-400"
           title="Done"
           aria-label="Done"
         >
-          <Check className="w-3.5 h-3.5" />
+          <Check className="h-3.5 w-3.5" />
         </button>
       )}
     </div>

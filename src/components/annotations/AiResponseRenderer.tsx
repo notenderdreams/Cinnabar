@@ -15,7 +15,7 @@ export const AiResponseRenderer: React.FC<AiResponseRendererProps> = React.memo(
   const normalizedResponse = useMemo(() => normalizeAiResponseMarkdown(response), [response]);
 
   return (
-    <div className="ai-response-markdown select-text text-xs leading-relaxed">
+    <div className="ai-response-markdown text-xs leading-relaxed select-text">
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkMath]}
         rehypePlugins={[[rehypeKatex, { strict: false, throwOnError: false }]]}

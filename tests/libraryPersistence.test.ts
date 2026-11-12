@@ -98,7 +98,7 @@ describe('Library filter & folder selection persistence', () => {
   test('falls back when persisted highlight palette data is malformed', () => {
     localStorage.setItem(
       'pdfuck_highlight_palette',
-      JSON.stringify({ colors: ['not-a-color'], selectedIndex: 20 })
+      JSON.stringify({ colors: ['not-a-color'], selectedIndex: 20 }),
     );
 
     expect(loadHighlightPalette(HIGHLIGHT_COLOR_PRESETS)).toEqual({

@@ -38,7 +38,7 @@ function enableGlobalSelectionListener() {
     () => {
       isPointerDown = true;
     },
-    { signal }
+    { signal },
   );
 
   document.addEventListener(
@@ -47,7 +47,7 @@ function enableGlobalSelectionListener() {
       isPointerDown = false;
       textLayers.forEach(resetLayer);
     },
-    { signal }
+    { signal },
   );
 
   window.addEventListener(
@@ -56,7 +56,7 @@ function enableGlobalSelectionListener() {
       isPointerDown = false;
       textLayers.forEach(resetLayer);
     },
-    { signal }
+    { signal },
   );
 
   document.addEventListener(
@@ -66,7 +66,7 @@ function enableGlobalSelectionListener() {
         textLayers.forEach(resetLayer);
       }
     },
-    { signal }
+    { signal },
   );
 
   document.addEventListener(
@@ -109,8 +109,8 @@ function enableGlobalSelectionListener() {
       const range = selection.getRangeAt(0);
       const modifyStart = Boolean(
         prevRange &&
-          (range.compareBoundaryPoints(Range.END_TO_END, prevRange) === 0 ||
-            range.compareBoundaryPoints(Range.START_TO_END, prevRange) === 0)
+        (range.compareBoundaryPoints(Range.END_TO_END, prevRange) === 0 ||
+          range.compareBoundaryPoints(Range.START_TO_END, prevRange) === 0),
       );
 
       let anchor: Node | null = modifyStart ? range.startContainer : range.endContainer;
@@ -119,7 +119,7 @@ function enableGlobalSelectionListener() {
       }
 
       const parentTextLayer = (anchor as HTMLElement | null)?.parentElement?.closest(
-        '.textLayer'
+        '.textLayer',
       ) as HTMLElement | null;
       const endDiv = parentTextLayer ? textLayers.get(parentTextLayer) : null;
       if (endDiv && parentTextLayer && anchor && anchor.parentElement) {
@@ -129,7 +129,7 @@ function enableGlobalSelectionListener() {
       }
       prevRange = range.cloneRange();
     },
-    { signal }
+    { signal },
   );
 }
 

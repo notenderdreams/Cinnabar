@@ -9,7 +9,7 @@ describe('fit a page to its pane', () => {
 
   test('allows a fit smaller than ordinary zoom controls in a narrow split', () => {
     const zoom = fitPageZoom(240, 800, 595, 842);
-    expect(zoom).toBeLessThan(.4);
+    expect(zoom).toBeLessThan(0.4);
     expect(595 * zoom).toBeLessThanOrEqual(192);
     expect(842 * zoom).toBeLessThanOrEqual(752);
   });

@@ -12,7 +12,7 @@ import type {
 export function distToSegment(
   p: { x: number; y: number },
   v: { x: number; y: number },
-  w: { x: number; y: number }
+  w: { x: number; y: number },
 ): number {
   const l2 = (v.x - w.x) ** 2 + (v.y - w.y) ** 2;
   if (l2 === 0) return Math.hypot(p.x - v.x, p.y - v.y);
@@ -28,7 +28,7 @@ export function isAnnotationHitByEraser(
   pageWidth: number,
   pageHeight: number,
   eraseRadius: number = 22,
-  scale: number = 1
+  scale: number = 1,
 ): boolean {
   const zoomScale = Math.max(0.1, scale);
   if (ann.type === 'pen' || ann.type === 'highlight-pen') {
@@ -42,7 +42,10 @@ export function isAnnotationHitByEraser(
     }
     for (let i = 0; i < drawAnn.points.length - 1; i++) {
       const p1 = { x: drawAnn.points[i].x * pageWidth, y: drawAnn.points[i].y * pageHeight };
-      const p2 = { x: drawAnn.points[i + 1].x * pageWidth, y: drawAnn.points[i + 1].y * pageHeight };
+      const p2 = {
+        x: drawAnn.points[i + 1].x * pageWidth,
+        y: drawAnn.points[i + 1].y * pageHeight,
+      };
       if (distToSegment({ x: px, y: py }, p1, p2) <= threshold) {
         return true;
       }

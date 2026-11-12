@@ -25,13 +25,13 @@ describe('read together page rows', () => {
     expect(appSource).toContain("activeReaderPane === 'companion'");
     expect(headerSource).not.toContain('activePaneLabel');
     expect(appSource).toContain("'companion-pdf-page'");
-    expect(pageSource).toContain('{!isReadOnly && <AnnotationCanvas');
+    expect(pageSource).toMatch(/!isReadOnly && \(\s*<AnnotationCanvas/);
     expect(dashboardSource).toContain('if (event.shiftKey)');
     expect(dashboardSource).toContain("event.key === 'Enter' && selectedPdfIds.length === 2");
     expect(dashboardSource).toContain('onOpenPdfPair(');
     expect(viewerSource).toContain('getTargetContainerForPoint');
     expect(viewerSource).toContain('handleSpaceOverlayMouseDown');
-    expect(viewerSource).toContain('onMouseDownCapture={isSpacePressed');
+    expect(viewerSource).toMatch(/onMouseDownCapture=\{\s*isSpacePressed/);
     expect(viewerSource).toContain('onActivePaneChange?.(pane)');
   });
 
@@ -42,6 +42,7 @@ describe('read together page rows', () => {
     ]);
 
     expect(pageSource).toContain('data-pdf-page-number={pageNumber}');
-    expect(viewerSource).toContain('text-white font-semibold shadow-sm');
+    for (const token of ['text-white', 'font-semibold', 'shadow-sm'])
+      expect(viewerSource).toContain(token);
   });
 });

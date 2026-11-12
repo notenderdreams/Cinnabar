@@ -1,6 +1,11 @@
 import { parseNotebookFile, type NotebookFile } from '@cinnabar/notebook';
 
-export interface NotebookSummary { id: string; title: string; updatedAt: number; lastOpenedAt?: number }
+export interface NotebookSummary {
+  id: string;
+  title: string;
+  updatedAt: number;
+  lastOpenedAt?: number;
+}
 
 function openStorage(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -11,7 +16,10 @@ function openStorage(): Promise<IDBDatabase> {
       request.result.createObjectStore('index', { keyPath: 'id' });
     };
     request.onsuccess = () => {
-      if (blocked) { request.result.close(); return; }
+      if (blocked) {
+        request.result.close();
+        return;
+      }
       request.result.onversionchange = () => request.result.close();
       resolve(request.result);
     };
@@ -29,14 +37,24 @@ export async function saveNotebookLocally(file: NotebookFile): Promise<void> {
     await new Promise<void>((resolve, reject) => {
       const tx = db.transaction(['documents', 'index'], 'readwrite');
       tx.objectStore('documents').put(file);
-      tx.objectStore('index').put({ id: file.id, title: file.title, updatedAt: file.updatedAt, lastOpenedAt: Date.now() });
+      tx.objectStore('index').put({
+        id: file.id,
+        title: file.title,
+        updatedAt: file.updatedAt,
+        lastOpenedAt: Date.now(),
+      });
       tx.oncomplete = () => resolve();
       tx.onabort = tx.onerror = () => reject(tx.error ?? new Error('Could not save the notebook.'));
     });
-  } finally { db.close(); }
+  } finally {
+    db.close();
+  }
 }
 
-async function readStorage<T>(store: string, read: (store: IDBObjectStore) => IDBRequest<T>): Promise<T> {
+async function readStorage<T>(
+  store: string,
+  read: (store: IDBObjectStore) => IDBRequest<T>,
+): Promise<T> {
   const db = await openStorage();
   try {
     return await new Promise<T>((resolve, reject) => {
@@ -45,17 +63,19 @@ async function readStorage<T>(store: string, read: (store: IDBObjectStore) => ID
       tx.oncomplete = () => resolve(request.result);
       tx.onabort = tx.onerror = () => reject(tx.error ?? new Error('Could not read notebooks.'));
     });
-  } finally { db.close(); }
+  } finally {
+    db.close();
+  }
 }
 
 export async function loadNotebookLocally(id: string): Promise<NotebookFile> {
-  const value = await readStorage('documents', store => store.get(id));
+  const value = await readStorage('documents', (store) => store.get(id));
   if (!value) throw new Error('The notebook is no longer available on this device.');
   return parseNotebookFile(JSON.stringify(value));
 }
 
 export async function listLocalNotebooks(): Promise<NotebookSummary[]> {
-  const items: NotebookSummary[] = await readStorage('index', store => store.getAll());
+  const items: NotebookSummary[] = await readStorage('index', (store) => store.getAll());
   return items.sort((a, b) => (b.lastOpenedAt ?? b.updatedAt) - (a.lastOpenedAt ?? a.updatedAt));
 }
 
@@ -71,7 +91,10 @@ export async function touchNotebookLocally(id: string): Promise<void> {
         if (request.result) store.put({ ...request.result, lastOpenedAt: Date.now() });
       };
       tx.oncomplete = () => resolve();
-      tx.onabort = tx.onerror = () => reject(tx.error ?? new Error('Could not update notebook recency.'));
+      tx.onabort = tx.onerror = () =>
+        reject(tx.error ?? new Error('Could not update notebook recency.'));
     });
-  } finally { db.close(); }
+  } finally {
+    db.close();
+  }
 }

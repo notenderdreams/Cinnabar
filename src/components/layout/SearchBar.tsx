@@ -93,9 +93,13 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   };
 
   return (
-    <div role="search" aria-label="Search document" className="pdf-search-bar fixed top-13 right-4 z-40 p-1.5 rounded-2xl bg-[var(--popover)] border border-[var(--border)] shadow-2xl animate-slide-down text-xs">
-      <div className="pdf-search-field control-field flex items-center gap-2 px-2.5 py-1 bg-[var(--secondary)] rounded-lg border border-[var(--border)]">
-        <Search className="w-3.5 h-3.5 text-zinc-400" />
+    <div
+      role="search"
+      aria-label="Search document"
+      className="pdf-search-bar animate-slide-down fixed top-13 right-4 z-40 rounded-2xl border border-[var(--border)] bg-[var(--popover)] p-1.5 text-xs shadow-2xl"
+    >
+      <div className="pdf-search-field control-field flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--secondary)] px-2.5 py-1">
+        <Search className="h-3.5 w-3.5 text-zinc-400" />
         <input
           ref={inputRef}
           type="text"
@@ -104,19 +108,25 @@ export const SearchBar: React.FC<SearchBarProps> = ({
           onKeyDown={handleKeyDown}
           placeholder="Find in document..."
           aria-label="Find in document"
-          className="min-w-0 flex-1 bg-transparent text-xs text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 border-0 outline-none font-sans"
+          className="min-w-0 flex-1 border-0 bg-transparent font-sans text-xs text-[var(--foreground)] outline-none placeholder:text-[var(--muted-foreground)] focus:ring-0 focus:outline-none focus-visible:ring-0 focus-visible:outline-none"
         />
         <span className="pdf-search-spinner" aria-hidden="true">
-          {(isSearching || isPending) && <Loader2 className="w-3 h-3 text-zinc-400 animate-spin" />}
+          {(isSearching || isPending) && <Loader2 className="h-3 w-3 animate-spin text-zinc-400" />}
         </span>
       </div>
 
-      <span role="status" aria-live="polite" className="pdf-search-status text-[11px] font-mono text-[var(--muted-foreground)] px-1 font-medium">
+      <span
+        role="status"
+        aria-live="polite"
+        className="pdf-search-status px-1 font-mono text-[11px] font-medium text-[var(--muted-foreground)]"
+      >
         {isSearching || isPending
           ? 'Searching…'
           : searchResults.length > 0
             ? `${currentMatchIndex + 1}/${searchResults.length}`
-            : query.trim() ? 'No matches' : null}
+            : query.trim()
+              ? 'No matches'
+              : null}
       </span>
 
       <div className="flex items-center gap-0.5">
@@ -124,26 +134,26 @@ export const SearchBar: React.FC<SearchBarProps> = ({
           onClick={onPrev}
           disabled={isSearching || isPending || searchResults.length === 0}
           aria-label="Previous match"
-          className="btn-icon w-6.5 h-6.5 disabled:opacity-30 disabled:cursor-not-allowed"
+          className="btn-icon h-6.5 w-6.5 disabled:cursor-not-allowed disabled:opacity-30"
           title="Previous match (Shift+Enter)"
         >
-          <ChevronUp className="w-3.5 h-3.5" />
+          <ChevronUp className="h-3.5 w-3.5" />
         </button>
         <button
           onClick={onNext}
           disabled={isSearching || isPending || searchResults.length === 0}
           aria-label="Next match"
-          className="btn-icon w-6.5 h-6.5 disabled:opacity-30 disabled:cursor-not-allowed"
+          className="btn-icon h-6.5 w-6.5 disabled:cursor-not-allowed disabled:opacity-30"
           title="Next match (Enter)"
         >
-          <ChevronDown className="w-3.5 h-3.5" />
+          <ChevronDown className="h-3.5 w-3.5" />
         </button>
         <button
           onClick={onClose}
-          className="btn-icon w-6.5 h-6.5 ml-0.5"
+          className="btn-icon ml-0.5 h-6.5 w-6.5"
           title="Close search (Esc)"
         >
-          <X className="w-3.5 h-3.5" />
+          <X className="h-3.5 w-3.5" />
         </button>
       </div>
     </div>

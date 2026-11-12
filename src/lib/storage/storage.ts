@@ -1,4 +1,10 @@
-import type { Annotation, DashboardPdfItem, SavedDirectory, ThemeSettings, ViewMode } from '../types/index';
+import type {
+  Annotation,
+  DashboardPdfItem,
+  SavedDirectory,
+  ThemeSettings,
+  ViewMode,
+} from '../types/index';
 
 const STORAGE_KEYS = {
   THEME_SETTINGS: 'pdfuck_theme_settings',
@@ -72,7 +78,7 @@ export async function idbSaveAnnotations(
   docKey: string,
   annotations: Annotation[],
   updatedAt = nextAnnotationSaveTimestamp(),
-  metadata: { notebookPageCount?: number } = {}
+  metadata: { notebookPageCount?: number } = {},
 ): Promise<boolean> {
   try {
     const db = await openIDB();
@@ -108,7 +114,9 @@ export async function idbSaveAnnotations(
   }
 }
 
-export async function idbLoadAnnotationRecord(docKey: string): Promise<StoredAnnotationRecord | null> {
+export async function idbLoadAnnotationRecord(
+  docKey: string,
+): Promise<StoredAnnotationRecord | null> {
   try {
     const db = await openIDB();
     const tx = db.transaction(IDB_STORE_ANNOTATIONS, 'readonly');
@@ -237,9 +245,7 @@ export function loadViewMode(): ViewMode {
   return 'continuous';
 }
 
-export function loadHighlightPalette(
-  fallbackColors: readonly string[]
-): HighlightPaletteSettings {
+export function loadHighlightPalette(fallbackColors: readonly string[]): HighlightPaletteSettings {
   const fallback = { colors: [...fallbackColors], selectedIndex: 0 };
 
   try {
@@ -250,9 +256,7 @@ export function loadHighlightPalette(
     const hasValidColors =
       Array.isArray(parsed.colors) &&
       parsed.colors.length === fallbackColors.length &&
-      parsed.colors.every(
-        (color) => typeof color === 'string' && /^#[0-9a-f]{6}$/i.test(color)
-      );
+      parsed.colors.every((color) => typeof color === 'string' && /^#[0-9a-f]{6}$/i.test(color));
     const hasValidIndex =
       Number.isInteger(parsed.selectedIndex) &&
       (parsed.selectedIndex as number) >= 0 &&
@@ -293,7 +297,11 @@ export function parseStoredAnnotationRecord(value: unknown): StoredAnnotationRec
       typeof parsed === 'object' &&
       Array.isArray((parsed as { annotations?: unknown }).annotations)
     ) {
-      const record = parsed as { annotations: Annotation[]; updatedAt?: unknown; notebookPageCount?: unknown };
+      const record = parsed as {
+        annotations: Annotation[];
+        updatedAt?: unknown;
+        notebookPageCount?: unknown;
+      };
       const updatedAt =
         typeof record.updatedAt === 'number' && Number.isFinite(record.updatedAt)
           ? record.updatedAt
@@ -302,8 +310,11 @@ export function parseStoredAnnotationRecord(value: unknown): StoredAnnotationRec
       return {
         annotations: filterPersistableAnnotations(record.annotations),
         updatedAt,
-        ...(typeof record.notebookPageCount === 'number' && Number.isSafeInteger(record.notebookPageCount) && record.notebookPageCount > 0
-          ? { notebookPageCount: record.notebookPageCount } : {}),
+        ...(typeof record.notebookPageCount === 'number' &&
+        Number.isSafeInteger(record.notebookPageCount) &&
+        record.notebookPageCount > 0
+          ? { notebookPageCount: record.notebookPageCount }
+          : {}),
       };
     }
   } catch {}
@@ -311,7 +322,7 @@ export function parseStoredAnnotationRecord(value: unknown): StoredAnnotationRec
 }
 
 export function selectNewestAnnotationRecord(
-  records: Array<StoredAnnotationRecord | null>
+  records: Array<StoredAnnotationRecord | null>,
 ): StoredAnnotationRecord | null {
   return records.reduce<StoredAnnotationRecord | null>((newest, record) => {
     if (!record) return newest;
@@ -324,7 +335,7 @@ export async function saveAnnotationsForDoc(
   docKey: string,
   annotations: Annotation[],
   fallbackKeys: string[] = [],
-  metadata: { notebookPageCount?: number } = {}
+  metadata: { notebookPageCount?: number } = {},
 ): Promise<void> {
   if (!docKey) return;
   const persistable = filterPersistableAnnotations(annotations);
@@ -368,7 +379,7 @@ export async function saveAnnotationsForDoc(
 
 export function loadAnnotationRecordForDocSync(
   docKey: string,
-  fallbackKeys: string[] = []
+  fallbackKeys: string[] = [],
 ): StoredAnnotationRecord | null {
   if (!docKey) return null;
 
@@ -396,13 +407,16 @@ export function loadAnnotationRecordForDocSync(
   return null;
 }
 
-export function loadAnnotationsForDocSync(docKey: string, fallbackKeys: string[] = []): Annotation[] {
+export function loadAnnotationsForDocSync(
+  docKey: string,
+  fallbackKeys: string[] = [],
+): Annotation[] {
   return loadAnnotationRecordForDocSync(docKey, fallbackKeys)?.annotations ?? [];
 }
 
 export async function loadAnnotationRecordForDocAsync(
   docKey: string,
-  fallbackKeys: string[] = []
+  fallbackKeys: string[] = [],
 ): Promise<StoredAnnotationRecord | null> {
   if (!docKey) return null;
 
@@ -422,7 +436,7 @@ export async function loadAnnotationRecordForDocAsync(
 
 export async function loadAnnotationsForDocAsync(
   docKey: string,
-  fallbackKeys: string[] = []
+  fallbackKeys: string[] = [],
 ): Promise<Annotation[] | null> {
   return (await loadAnnotationRecordForDocAsync(docKey, fallbackKeys))?.annotations ?? null;
 }
@@ -437,7 +451,7 @@ export function saveLastPageForDoc(
   docKey: string,
   pageNumber: number,
   fileName?: string,
-  filePath?: string
+  filePath?: string,
 ): void {
   try {
     localStorage.setItem(`${STORAGE_KEYS.LAST_PAGE_PREFIX}${docKey}`, String(pageNumber));

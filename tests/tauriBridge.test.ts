@@ -6,12 +6,18 @@ afterEach(() => mock.restore());
 
 describe('native desktop bridge', () => {
   test('preserves native image dialog cancellation', async () => {
-    const save = spyOn(commands, 'saveImageDialog').mockResolvedValue({ status: 'ok', data: { success: false, file_path: null } });
+    const save = spyOn(commands, 'saveImageDialog').mockResolvedValue({
+      status: 'ok',
+      data: { success: false, file_path: null },
+    });
     expect(await saveImageFile('data:image/png;base64,abc', 'page.png')).toBe(false);
     expect(save).toHaveBeenCalledWith('data:image/png;base64,abc', 'page.png');
   });
   test('reads native clipboard text and handles empty clipboard', async () => {
-    const read = spyOn(commands, 'readTextFromClipboard').mockResolvedValue({ status: 'ok', data: 'hello' });
+    const read = spyOn(commands, 'readTextFromClipboard').mockResolvedValue({
+      status: 'ok',
+      data: 'hello',
+    });
     expect(await readClipboardText()).toBe('hello');
     read.mockResolvedValue({ status: 'ok', data: null });
     expect(await readClipboardText()).toBeNull();

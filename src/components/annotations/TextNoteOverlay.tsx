@@ -91,7 +91,7 @@ export const TextNoteOverlay: React.FC<TextNoteOverlayProps> = ({
 
   // Find color config or match preset
   const currentColor = NOTE_COLORS.find(
-    (c) => c.bg.toLowerCase() === (annotation.color || '').toLowerCase()
+    (c) => c.bg.toLowerCase() === (annotation.color || '').toLowerCase(),
   ) || {
     name: 'Custom',
     bg: annotation.color || '#fef08a',
@@ -137,7 +137,7 @@ export const TextNoteOverlay: React.FC<TextNoteOverlayProps> = ({
   const isResizingRef = useRef(false);
   const resizeStartPosRef = useRef({ startX: 0, initialWidthPx: 0 });
 
-  const defaultStickyWidthRatio = 0.20;
+  const defaultStickyWidthRatio = 0.2;
 
   const handleResizeStart = (e: React.PointerEvent) => {
     e.stopPropagation();
@@ -157,8 +157,12 @@ export const TextNoteOverlay: React.FC<TextNoteOverlayProps> = ({
     const handlePointerMove = (moveEvt: PointerEvent) => {
       if (!isResizingRef.current) return;
       const dx = moveEvt.clientX - resizeStartPosRef.current.startX;
-      const minW = annotation.kind === 'plain' ? Math.round(40 * zoomScale) : Math.round(55 * zoomScale);
-      const nextWidthPx = Math.max(minW, Math.min(pageWidth * 1.5, resizeStartPosRef.current.initialWidthPx + dx));
+      const minW =
+        annotation.kind === 'plain' ? Math.round(40 * zoomScale) : Math.round(55 * zoomScale);
+      const nextWidthPx = Math.max(
+        minW,
+        Math.min(pageWidth * 1.5, resizeStartPosRef.current.initialWidthPx + dx),
+      );
       onUpdate(annotation.id, { width: nextWidthPx / pageWidth });
     };
 
@@ -227,9 +231,10 @@ export const TextNoteOverlay: React.FC<TextNoteOverlayProps> = ({
   };
 
   // Scaled font sizes matching relative highlights behavior
-  const scaledPlainFontSize = annotation.format === 'markdown'
-    ? (annotation.fontSize || 13) * zoomScale
-    : Math.max(6, Math.round((annotation.fontSize || 14) * zoomScale));
+  const scaledPlainFontSize =
+    annotation.format === 'markdown'
+      ? (annotation.fontSize || 13) * zoomScale
+      : Math.max(6, Math.round((annotation.fontSize || 14) * zoomScale));
   const plainLineHeight = Math.round(scaledPlainFontSize * 1.4);
 
   if (annotation.kind === 'plain') {
@@ -268,7 +273,7 @@ export const TextNoteOverlay: React.FC<TextNoteOverlayProps> = ({
           minWidth: `${Math.round(30 * zoomScale)}px`,
           maxWidth: `${Math.round(pageWidth)}px`,
         }}
-        className={`absolute z-30 group rounded-xs transition-shadow ${
+        className={`group absolute z-30 rounded-xs transition-shadow ${
           isSelected
             ? 'ring-1 ring-[#0080f0] ring-offset-1 ring-offset-transparent'
             : isEditing
@@ -296,17 +301,17 @@ export const TextNoteOverlay: React.FC<TextNoteOverlayProps> = ({
         {/* Figma-Style Corner & Edge Resize Handles */}
         {isSelected && (
           <>
-            <div className="absolute -top-1 -left-1 w-2 h-2 bg-white border border-[#0080f0] rounded-2xs pointer-events-none shadow-xs z-40" />
-            <div className="absolute -top-1 -right-1 w-2 h-2 bg-white border border-[#0080f0] rounded-2xs pointer-events-none shadow-xs z-40" />
-            <div className="absolute -bottom-1 -left-1 w-2 h-2 bg-white border border-[#0080f0] rounded-2xs pointer-events-none shadow-xs z-40" />
+            <div className="rounded-2xs pointer-events-none absolute -top-1 -left-1 z-40 h-2 w-2 border border-[#0080f0] bg-white shadow-xs" />
+            <div className="rounded-2xs pointer-events-none absolute -top-1 -right-1 z-40 h-2 w-2 border border-[#0080f0] bg-white shadow-xs" />
+            <div className="rounded-2xs pointer-events-none absolute -bottom-1 -left-1 z-40 h-2 w-2 border border-[#0080f0] bg-white shadow-xs" />
             <div
               onPointerDown={handleResizeStart}
-              className="absolute -bottom-1 -right-1 w-2.5 h-2.5 bg-white border border-[#0080f0] rounded-2xs cursor-nwse-resize shadow-xs z-40 touch-none"
+              className="rounded-2xs absolute -right-1 -bottom-1 z-40 h-2.5 w-2.5 cursor-nwse-resize touch-none border border-[#0080f0] bg-white shadow-xs"
               title="Drag to resize text box"
             />
             <div
               onPointerDown={handleResizeStart}
-              className="absolute top-0 -right-1 bottom-0 w-2.5 cursor-ew-resize touch-none select-none z-30"
+              className="absolute top-0 -right-1 bottom-0 z-30 w-2.5 cursor-ew-resize touch-none select-none"
               title="Drag to resize width"
             />
           </>
@@ -319,7 +324,9 @@ export const TextNoteOverlay: React.FC<TextNoteOverlayProps> = ({
             onChange={handleTextChange}
             onBlur={handleSaveEdit}
             placeholder="Type text..."
-            aria-label={annotation.format === 'markdown' ? 'Edit formatted note' : 'Edit plain text'}
+            aria-label={
+              annotation.format === 'markdown' ? 'Edit formatted note' : 'Edit plain text'
+            }
             onKeyDown={(e) => {
               if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
                 e.preventDefault();
@@ -330,7 +337,7 @@ export const TextNoteOverlay: React.FC<TextNoteOverlayProps> = ({
                 handleSaveEdit();
               }
             }}
-            className={`w-full bg-transparent border-0 outline-none ring-0 p-0.5 m-0 leading-relaxed resize-none block ${fontClass} ${alignClass}`}
+            className={`m-0 block w-full resize-none border-0 bg-transparent p-0.5 leading-relaxed ring-0 outline-none ${fontClass} ${alignClass}`}
             style={{
               color: annotation.color || '#000000',
               fontSize: `${scaledPlainFontSize}px`,
@@ -340,15 +347,18 @@ export const TextNoteOverlay: React.FC<TextNoteOverlayProps> = ({
           />
         ) : (
           <div
-            className={`cursor-grab ${annotation.format === 'markdown' ? 'notebook-note-content' : 'whitespace-pre-wrap p-0.5'} break-words leading-relaxed active:cursor-grabbing select-text ${fontClass} ${alignClass}`}
+            className={`cursor-grab ${annotation.format === 'markdown' ? 'notebook-note-content' : 'p-0.5 whitespace-pre-wrap'} leading-relaxed break-words select-text active:cursor-grabbing ${fontClass} ${alignClass}`}
             style={{
               color: annotation.color || '#000000',
               fontSize: `${scaledPlainFontSize}px`,
               lineHeight: 1.4,
             }}
           >
-            {annotation.format === 'markdown' ? <NotebookContent text={annotation.text} images={annotation.inlineImages} />
-              : annotation.text || <span className="opacity-40 italic">Empty text</span>}
+            {annotation.format === 'markdown' ? (
+              <NotebookContent text={annotation.text} images={annotation.inlineImages} />
+            ) : (
+              annotation.text || <span className="italic opacity-40">Empty text</span>
+            )}
           </div>
         )}
       </div>
@@ -360,7 +370,10 @@ export const TextNoteOverlay: React.FC<TextNoteOverlayProps> = ({
     ? Math.max(Math.round(45 * zoomScale), Math.round(annotation.width * pageWidth))
     : Math.round(pageWidth * defaultStickyWidthRatio);
 
-  const scaledStickyFontSize = Math.max(5.5, Math.round((annotation.fontSize ? annotation.fontSize * 0.65 : 8.5) * zoomScale));
+  const scaledStickyFontSize = Math.max(
+    5.5,
+    Math.round((annotation.fontSize ? annotation.fontSize * 0.65 : 8.5) * zoomScale),
+  );
 
   // Baseline invariant expression preserved for test compatibility: fontSize: `${annotation.fontSize || 12}px`
   const fallbackStickyFontSizeStyle = { fontSize: `${annotation.fontSize || 12}px` };
@@ -377,10 +390,8 @@ export const TextNoteOverlay: React.FC<TextNoteOverlayProps> = ({
         width: `${stickyWidthPx}px`,
         minWidth: `${Math.round(55 * zoomScale)}px`,
       }}
-      className={`absolute z-30 select-none group transition-shadow rounded-md shadow-md ${
-        isSelected
-          ? 'ring-1.5 ring-blue-500 shadow-lg'
-          : 'hover:ring-1 hover:ring-zinc-400/60'
+      className={`group absolute z-30 rounded-md shadow-md transition-shadow select-none ${
+        isSelected ? 'ring-1.5 shadow-lg ring-blue-500' : 'hover:ring-1 hover:ring-zinc-400/60'
       }`}
     >
       {/* Sticky Note Container */}
@@ -393,7 +404,7 @@ export const TextNoteOverlay: React.FC<TextNoteOverlayProps> = ({
           borderRadius: `${Math.max(3, Math.round(5 * zoomScale))}px`,
           gap: `${Math.max(1, Math.round(2.5 * zoomScale))}px`,
         }}
-        className="relative rounded-md border flex flex-col shadow-2xs font-sans"
+        className="relative flex flex-col rounded-md border font-sans shadow-2xs"
       >
         {/* Header Drag Handle & Controls (Visible on hover or when selected) */}
         <div
@@ -401,7 +412,7 @@ export const TextNoteOverlay: React.FC<TextNoteOverlayProps> = ({
           style={{
             paddingBottom: `${Math.max(1, Math.round(2 * zoomScale))}px`,
           }}
-          className="flex items-center justify-between cursor-grab active:cursor-grabbing border-b border-black/10 text-black/60 hover:text-black"
+          className="flex cursor-grab items-center justify-between border-b border-black/10 text-black/60 hover:text-black active:cursor-grabbing"
         >
           <div className="flex items-center gap-0.5">
             <GripHorizontal
@@ -412,7 +423,7 @@ export const TextNoteOverlay: React.FC<TextNoteOverlayProps> = ({
             />
             <span
               style={{ fontSize: `${Math.max(5.5, Math.round(7.5 * zoomScale))}px` }}
-              className="font-semibold uppercase tracking-wider opacity-70"
+              className="font-semibold tracking-wider uppercase opacity-70"
             >
               Note
             </span>
@@ -423,7 +434,7 @@ export const TextNoteOverlay: React.FC<TextNoteOverlayProps> = ({
             <button
               onClick={() => setShowColorPicker((prev) => !prev)}
               style={{ padding: `${Math.max(0.5, Math.round(1 * zoomScale))}px` }}
-              className="rounded hover:bg-black/10 text-black/70 hover:text-black transition-colors"
+              className="rounded text-black/70 transition-colors hover:bg-black/10 hover:text-black"
               title="Change note color"
             >
               <Palette
@@ -439,7 +450,7 @@ export const TextNoteOverlay: React.FC<TextNoteOverlayProps> = ({
               <button
                 onClick={() => setIsEditing(true)}
                 style={{ padding: `${Math.max(0.5, Math.round(1 * zoomScale))}px` }}
-                className="rounded hover:bg-black/10 text-black/70 hover:text-black transition-colors"
+                className="rounded text-black/70 transition-colors hover:bg-black/10 hover:text-black"
                 title="Edit note text"
               >
                 <Edit3
@@ -455,7 +466,7 @@ export const TextNoteOverlay: React.FC<TextNoteOverlayProps> = ({
             <button
               onClick={handleDeleteNote}
               style={{ padding: `${Math.max(0.5, Math.round(1 * zoomScale))}px` }}
-              className="rounded hover:bg-red-500/20 text-red-700 hover:text-red-900 transition-colors"
+              className="rounded text-red-700 transition-colors hover:bg-red-500/20 hover:text-red-900"
               title="Delete note (Delete key)"
             >
               <Trash2
@@ -471,7 +482,7 @@ export const TextNoteOverlay: React.FC<TextNoteOverlayProps> = ({
         {/* Color Picker Swatches Dropdown */}
         {showColorPicker && (
           <div
-            className="flex items-center gap-0.5 bg-black/15 rounded justify-between"
+            className="flex items-center justify-between gap-0.5 rounded bg-black/15"
             style={{ padding: `${Math.max(1, Math.round(2 * zoomScale))}px` }}
             onMouseDown={(e) => {
               e.preventDefault();
@@ -495,7 +506,7 @@ export const TextNoteOverlay: React.FC<TextNoteOverlayProps> = ({
                   width: `${Math.max(7, Math.round(11 * zoomScale))}px`,
                   height: `${Math.max(7, Math.round(11 * zoomScale))}px`,
                 }}
-                className="rounded-full border shadow-xs hover:scale-115 transition-transform"
+                className="rounded-full border shadow-xs transition-transform hover:scale-115"
                 title={c.name}
               />
             ))}
@@ -534,7 +545,7 @@ export const TextNoteOverlay: React.FC<TextNoteOverlayProps> = ({
               lineHeight: 1.35,
               minHeight: `${Math.max(14, Math.round(20 * zoomScale))}px`,
             }}
-            className="w-full bg-transparent border-0 outline-none ring-0 p-0 m-0 py-0.5 px-0 font-sans font-normal resize-none leading-normal block placeholder:opacity-40 placeholder:italic focus:outline-none focus:ring-0 focus:border-0"
+            className="m-0 block w-full resize-none border-0 bg-transparent p-0 px-0 py-0.5 font-sans leading-normal font-normal ring-0 outline-none placeholder:italic placeholder:opacity-40 focus:border-0 focus:ring-0 focus:outline-none"
           />
         ) : (
           <div
@@ -544,7 +555,7 @@ export const TextNoteOverlay: React.FC<TextNoteOverlayProps> = ({
                 setIsEditing(true);
               }
             }}
-            className="cursor-text whitespace-pre-wrap break-words leading-normal py-0.5 px-0 font-normal font-sans select-text"
+            className="cursor-text px-0 py-0.5 font-sans leading-normal font-normal break-words whitespace-pre-wrap select-text"
             style={{
               color: currentColor.text,
               fontSize: `${scaledStickyFontSize}px`,
@@ -552,7 +563,7 @@ export const TextNoteOverlay: React.FC<TextNoteOverlayProps> = ({
               minHeight: `${Math.max(14, Math.round(20 * zoomScale))}px`,
             }}
           >
-            {annotation.text || <span className="opacity-40 italic">Write a note...</span>}
+            {annotation.text || <span className="italic opacity-40">Write a note...</span>}
           </div>
         )}
 
@@ -563,7 +574,7 @@ export const TextNoteOverlay: React.FC<TextNoteOverlayProps> = ({
             width: `${Math.max(8, Math.round(11 * zoomScale))}px`,
             height: `${Math.max(8, Math.round(11 * zoomScale))}px`,
           }}
-          className="absolute -bottom-1 -right-1 cursor-nwse-resize select-none touch-none z-20"
+          className="absolute -right-1 -bottom-1 z-20 cursor-nwse-resize touch-none select-none"
           aria-label="Resize note width"
         />
         <div
@@ -571,7 +582,7 @@ export const TextNoteOverlay: React.FC<TextNoteOverlayProps> = ({
           style={{
             width: `${Math.max(5, Math.round(7 * zoomScale))}px`,
           }}
-          className="absolute top-1 right-0 bottom-2 cursor-ew-resize select-none touch-none z-20"
+          className="absolute top-1 right-0 bottom-2 z-20 cursor-ew-resize touch-none select-none"
           aria-label="Resize note width"
         />
       </div>

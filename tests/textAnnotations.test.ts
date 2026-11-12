@@ -13,7 +13,9 @@ describe('plain text and sticky note tools', () => {
     ]);
 
     expect(toolbar).toContain("{ id: 'text', icon: Type, label: 'Plain Text', shortcut: 'T' }");
-    expect(toolbar).toContain("{ id: 'sticky-note', icon: StickyNote, label: 'Sticky Note', shortcut: 'N' }");
+    expect(toolbar).toContain(
+      "{ id: 'sticky-note', icon: StickyNote, label: 'Sticky Note', shortcut: 'N' }",
+    );
     expect(keyboard).toContain("options.onSelectTool('sticky-note')");
     expect(shortcuts).toContain("{ keys: ['T'], desc: 'Plain Text Tool' }");
     expect(shortcuts).toContain("{ keys: ['N'], desc: 'Sticky Note Tool' }");
@@ -30,10 +32,12 @@ describe('plain text and sticky note tools', () => {
     expect(canvas).toContain("color: activeTool === 'text' ? '#000000' : '#fef08a'");
     expect(canvas).toContain("activeTool === 'text' ? 'cursor-text' : 'cursor-default'");
     expect(overlay).toContain("if (annotation.kind === 'plain')");
-    expect(overlay).toContain("aria-label={annotation.format === 'markdown' ? 'Edit formatted note' : 'Edit plain text'}");
+    expect(overlay).toMatch(
+      /aria-label=\{\s*annotation\.format === 'markdown' \? 'Edit formatted note' : 'Edit plain text'\s*\}/,
+    );
     expect(overlay).toContain('onBlur={handleSaveEdit}');
     expect(overlay).toContain(
-      'textareaRef.current.setSelectionRange(annotation.text.length, annotation.text.length)'
+      'textareaRef.current.setSelectionRange(annotation.text.length, annotation.text.length)',
     );
     expect(overlay).toContain("e.key === 'Enter' && (e.metaKey || e.ctrlKey)");
     expect(overlay).not.toContain('flex min-w-[180px] flex-col gap-1.5 rounded-lg');
@@ -69,7 +73,9 @@ describe('plain text and sticky note tools', () => {
       source('src/components/annotations/TextNoteOverlay.tsx'),
     ]);
 
-    expect(viewer).toContain("const isNoteCreationTool = (activeTool === 'text' || activeTool === 'sticky-note')");
+    expect(viewer).toMatch(
+      /const isNoteCreationTool =\s*\(activeTool === 'text' \|\| activeTool === 'sticky-note'\)/,
+    );
     expect(viewer).toContain('onAddAnnotation(newNote)');
     expect(viewer).toContain('onSelectAnnotation(newNote.id)');
     expect(overlay).toContain("const [isEditing, setIsEditing] = useState(annotation.text === '')");
@@ -115,6 +121,6 @@ describe('plain text and sticky note tools', () => {
     // App wires onSelectTool into PDFViewer
     expect(app).toContain('onSelectTool={handleSelectTool}');
     // App keeps tool until AI prompt is submitted, cancelled, or closed
-    expect(app).toContain("if (activeTool === 'ai-box') {\n                    setActiveTool('select');");
+    expect(app).toMatch(/if \(activeTool === 'ai-box'\) \{\s*setActiveTool\('select'\);/);
   });
 });

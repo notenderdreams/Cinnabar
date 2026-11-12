@@ -23,10 +23,14 @@ export function findPageMatches(
   }
   const matches: SearchMatch[] = [];
   const lower = text.toLowerCase();
-  for (let position = lower.indexOf(needle); position !== -1; position = lower.indexOf(needle, position + needle.length)) {
+  for (
+    let position = lower.indexOf(needle);
+    position !== -1;
+    position = lower.indexOf(needle, position + needle.length)
+  ) {
     const endPosition = position + needle.length;
-    const first = segments.find(segment => segment.end > position);
-    const last = segments.find(segment => segment.end >= endPosition);
+    const first = segments.find((segment) => segment.end > position);
+    const last = segments.find((segment) => segment.end >= endPosition);
     if (!first || !last) continue;
     const start = Math.max(0, position - 30);
     const end = Math.min(text.length, endPosition + 30);
@@ -44,7 +48,13 @@ export function findPageMatches(
 export function getSearchMatchRange(page: HTMLElement, match: SearchMatch): Range | null {
   const start = page.querySelector(`[data-search-item="${match.start.itemIndex}"]`)?.firstChild;
   const end = page.querySelector(`[data-search-item="${match.end.itemIndex}"]`)?.firstChild;
-  if (!start || !end || match.start.offset > (start.textContent?.length ?? 0) || match.end.offset > (end.textContent?.length ?? 0)) return null;
+  if (
+    !start ||
+    !end ||
+    match.start.offset > (start.textContent?.length ?? 0) ||
+    match.end.offset > (end.textContent?.length ?? 0)
+  )
+    return null;
   const range = document.createRange();
   range.setStart(start, match.start.offset);
   range.setEnd(end, match.end.offset);

@@ -6,7 +6,11 @@ import { PDFViewer } from './components/viewer/PDFViewer';
 import { NotePanel } from './components/viewer/NotePanel';
 import type { NotebookTarget } from './lib/notebook/navigation';
 import { createAiClipboardAttachment } from './lib/ai/chatClipboard';
-import { appendAiNotebookText, getAiNotebookContext, insertAiNotebookImage } from './lib/ai/notebookActions';
+import {
+  appendAiNotebookText,
+  getAiNotebookContext,
+  insertAiNotebookImage,
+} from './lib/ai/notebookActions';
 import { notebookKey, loadNotePageCount, notePageCount, editNotePages } from './lib/notes';
 import { Dashboard } from './components/dashboard/Dashboard';
 import { ColorThemeModal } from './components/modals/ColorThemeModal';
@@ -65,11 +69,29 @@ import {
   copyStitchedSnippetsToClipboard,
   downloadStitchedSnippets,
 } from './lib/snippets/snippetExtractor';
-import type { AiChatAttachment, AiExplanationAnnotation, Annotation, AppScreen, HighlightStyle, LineHighlightStyle, ToolType, ViewMode, StitchOptions } from './lib/types/index';
+import type {
+  AiChatAttachment,
+  AiExplanationAnnotation,
+  Annotation,
+  AppScreen,
+  HighlightStyle,
+  LineHighlightStyle,
+  ToolType,
+  ViewMode,
+  StitchOptions,
+} from './lib/types/index';
 import type { SidebarTabType } from './components/layout/Sidebar';
 
-const NotebookWorkspace = React.lazy(() => import('./components/notebook/NotebookWorkspace').then(module => ({ default: module.NotebookWorkspace })));
-const NotebookPanel = React.lazy(() => import('./components/notebook/NotebookPanel').then(module => ({ default: module.NotebookPanel })));
+const NotebookWorkspace = React.lazy(() =>
+  import('./components/notebook/NotebookWorkspace').then((module) => ({
+    default: module.NotebookWorkspace,
+  })),
+);
+const NotebookPanel = React.lazy(() =>
+  import('./components/notebook/NotebookPanel').then((module) => ({
+    default: module.NotebookPanel,
+  })),
+);
 
 export function App() {
   // Screen Routing: 'dashboard' (Library view) | 'reader' (PDF reader & annotation studio)
@@ -94,22 +116,33 @@ export function App() {
   const [isNoteMode, setIsNoteMode] = useState(false);
   const [notebookTarget, setNotebookTarget] = useState<NotebookTarget>({ kind: 'new' });
   const [isNotebookPanelOpen, setIsNotebookPanelOpen] = useState(false);
-  const [panelNotebook, setPanelNotebook] = useState<{ title: string; pages: number; page: number } | null>(null);
-  const [notebookPageRequest, setNotebookPageRequest] = useState<{ page: number; id: number } | null>(null);
+  const [panelNotebook, setPanelNotebook] = useState<{
+    title: string;
+    pages: number;
+    page: number;
+  } | null>(null);
+  const [notebookPageRequest, setNotebookPageRequest] = useState<{
+    page: number;
+    id: number;
+  } | null>(null);
   const [notebookFitRequest, setNotebookFitRequest] = useState(0);
   const [notebookPaneActive, setNotebookPaneActive] = useState(false);
-  const [notebookZoom, setNotebookZoom] = useState(.8);
+  const [notebookZoom, setNotebookZoom] = useState(0.8);
   const panelNotebookActive = isNotebookPanelOpen && notebookPaneActive && panelNotebook !== null;
   const activateNotebookPane = useCallback(() => setNotebookPaneActive(true), []);
   const [hasOpenedNotebookPanel, setHasOpenedNotebookPanel] = useState(false);
   const closeNotebookPanel = useCallback(() => {
     setIsNotebookPanelOpen(false);
-    document.querySelector<HTMLButtonElement>('button[aria-controls="reader-notebooks-panel"]')?.focus();
+    document
+      .querySelector<HTMLButtonElement>('button[aria-controls="reader-notebooks-panel"]')
+      ?.focus();
   }, []);
   const [notePaneActive, setNotePaneActive] = useState(false);
   const notesActive = isNoteMode && notePaneActive;
-  const [noteZoom, setNoteZoom] = useState(.8);
-  const [noteNavRequest, setNoteNavRequest] = useState<{ page: number; timestamp: number } | null>(null);
+  const [noteZoom, setNoteZoom] = useState(0.8);
+  const [noteNavRequest, setNoteNavRequest] = useState<{ page: number; timestamp: number } | null>(
+    null,
+  );
   const [noteFitRequest, setNoteFitRequest] = useState<{ id: number; page: number } | null>(null);
 
   // Active Toast Feedback
@@ -117,17 +150,13 @@ export function App() {
 
   // Active Tool & Style State
   const [activeTool, setActiveTool] = useState<ToolType>('select');
-  const [initialHighlightPalette] = useState(() =>
-    loadHighlightPalette(HIGHLIGHT_COLOR_PRESETS)
-  );
-  const [highlightColors, setHighlightColors] = useState<string[]>(
-    initialHighlightPalette.colors
-  );
+  const [initialHighlightPalette] = useState(() => loadHighlightPalette(HIGHLIGHT_COLOR_PRESETS));
+  const [highlightColors, setHighlightColors] = useState<string[]>(initialHighlightPalette.colors);
   const [selectedPaletteIndex, setSelectedPaletteIndex] = useState(
-    initialHighlightPalette.selectedIndex
+    initialHighlightPalette.selectedIndex,
   );
   const [selectedColor, setSelectedColor] = useState<string>(
-    initialHighlightPalette.colors[initialHighlightPalette.selectedIndex]
+    initialHighlightPalette.colors[initialHighlightPalette.selectedIndex],
   );
   const [strokeWidth, setStrokeWidth] = useState<number>(4);
   const [opacity, setOpacity] = useState<number>(0.45);
@@ -138,7 +167,6 @@ export function App() {
   useEffect(() => {
     saveHighlightPalette({ colors: highlightColors, selectedIndex: selectedPaletteIndex });
   }, [highlightColors, selectedPaletteIndex]);
-
 
   // Active Cursor coordinates over PDF pages for precise cursor pasting
   const cursorPosRef = useRef<{ pageNumber: number; x: number; y: number } | null>(null);
@@ -170,15 +198,33 @@ export function App() {
     noteCursorRef.current = null;
   }, [notesKey]);
   const notes = useAnnotations(notesKey);
-  const [notebook, setNotebook] = useState(() => ({ key: notesKey, count: loadNotePageCount(notesKey), page: 1 }));
+  const [notebook, setNotebook] = useState(() => ({
+    key: notesKey,
+    count: loadNotePageCount(notesKey),
+    page: 1,
+  }));
   if (notebook.key !== notesKey) {
     setNotebook({ key: notesKey, count: loadNotePageCount(notesKey), page: 1 });
   }
   const notesCount = notePageCount(notebook.count, notes.annotations);
-  const notebookWriteState = useRef({ annotations: notes.annotations, count: notesCount, addAnnotations: notes.addAnnotations, replaceAnnotations: notes.replaceAnnotations, page: notebook.page });
-  notebookWriteState.current = { annotations: notes.annotations, count: notesCount, addAnnotations: notes.addAnnotations, replaceAnnotations: notes.replaceAnnotations, page: notebook.page };
-  const aiNotebook = useMemo(() => notesKey ? getAiNotebookContext(notesKey, notesCount, notes.annotations) : undefined,
-    [notesKey, notesCount, notes.annotations]);
+  const notebookWriteState = useRef({
+    annotations: notes.annotations,
+    count: notesCount,
+    addAnnotations: notes.addAnnotations,
+    replaceAnnotations: notes.replaceAnnotations,
+    page: notebook.page,
+  });
+  notebookWriteState.current = {
+    annotations: notes.annotations,
+    count: notesCount,
+    addAnnotations: notes.addAnnotations,
+    replaceAnnotations: notes.replaceAnnotations,
+    page: notebook.page,
+  };
+  const aiNotebook = useMemo(
+    () => (notesKey ? getAiNotebookContext(notesKey, notesCount, notes.annotations) : undefined),
+    [notesKey, notesCount, notes.annotations],
+  );
   const navigateNotePage = (page: number) => {
     const target = Math.max(1, Math.min(notesCount, page));
     setNotePaneActive(true);
@@ -244,8 +290,11 @@ export function App() {
   useEffect(() => {
     if (!docInfo?.libraryId) return;
     const timer = window.setTimeout(() => {
-      void tauriUpdateLibraryDocumentState(docInfo.libraryId!, currentPage, annotations.length)
-        .catch((error) => console.warn('Failed to update library reading state:', error));
+      void tauriUpdateLibraryDocumentState(
+        docInfo.libraryId!,
+        currentPage,
+        annotations.length,
+      ).catch((error) => console.warn('Failed to update library reading state:', error));
     }, 250);
     return () => window.clearTimeout(timer);
   }, [annotations.length, currentPage, docInfo?.libraryId]);
@@ -268,13 +317,17 @@ export function App() {
         showToast(`Imported ${imported.length} annotations`);
       }
     },
-    [annotations, replaceAnnotations, showToast]
+    [annotations, replaceAnnotations, showToast],
   );
 
   const snippetFallbackKeys = useMemo(() => {
     const keys: string[] = [];
     if (docInfo?.filePath && docInfo.filePath !== docKey) keys.push(docInfo.filePath);
-    if (docInfo?.fingerprint && docInfo.fingerprint !== docKey && !keys.includes(docInfo.fingerprint)) {
+    if (
+      docInfo?.fingerprint &&
+      docInfo.fingerprint !== docKey &&
+      !keys.includes(docInfo.fingerprint)
+    ) {
       keys.push(docInfo.fingerprint);
     }
     if (docInfo?.fileName && (docInfo?.numPages || docInfo?.fileSize)) {
@@ -284,7 +337,14 @@ export function App() {
       }
     }
     return keys;
-  }, [docInfo?.filePath, docInfo?.fileName, docInfo?.fingerprint, docInfo?.numPages, docInfo?.fileSize, docKey]);
+  }, [
+    docInfo?.filePath,
+    docInfo?.fileName,
+    docInfo?.fingerprint,
+    docInfo?.numPages,
+    docInfo?.fileSize,
+    docKey,
+  ]);
 
   const {
     snippets,
@@ -312,7 +372,9 @@ export function App() {
     getCustomFilterStyle,
   } = useColorTheme();
 
-  const [pageNavRequest, setPageNavRequest] = useState<{ page: number; timestamp: number } | null>(null);
+  const [pageNavRequest, setPageNavRequest] = useState<{ page: number; timestamp: number } | null>(
+    null,
+  );
 
   const handleNavigatePage = useCallback(
     (page: number) => {
@@ -320,30 +382,35 @@ export function App() {
       changePage(page);
       setPageNavRequest({ page, timestamp: Date.now() });
     },
-    [changePage]
+    [changePage],
   );
 
   const isDarkTheme = usesInvertedColorSpace(themeSettings.theme);
 
-  const handleSelectAnnotation = useCallback((id: string | null) => {
-    setSelectedAnnotationId(id);
-    if (!id) return;
+  const handleSelectAnnotation = useCallback(
+    (id: string | null) => {
+      setSelectedAnnotationId(id);
+      if (!id) return;
 
-    const selectedAnnotation = [...annotations, ...notes.annotations].find((annotation) => annotation.id === id);
-    if (
-      selectedAnnotation &&
-      (selectedAnnotation.type === 'highlight-line' ||
-        selectedAnnotation.type === 'highlight-pen' ||
-        selectedAnnotation.type === 'highlight-rect' ||
-        selectedAnnotation.type === 'highlight-text')
-    ) {
-      setSelectedColor(selectedAnnotation.color);
-      const paletteIndex = highlightColors.findIndex(
-        (color) => color.toLowerCase() === selectedAnnotation.color.toLowerCase()
+      const selectedAnnotation = [...annotations, ...notes.annotations].find(
+        (annotation) => annotation.id === id,
       );
-      if (paletteIndex >= 0) setSelectedPaletteIndex(paletteIndex);
-    }
-  }, [annotations, notes.annotations, highlightColors]);
+      if (
+        selectedAnnotation &&
+        (selectedAnnotation.type === 'highlight-line' ||
+          selectedAnnotation.type === 'highlight-pen' ||
+          selectedAnnotation.type === 'highlight-rect' ||
+          selectedAnnotation.type === 'highlight-text')
+      ) {
+        setSelectedColor(selectedAnnotation.color);
+        const paletteIndex = highlightColors.findIndex(
+          (color) => color.toLowerCase() === selectedAnnotation.color.toLowerCase(),
+        );
+        if (paletteIndex >= 0) setSelectedPaletteIndex(paletteIndex);
+      }
+    },
+    [annotations, notes.annotations, highlightColors],
+  );
 
   useEffect(() => {
     document.documentElement.dataset.uiTheme = isDarkTheme ? 'dark' : 'light';
@@ -369,7 +436,12 @@ export function App() {
     handleResumeReading,
     handleOpenPdf,
   } = useDocumentSession({
-    pdfDoc, docInfo, currentPage, loadPdf, closeCompanionPdf, loadCompanionPdf,
+    pdfDoc,
+    docInfo,
+    currentPage,
+    loadPdf,
+    closeCompanionPdf,
+    loadCompanionPdf,
     onScreenChange: setCurrentScreen,
     showToast,
   });
@@ -380,7 +452,7 @@ export function App() {
       dataUrl: string,
       targetPage: number,
       fileName: string = 'Attached Image',
-      cursorPos?: { x: number; y: number } | null
+      cursorPos?: { x: number; y: number } | null,
     ) => {
       try {
         const { width: imgW, height: imgH, aspectRatio } = await getImageDimensions(dataUrl);
@@ -411,7 +483,7 @@ export function App() {
         console.error('Failed to attach image:', err);
       }
     },
-    [pdfDoc, addAttachedImage, isDarkTheme, notesActive, notes.addAttachedImage]
+    [pdfDoc, addAttachedImage, isDarkTheme, notesActive, notes.addAttachedImage],
   );
 
   // Attach an image from the native dialog.
@@ -432,7 +504,10 @@ export function App() {
       if (typeof reader.result === 'string') {
         const cursorPos =
           (notesActive ? noteCursorRef.current : cursorPosRef.current)?.pageNumber === pageNumber
-            ? { x: (notesActive ? noteCursorRef.current : cursorPosRef.current)!.x, y: (notesActive ? noteCursorRef.current : cursorPosRef.current)!.y }
+            ? {
+                x: (notesActive ? noteCursorRef.current : cursorPosRef.current)!.x,
+                y: (notesActive ? noteCursorRef.current : cursorPosRef.current)!.y,
+              }
             : { x: 0.5, y: 0.5 };
         await handleAddImage(reader.result, pageNumber, file.name, cursorPos);
       }
@@ -441,17 +516,20 @@ export function App() {
   };
 
   // Tool selection handler that syncs sidebar when snip tool is selected
-  const handleSelectTool = useCallback((tool: ToolType) => {
-    setActiveTool(tool);
-    if (tool === 'snip') {
-      if (snipTarget !== 'ai-prompt' && !isNoteMode) {
-        setIsSidebarOpen(true);
-        setSidebarTab('snippets');
+  const handleSelectTool = useCallback(
+    (tool: ToolType) => {
+      setActiveTool(tool);
+      if (tool === 'snip') {
+        if (snipTarget !== 'ai-prompt' && !isNoteMode) {
+          setIsSidebarOpen(true);
+          setSidebarTab('snippets');
+        }
+      } else {
+        setSnipTarget('snippets');
       }
-    } else {
-      setSnipTarget('snippets');
-    }
-  }, [snipTarget, isNoteMode]);
+    },
+    [snipTarget, isNoteMode],
+  );
 
   // Snippet capture handler from canvas
   const handleCaptureSnippet = useCallback(
@@ -462,9 +540,16 @@ export function App() {
         if (entry) {
           if (activeNotesKey.current !== captureNotesKey) return;
           if (isNoteMode && snipTarget !== 'ai-prompt') {
-            notes.addAttachedImage(notebook.page, entry.dataUrl, entry.aspectRatio, `Cutout from PDF page ${pageNumber}`, {
-              imageWidth: entry.width, imageHeight: entry.height,
-            });
+            notes.addAttachedImage(
+              notebook.page,
+              entry.dataUrl,
+              entry.aspectRatio,
+              `Cutout from PDF page ${pageNumber}`,
+              {
+                imageWidth: entry.width,
+                imageHeight: entry.height,
+              },
+            );
             setActiveTool('select');
             showToast(`Added cutout to note page ${notebook.page}`);
           } else if (snipTarget === 'ai-prompt') {
@@ -494,7 +579,16 @@ export function App() {
         showToast('Failed to capture snippet', true);
       }
     },
-    [pdfDoc, snipTarget, addSnippet, showToast, isNoteMode, notesKey, notes.addAttachedImage, notebook.page]
+    [
+      pdfDoc,
+      snipTarget,
+      addSnippet,
+      showToast,
+      isNoteMode,
+      notesKey,
+      notes.addAttachedImage,
+      notebook.page,
+    ],
   );
 
   const handleStartSnipCaptureForAi = useCallback(() => {
@@ -503,26 +597,29 @@ export function App() {
     showToast('Drag a box on the PDF to attach snippet to AI prompt');
   }, [showToast]);
 
-  const handleAttachSelectedTextToAi = useCallback((text?: unknown, pageNumber?: number) => {
-    let textToAttach = typeof text === 'string' && text.trim().length > 0 ? text.trim() : '';
-    if (!textToAttach) {
-      const sel = window.getSelection();
-      textToAttach = sel ? sel.toString().trim() : '';
-    }
-    if (!textToAttach) {
-      showToast('Select text on the PDF to attach', true);
-      return;
-    }
-    const newAttachment: AiChatAttachment = {
-      id: `quote_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-      type: 'text',
-      text: textToAttach,
-      pageNumber: typeof pageNumber === 'number' ? pageNumber : currentPage,
-    };
-    setPendingAiAttachments((prev) => [...prev, newAttachment]);
-    setIsAiPanelOpen(true);
-    showToast('Attached selected text to AI prompt!');
-  }, [currentPage, showToast]);
+  const handleAttachSelectedTextToAi = useCallback(
+    (text?: unknown, pageNumber?: number) => {
+      let textToAttach = typeof text === 'string' && text.trim().length > 0 ? text.trim() : '';
+      if (!textToAttach) {
+        const sel = window.getSelection();
+        textToAttach = sel ? sel.toString().trim() : '';
+      }
+      if (!textToAttach) {
+        showToast('Select text on the PDF to attach', true);
+        return;
+      }
+      const newAttachment: AiChatAttachment = {
+        id: `quote_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        type: 'text',
+        text: textToAttach,
+        pageNumber: typeof pageNumber === 'number' ? pageNumber : currentPage,
+      };
+      setPendingAiAttachments((prev) => [...prev, newAttachment]);
+      setIsAiPanelOpen(true);
+      showToast('Attached selected text to AI prompt!');
+    },
+    [currentPage, showToast],
+  );
 
   const handleRemoveAiAttachment = useCallback((id: string) => {
     setPendingAiAttachments((prev) => prev.filter((a) => a.id !== id));
@@ -532,7 +629,7 @@ export function App() {
     async (options?: StitchOptions) => {
       return await copyStitchedSnippetsToClipboard(snippets, options);
     },
-    [snippets]
+    [snippets],
   );
 
   const handleDownloadStitchedSnippets = useCallback(
@@ -540,7 +637,7 @@ export function App() {
       const baseName = docInfo?.fileName || 'document';
       return await downloadStitchedSnippets(snippets, baseName, options);
     },
-    [snippets, docInfo]
+    [snippets, docInfo],
   );
 
   // Quick keyboard shortcut handler to copy stitched snippets
@@ -570,7 +667,10 @@ export function App() {
 
   // Contextual Global Undo handler
   const handleGlobalUndo = useCallback(() => {
-    if (notesActive) { notes.undo(); return; }
+    if (notesActive) {
+      notes.undo();
+      return;
+    }
     if (activeTool === 'snip' || sidebarTab === 'snippets') {
       if (canUndoSnippets) {
         undoSnippets();
@@ -586,7 +686,8 @@ export function App() {
       showToast('Undid snippet change');
     }
   }, [
-    notesActive, notes.undo,
+    notesActive,
+    notes.undo,
     activeTool,
     sidebarTab,
     canUndoSnippets,
@@ -598,7 +699,10 @@ export function App() {
 
   // Contextual Global Redo handler
   const handleGlobalRedo = useCallback(() => {
-    if (notesActive) { notes.redo(); return; }
+    if (notesActive) {
+      notes.redo();
+      return;
+    }
     if (activeTool === 'snip' || sidebarTab === 'snippets') {
       if (canRedoSnippets) {
         redoSnippets();
@@ -614,7 +718,8 @@ export function App() {
       showToast('Redid snippet change');
     }
   }, [
-    notesActive, notes.redo,
+    notesActive,
+    notes.redo,
     activeTool,
     sidebarTab,
     canRedoSnippets,
@@ -627,7 +732,8 @@ export function App() {
   // Extract and Copy all text from a page
   const handleCopyPageText = useCallback(
     async (pageParam?: number | unknown) => {
-      const pageNumber = typeof pageParam === 'number' && !isNaN(pageParam) ? pageParam : currentPage;
+      const pageNumber =
+        typeof pageParam === 'number' && !isNaN(pageParam) ? pageParam : currentPage;
       if (!pdfDoc) return;
       try {
         const fullText = await extractPageText(pdfDoc, pageNumber);
@@ -648,7 +754,7 @@ export function App() {
         showToast(`Failed to extract page text.`, true);
       }
     },
-    [pdfDoc, currentPage, showToast]
+    [pdfDoc, currentPage, showToast],
   );
 
   // Copy selected text directly to clipboard
@@ -668,13 +774,14 @@ export function App() {
         showToast('Failed to copy text.', true);
       }
     },
-    [showToast]
+    [showToast],
   );
 
   // Copy active page text to clipboard as image
   const handleCopyPageJpg = useCallback(
     async (pageParam?: number | unknown) => {
-      const pageNumber = typeof pageParam === 'number' && !isNaN(pageParam) ? pageParam : currentPage;
+      const pageNumber =
+        typeof pageParam === 'number' && !isNaN(pageParam) ? pageParam : currentPage;
       if (!pdfDoc) return;
       try {
         const copiedToClipboard = await copyPageImageToClipboard(pageNumber, pdfDoc);
@@ -688,7 +795,7 @@ export function App() {
         showToast(`Failed to capture page image.`, true);
       }
     },
-    [pdfDoc, currentPage, showToast]
+    [pdfDoc, currentPage, showToast],
   );
 
   const handleCopyCompanionPageText = useCallback(async () => {
@@ -705,7 +812,7 @@ export function App() {
         copied
           ? `Copied ${wordCount} words from Page ${companionCurrentPage}!`
           : 'Could not copy to clipboard.',
-        !copied
+        !copied,
       );
     } catch (error) {
       console.error('Failed to copy companion page text:', error);
@@ -719,13 +826,13 @@ export function App() {
       const copied = await copyPageImageToClipboard(
         companionCurrentPage,
         companionPdfDoc,
-        'companion-pdf-page'
+        'companion-pdf-page',
       );
       showToast(
         copied
           ? `Page ${companionCurrentPage} image copied to clipboard!`
           : 'Could not copy image to clipboard.',
-        !copied
+        !copied,
       );
     } catch (error) {
       console.error('Failed to copy companion page image:', error);
@@ -765,7 +872,7 @@ export function App() {
       setSelectedAnnotationId(annotation.id);
       setActiveTool('select');
     },
-    [addAnnotation, aiExplanations.openComposer, pdfDoc]
+    [addAnnotation, aiExplanations.openComposer, pdfDoc],
   );
 
   const handleAiChatResponseDrop = useCallback(
@@ -796,7 +903,7 @@ export function App() {
       addAnnotation(annotation);
       setSelectedAnnotationId(annotation.id);
     },
-    [addAnnotation, pdfDoc, setSelectedAnnotationId]
+    [addAnnotation, pdfDoc, setSelectedAnnotationId],
   );
 
   const handlePageMutation = useCallback((page: number) => {
@@ -813,8 +920,15 @@ export function App() {
     handleDeletePage,
     handleAddPageBelow,
   } = usePdfPageMutations({
-    pdfDoc, rawPdfBytes, docInfo, docKey, loadPdf,
-    annotations, replaceAnnotations, snippets, replaceSnippets,
+    pdfDoc,
+    rawPdfBytes,
+    docInfo,
+    docKey,
+    loadPdf,
+    annotations,
+    replaceAnnotations,
+    snippets,
+    replaceSnippets,
     onPageChanged: handlePageMutation,
     showToast,
   });
@@ -822,7 +936,11 @@ export function App() {
   // Cursor-aware Clipboard Paste: Pastes image at mouse cursor position on hovered page
   useEffect(() => {
     const handlePaste = (e: ClipboardEvent) => {
-      if (e.defaultPrevented || (e.target instanceof Element && e.target.closest('[data-ai-chat-composer]'))) return;
+      if (
+        e.defaultPrevented ||
+        (e.target instanceof Element && e.target.closest('[data-ai-chat-composer]'))
+      )
+        return;
       const items = e.clipboardData?.items;
       if (!items) return;
 
@@ -856,12 +974,7 @@ export function App() {
     (style: HighlightStyle = 'box', showEmptyToast = true, color?: string) => {
       const selection = window.getSelection();
       const targetColor = color || selectedColor;
-      const highlights = createTextHighlightsFromSelection(
-        selection,
-        targetColor,
-        opacity,
-        style
-      );
+      const highlights = createTextHighlightsFromSelection(selection, targetColor, opacity, style);
 
       if (highlights.length === 0) {
         if (showEmptyToast) showToast('Select PDF text first', true);
@@ -871,15 +984,13 @@ export function App() {
       highlights.forEach(addAnnotation);
       selection?.removeAllRanges();
       const location =
-        highlights.length === 1
-          ? `Page ${highlights[0].pageNumber}`
-          : `${highlights.length} pages`;
+        highlights.length === 1 ? `Page ${highlights[0].pageNumber}` : `${highlights.length} pages`;
       showToast(
-        `${style === 'underline' ? 'Underlined' : style === 'stroke' ? 'Boxed' : 'Highlighted'} selected text on ${location}`
+        `${style === 'underline' ? 'Underlined' : style === 'stroke' ? 'Boxed' : 'Highlighted'} selected text on ${location}`,
       );
       return true;
     },
-    [addAnnotation, opacity, selectedColor, showToast]
+    [addAnnotation, opacity, selectedColor, showToast],
   );
 
   const handleHighlightSelectedText = useCallback(() => {
@@ -911,7 +1022,9 @@ export function App() {
 
       setSelectedPaletteIndex(index);
       setSelectedColor(color);
-      const selectedAnnotation = (notesActive ? notes.annotations : annotations).find(({ id }) => id === selectedAnnotationId);
+      const selectedAnnotation = (notesActive ? notes.annotations : annotations).find(
+        ({ id }) => id === selectedAnnotationId,
+      );
       if (
         selectedAnnotation &&
         (selectedAnnotation.type === 'highlight-line' ||
@@ -925,8 +1038,14 @@ export function App() {
     onUndo: handleGlobalUndo,
     onRedo: handleGlobalRedo,
     onZoomIn: () => {
-      if (panelNotebookActive) { setNotebookZoom(value => Math.min(3, value + .15)); return; }
-      if (notesActive) { setNoteZoom((zoom) => Math.min(3.5, zoom + .15)); return; }
+      if (panelNotebookActive) {
+        setNotebookZoom((value) => Math.min(3, value + 0.15));
+        return;
+      }
+      if (notesActive) {
+        setNoteZoom((zoom) => Math.min(3.5, zoom + 0.15));
+        return;
+      }
       if (companionPdfDoc && activeReaderPane === 'companion') {
         setCompanionZoom((z) => Math.min(3.5, z + 0.15));
       } else {
@@ -934,8 +1053,14 @@ export function App() {
       }
     },
     onZoomOut: () => {
-      if (panelNotebookActive) { setNotebookZoom(value => Math.max(.4, value - .15)); return; }
-      if (notesActive) { setNoteZoom((zoom) => Math.max(.3, zoom - .15)); return; }
+      if (panelNotebookActive) {
+        setNotebookZoom((value) => Math.max(0.4, value - 0.15));
+        return;
+      }
+      if (notesActive) {
+        setNoteZoom((zoom) => Math.max(0.3, zoom - 0.15));
+        return;
+      }
       if (companionPdfDoc && activeReaderPane === 'companion') {
         setCompanionZoom((z) => Math.max(0.3, z - 0.15));
       } else {
@@ -943,13 +1068,22 @@ export function App() {
       }
     },
     onResetZoom: () => {
-      if (panelNotebookActive) { setNotebookZoom(.8); return; }
-      if (notesActive) { setNoteZoom(.8); return; }
+      if (panelNotebookActive) {
+        setNotebookZoom(0.8);
+        return;
+      }
+      if (notesActive) {
+        setNoteZoom(0.8);
+        return;
+      }
       if (companionPdfDoc && activeReaderPane === 'companion') setCompanionZoom(1.15);
       else setZoom(1.15);
     },
     onNextPage: () => {
-      if (notesActive) { navigateNotePage(notebook.page + 1); return; }
+      if (notesActive) {
+        navigateNotePage(notebook.page + 1);
+        return;
+      }
       if (companionPdfDoc && activeReaderPane === 'companion') {
         setCompanionCurrentPage((page) => Math.min(companionPdfDoc.numPages, page + 1));
         return;
@@ -958,7 +1092,10 @@ export function App() {
       handleNavigatePage(viewMode === 'spread' ? spreadStart + 2 : currentPage + 1);
     },
     onPrevPage: () => {
-      if (notesActive) { navigateNotePage(notebook.page - 1); return; }
+      if (notesActive) {
+        navigateNotePage(notebook.page - 1);
+        return;
+      }
       if (companionPdfDoc && activeReaderPane === 'companion') {
         setCompanionCurrentPage((page) => Math.max(1, page - 1));
         return;
@@ -1002,12 +1139,17 @@ export function App() {
         return;
       }
       if (selectedAnnotationId) {
-        const selectedAnn = (notesActive ? notes.annotations : annotations).find((a) => a.id === selectedAnnotationId);
+        const selectedAnn = (notesActive ? notes.annotations : annotations).find(
+          (a) => a.id === selectedAnnotationId,
+        );
         if (selectedAnn && selectedAnn.type === 'ai-explanation') {
           if (!selectedAnn.response) {
             (notesActive ? notes.deleteAnnotation : deleteAnnotation)(selectedAnn.id);
           } else {
-            (notesActive ? notes.updateAnnotation : updateAnnotation)(selectedAnn.id, { isOpen: false, updatedAt: Date.now() });
+            (notesActive ? notes.updateAnnotation : updateAnnotation)(selectedAnn.id, {
+              isOpen: false,
+              updatedAt: Date.now(),
+            });
           }
         }
         setSelectedAnnotationId(null);
@@ -1048,7 +1190,10 @@ export function App() {
       else void handleCopyPageJpg(currentPage);
     },
     onAddPageBelow: () => {
-      if (notesActive) { addNotePage(); return; }
+      if (notesActive) {
+        addNotePage();
+        return;
+      }
       if (currentScreen === 'reader' && pdfDoc) {
         void handleAddPageBelow(currentPage);
       }
@@ -1075,7 +1220,13 @@ export function App() {
     setIsSettingsOpen,
     toggleInvert,
     handleChangeViewMode,
-    setZoom: panelNotebookActive ? setNotebookZoom : notesActive ? setNoteZoom : companionPdfDoc && activeReaderPane === 'companion' ? setCompanionZoom : setZoom,
+    setZoom: panelNotebookActive
+      ? setNotebookZoom
+      : notesActive
+        ? setNoteZoom
+        : companionPdfDoc && activeReaderPane === 'companion'
+          ? setCompanionZoom
+          : setZoom,
     setIsSidebarOpen,
     setIsZenMode,
     setIsShortcutsModalOpen,
@@ -1092,7 +1243,13 @@ export function App() {
     setIsSettingsOpen,
     toggleInvert,
     handleChangeViewMode,
-    setZoom: panelNotebookActive ? setNotebookZoom : notesActive ? setNoteZoom : companionPdfDoc && activeReaderPane === 'companion' ? setCompanionZoom : setZoom,
+    setZoom: panelNotebookActive
+      ? setNotebookZoom
+      : notesActive
+        ? setNoteZoom
+        : companionPdfDoc && activeReaderPane === 'companion'
+          ? setCompanionZoom
+          : setZoom,
     setIsSidebarOpen,
     setIsZenMode,
     setIsShortcutsModalOpen,
@@ -1114,7 +1271,10 @@ export function App() {
               const imported = parseAnnotationsJson(fileData.content);
               h.handleImportAnnotations(imported, 'replace');
             } catch (err) {
-              h.showToast(err instanceof Error ? err.message : 'Failed to import annotations', true);
+              h.showToast(
+                err instanceof Error ? err.message : 'Failed to import annotations',
+                true,
+              );
             }
           })();
           break;
@@ -1132,7 +1292,10 @@ export function App() {
                 h.showToast(`Saved annotations to ${exportName}`);
               }
             } catch (err) {
-              h.showToast(err instanceof Error ? err.message : 'Failed to export annotations', true);
+              h.showToast(
+                err instanceof Error ? err.message : 'Failed to export annotations',
+                true,
+              );
             }
           })();
           break;
@@ -1188,15 +1351,15 @@ export function App() {
   return (
     <div
       data-ui-theme={isDarkTheme ? 'dark' : 'light'}
-      className="macos-window h-screen w-screen flex flex-col bg-[#1e1e24] text-[#f0f0f4] overflow-hidden select-none transition-colors duration-200"
+      className="macos-window flex h-screen w-screen flex-col overflow-hidden bg-[#1e1e24] text-[#f0f0f4] transition-colors duration-200 select-none"
     >
       {/* Floating Dynamic Feedback Toast */}
       {toastMessage && (
-        <div className="fixed top-13 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#26262e]/95 border border-[#3e3e4c] text-xs text-zinc-100 shadow-2xl backdrop-blur-md animate-slide-down pointer-events-none">
+        <div className="animate-slide-down pointer-events-none fixed top-13 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-full border border-[#3e3e4c] bg-[#26262e]/95 px-3.5 py-1.5 text-xs text-zinc-100 shadow-2xl backdrop-blur-md">
           {toastMessage.isError ? (
-            <Info className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+            <Info className="h-3.5 w-3.5 shrink-0 text-amber-400" />
           ) : (
-            <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+            <Check className="h-3.5 w-3.5 shrink-0 text-emerald-400" />
           )}
           <span className="font-medium">{toastMessage.text}</span>
         </div>
@@ -1219,11 +1382,17 @@ export function App() {
       {/* VIEW 1: DASHBOARD & SAVED DIRECTORIES LIBRARY */}
       {currentScreen === 'notebook' ? (
         <React.Suspense fallback={<div role="status">Opening notebook…</div>}>
-          <NotebookWorkspace initialTarget={notebookTarget} onBack={() => setCurrentScreen('dashboard')} />
+          <NotebookWorkspace
+            initialTarget={notebookTarget}
+            onBack={() => setCurrentScreen('dashboard')}
+          />
         </React.Suspense>
       ) : currentScreen === 'dashboard' ? (
         <Dashboard
-          onOpenNotebook={target => { setNotebookTarget(target); setCurrentScreen('notebook'); }}
+          onOpenNotebook={(target) => {
+            setNotebookTarget(target);
+            setCurrentScreen('notebook');
+          }}
           hasActiveDoc={Boolean(pdfDoc || lastActiveDoc)}
           activeDocName={docInfo?.fileName || lastActiveDoc?.fileName}
           isDarkTheme={isDarkTheme}
@@ -1245,10 +1414,42 @@ export function App() {
           {/* Top Header & Titlebar */}
           <Header
             docInfo={docInfo}
-            currentPage={panelNotebookActive ? panelNotebook.page : notesActive ? notebook.page : companionPdfDoc && activeReaderPane === 'companion' ? companionCurrentPage : currentPage}
-            numPages={panelNotebookActive ? panelNotebook.pages : notesActive ? notesCount : companionPdfDoc && activeReaderPane === 'companion' ? companionPdfDoc.numPages : pdfDoc?.numPages || 0}
-            zoom={panelNotebookActive ? notebookZoom : notesActive ? noteZoom : companionPdfDoc && activeReaderPane === 'companion' ? companionZoom : zoom}
-            activeDocumentName={panelNotebookActive ? panelNotebook.title : notesActive ? `${docInfo?.fileName} · Notes` : companionPdfDoc && activeReaderPane === 'companion' ? companionFileName : docInfo?.fileName}
+            currentPage={
+              panelNotebookActive
+                ? panelNotebook.page
+                : notesActive
+                  ? notebook.page
+                  : companionPdfDoc && activeReaderPane === 'companion'
+                    ? companionCurrentPage
+                    : currentPage
+            }
+            numPages={
+              panelNotebookActive
+                ? panelNotebook.pages
+                : notesActive
+                  ? notesCount
+                  : companionPdfDoc && activeReaderPane === 'companion'
+                    ? companionPdfDoc.numPages
+                    : pdfDoc?.numPages || 0
+            }
+            zoom={
+              panelNotebookActive
+                ? notebookZoom
+                : notesActive
+                  ? noteZoom
+                  : companionPdfDoc && activeReaderPane === 'companion'
+                    ? companionZoom
+                    : zoom
+            }
+            activeDocumentName={
+              panelNotebookActive
+                ? panelNotebook.title
+                : notesActive
+                  ? `${docInfo?.fileName} · Notes`
+                  : companionPdfDoc && activeReaderPane === 'companion'
+                    ? companionFileName
+                    : docInfo?.fileName
+            }
             canUsePageActions={!panelNotebookActive && !notesActive}
             viewMode={viewMode}
             theme={themeSettings.theme}
@@ -1265,24 +1466,38 @@ export function App() {
             onToggleZen={() => setIsZenMode((prev) => !prev)}
             onToggleShortcuts={() => setIsShortcutsModalOpen(true)}
             onChangeViewMode={handleChangeViewMode}
-            onChangeZoom={panelNotebookActive ? setNotebookZoom : notesActive ? setNoteZoom : activeReaderPane === 'companion' ? setCompanionZoom : setZoom}
+            onChangeZoom={
+              panelNotebookActive
+                ? setNotebookZoom
+                : notesActive
+                  ? setNoteZoom
+                  : activeReaderPane === 'companion'
+                    ? setCompanionZoom
+                    : setZoom
+            }
             isNotebookPanelOpen={isNotebookPanelOpen}
             onToggleNotebooks={() => {
               setHasOpenedNotebookPanel(true);
-              setIsNotebookPanelOpen(value => !value);
+              setIsNotebookPanelOpen((value) => !value);
               setIsNoteMode(false);
               setNotePaneActive(false);
               setIsAiPanelOpen(false);
             }}
             onFitPage={() => {
-              if (panelNotebookActive) { setNotebookFitRequest(value => value + 1); return; }
+              if (panelNotebookActive) {
+                setNotebookFitRequest((value) => value + 1);
+                return;
+              }
               if (notesActive) {
-                setNoteFitRequest((request) => ({ id: (request?.id ?? 0) + 1, page: notebook.page }));
+                setNoteFitRequest((request) => ({
+                  id: (request?.id ?? 0) + 1,
+                  page: notebook.page,
+                }));
                 navigateNotePage(notebook.page);
                 return;
               }
               if (companionPdfDoc && activeReaderPane === 'companion') {
-                setCompanionFitRequest(value => ({ id: (value?.id ?? 0) + 1 }));
+                setCompanionFitRequest((value) => ({ id: (value?.id ?? 0) + 1 }));
               } else {
                 setFitPageRequest((request) => ({
                   id: (request?.id ?? 0) + 1,
@@ -1290,21 +1505,32 @@ export function App() {
                 }));
               }
             }}
-            onPageChange={panelNotebookActive ? page => setNotebookPageRequest(value => ({ page, id: (value?.id ?? 0) + 1 })) : notesActive ? navigateNotePage : activeReaderPane === 'companion'
-              ? (page) => setCompanionCurrentPage(Math.max(1, Math.min(companionPdfDoc?.numPages || 1, page)))
-              : handleNavigatePage}
+            onPageChange={
+              panelNotebookActive
+                ? (page) => setNotebookPageRequest((value) => ({ page, id: (value?.id ?? 0) + 1 }))
+                : notesActive
+                  ? navigateNotePage
+                  : activeReaderPane === 'companion'
+                    ? (page) =>
+                        setCompanionCurrentPage(
+                          Math.max(1, Math.min(companionPdfDoc?.numPages || 1, page)),
+                        )
+                    : handleNavigatePage
+            }
             onCopyPageText={() => {
-              if (companionPdfDoc && activeReaderPane === 'companion') void handleCopyCompanionPageText();
+              if (companionPdfDoc && activeReaderPane === 'companion')
+                void handleCopyCompanionPageText();
               else void handleCopyPageText(currentPage);
             }}
             onCopyPageJpg={() => {
-              if (companionPdfDoc && activeReaderPane === 'companion') void handleCopyCompanionPageImage();
+              if (companionPdfDoc && activeReaderPane === 'companion')
+                void handleCopyCompanionPageImage();
               else void handleCopyPageJpg(currentPage);
             }}
           />
 
           {/* Main Reading & Sidebar Workspace */}
-          <div className="flex-1 flex overflow-hidden relative">
+          <div className="relative flex flex-1 overflow-hidden">
             {/* Navigation Sidebar */}
             <Sidebar
               isOpen={isSidebarOpen && !isZenMode}
@@ -1346,174 +1572,219 @@ export function App() {
                 onClick={() => setIsSidebarOpen(true)}
                 className={`macos-sidebar-collapse-control canvas-sidebar-toggle transition-all duration-200 ease-out ${
                   !isSidebarOpen
-                    ? 'opacity-100 translate-x-0 pointer-events-auto'
-                    : 'opacity-0 -translate-x-3 pointer-events-none'
+                    ? 'pointer-events-auto translate-x-0 opacity-100'
+                    : 'pointer-events-none -translate-x-3 opacity-0'
                 }`}
                 title="Show Sidebar"
               >
-                <SidebarIcon className="w-3.5 h-3.5" />
+                <SidebarIcon className="h-3.5 w-3.5" />
               </button>
             )}
 
             {/* Primary PDF Canvas Viewport */}
-            <div className="flex flex-1 min-w-0 overflow-hidden">
-            <div className="flex-1 min-w-0 relative overflow-hidden flex bg-[var(--workspace)]">
-              <div className={isNoteMode ? 'note-source-pane' : 'contents'}
-                onPointerDownCapture={() => { setNotePaneActive(false); setNotebookPaneActive(false); }}
-                onFocusCapture={() => { setNotePaneActive(false); setNotebookPaneActive(false); }}>
-              <PDFViewer
-                key={companionPdfDoc ? 'read-together' : 'single-document'}
-                pdfDoc={pdfDoc}
-                companionPdfDoc={companionPdfDoc}
-                primaryFileName={docInfo?.fileName || 'Primary PDF'}
-                companionFileName={companionFileName}
-                companionCurrentPage={companionCurrentPage}
-                companionZoom={companionZoom}
-                activePane={activeReaderPane}
-                currentPage={currentPage}
-                numPages={pdfDoc?.numPages || 0}
-                pageNavRequest={pageNavRequest}
-                searchMatch={isSearchOpen ? searchMatch : null}
-                zoom={zoom}
-                viewMode={viewMode}
-                currentTheme={themeSettings.theme}
-                filterClass={getPageFilterClass()}
-                customFilterStyle={getCustomFilterStyle()}
-                activeTool={activeTool}
-                selectedColor={selectedColor}
-                highlightColors={highlightColors}
-                strokeWidth={strokeWidth}
-                opacity={opacity}
-                highlightStyle={highlightStyle}
-                lineHighlightStyle={lineHighlightStyle}
-                annotations={annotations}
-                selectedAnnotationId={selectedAnnotationId}
-                onPageChange={(p) => changePage(p)}
-                onCompanionPageChange={setCompanionCurrentPage}
-                onCompanionZoomChange={setCompanionZoom}
-                companionFitRequest={companionFitRequest}
-                onActivePaneChange={setActiveReaderPane}
-                onSelectAnnotation={handleSelectAnnotation}
-                onAddAnnotation={(ann) => addAnnotation(ann)}
-                onUpdateAnnotation={(id, up) => updateAnnotation(id, up)}
-                onChangeHighlightStyle={setHighlightStyle}
-                onChangeLineHighlightStyle={setLineHighlightStyle}
-                onDeleteAnnotation={(id) => deleteAnnotation(id)}
-                onImageDrop={handleImageDropOnPage}
-                onAiResponseDrop={handleAiChatResponseDrop}
-                onCursorMove={(page, x, y) => {
-                  cursorPosRef.current = { pageNumber: page, x, y };
-                }}
-                onCaptureSnippet={handleCaptureSnippet}
-                aiJobs={aiExplanations.jobs}
-                onAiBoxCreated={(id) => {
-                  setSelectedAnnotationId(id);
-                  aiExplanations.openComposer(id);
-                }}
-                onSelectTool={handleSelectTool}
-                onSubmitAi={(annotation, prompt) => {
-                  void aiExplanations.submit(annotation, prompt);
-                  if (activeTool === 'ai-box') {
-                    setActiveTool('select');
-                  }
-                }}
-                onCancelAi={(annotationId) => {
-                  void aiExplanations.cancel(annotationId);
-                  if (activeTool === 'ai-box') {
-                    setActiveTool('select');
-                  }
-                }}
-                onCloseAi={(annotationId) => {
-                  aiExplanations.close(annotationId);
-                  if (activeTool === 'ai-box') {
-                    setActiveTool('select');
-                  }
-                }}
-                onAddPageBelow={handleAddPageBelow}
-                onDeletePage={requestDeletePage}
-                onCopySelectedText={(text) => void handleCopySelectedText(text)}
-                onCopyPageText={(pageNumber) => void handleCopyPageText(pageNumber)}
-                onCopyPageImage={(pageNumber) => void handleCopyPageJpg(pageNumber)}
-                onAskAiAboutPage={handleAskAiAboutPage}
-                onAttachTextToAi={handleAttachSelectedTextToAi}
-                onHighlightSelection={(style, color) => addHighlightsFromSelection(style || 'box', false, color)}
-                onPdfFileDrop={(file) => {
-                  const reader = new FileReader();
-                  reader.onload = async () => {
-                    if (reader.result instanceof ArrayBuffer) {
-                      await openPdfInReader(new Uint8Array(reader.result), file.name);
-                    }
-                  };
-                  reader.readAsArrayBuffer(file);
-                }}
-                onOpenPdfClick={handleOpenPdf}
-                onChangeZoom={setZoom}
-                fitPageRequest={fitPageRequest}
-              />
-
-              {pdfDoc && (
+            <div className="flex min-w-0 flex-1 overflow-hidden">
+              <div className="relative flex min-w-0 flex-1 overflow-hidden bg-[var(--workspace)]">
                 <div
-                  className="reader-progress"
-                  role="progressbar"
-                  aria-label="Reading progress"
-                  aria-valuemin={0}
-                  aria-valuemax={100}
-                  aria-valuenow={Math.round((
-                    companionPdfDoc && activeReaderPane === 'companion'
-                      ? companionCurrentPage / companionPdfDoc.numPages
-                      : currentPage / pdfDoc.numPages
-                  ) * 100)}
+                  className={isNoteMode ? 'note-source-pane' : 'contents'}
+                  onPointerDownCapture={() => {
+                    setNotePaneActive(false);
+                    setNotebookPaneActive(false);
+                  }}
+                  onFocusCapture={() => {
+                    setNotePaneActive(false);
+                    setNotebookPaneActive(false);
+                  }}
                 >
-                  <div className="reader-progress-track">
-                    <div
-                      className="reader-progress-value"
-                      style={{
-                        width: `${(
-                          companionPdfDoc && activeReaderPane === 'companion'
-                            ? companionCurrentPage / companionPdfDoc.numPages
-                            : currentPage / pdfDoc.numPages
-                        ) * 100}%`,
-                      }}
-                    />
-                  </div>
-                </div>
-              )}
-              </div>
-              {isNoteMode && pdfDoc && <NotePanel key={notesKey} notes={notes} docKey={notesKey}
-                page={notebook.page} pageCount={notesCount}
-                zoom={noteZoom} onZoomChange={setNoteZoom} pageNavRequest={noteNavRequest} fitPageRequest={noteFitRequest}
-                activeTool={activeTool} selectedColor={selectedColor} highlightColors={highlightColors}
-                strokeWidth={strokeWidth} opacity={opacity} highlightStyle={highlightStyle} lineHighlightStyle={lineHighlightStyle}
-                onChangeHighlightStyle={setHighlightStyle} onChangeLineHighlightStyle={setLineHighlightStyle}
-                onSelectTool={handleSelectTool} selectedAnnotationId={selectedAnnotationId} onSelectAnnotation={handleSelectAnnotation}
-                onImageDrop={handleImageDropOnPage}
-                onCursorMove={(pageNumber, x, y) => { noteCursorRef.current = { pageNumber, x, y }; }}
-                onActivate={() => setNotePaneActive(true)}
-                onPageChange={(page) => setNotebook((value) => ({ ...value, page }))}
-                onAddPage={addNotePage}
-                onAddPageAfter={(page) => mutateNotePage(page, 'insert')}
-                onDeletePage={(page) => mutateNotePage(page, 'delete')}
-                onCapture={(entry) => { addSnippet(entry); showToast('Captured note region.'); }}
-                showToast={showToast}
-              />}
-            </div>
+                  <PDFViewer
+                    key={companionPdfDoc ? 'read-together' : 'single-document'}
+                    pdfDoc={pdfDoc}
+                    companionPdfDoc={companionPdfDoc}
+                    primaryFileName={docInfo?.fileName || 'Primary PDF'}
+                    companionFileName={companionFileName}
+                    companionCurrentPage={companionCurrentPage}
+                    companionZoom={companionZoom}
+                    activePane={activeReaderPane}
+                    currentPage={currentPage}
+                    numPages={pdfDoc?.numPages || 0}
+                    pageNavRequest={pageNavRequest}
+                    searchMatch={isSearchOpen ? searchMatch : null}
+                    zoom={zoom}
+                    viewMode={viewMode}
+                    currentTheme={themeSettings.theme}
+                    filterClass={getPageFilterClass()}
+                    customFilterStyle={getCustomFilterStyle()}
+                    activeTool={activeTool}
+                    selectedColor={selectedColor}
+                    highlightColors={highlightColors}
+                    strokeWidth={strokeWidth}
+                    opacity={opacity}
+                    highlightStyle={highlightStyle}
+                    lineHighlightStyle={lineHighlightStyle}
+                    annotations={annotations}
+                    selectedAnnotationId={selectedAnnotationId}
+                    onPageChange={(p) => changePage(p)}
+                    onCompanionPageChange={setCompanionCurrentPage}
+                    onCompanionZoomChange={setCompanionZoom}
+                    companionFitRequest={companionFitRequest}
+                    onActivePaneChange={setActiveReaderPane}
+                    onSelectAnnotation={handleSelectAnnotation}
+                    onAddAnnotation={(ann) => addAnnotation(ann)}
+                    onUpdateAnnotation={(id, up) => updateAnnotation(id, up)}
+                    onChangeHighlightStyle={setHighlightStyle}
+                    onChangeLineHighlightStyle={setLineHighlightStyle}
+                    onDeleteAnnotation={(id) => deleteAnnotation(id)}
+                    onImageDrop={handleImageDropOnPage}
+                    onAiResponseDrop={handleAiChatResponseDrop}
+                    onCursorMove={(page, x, y) => {
+                      cursorPosRef.current = { pageNumber: page, x, y };
+                    }}
+                    onCaptureSnippet={handleCaptureSnippet}
+                    aiJobs={aiExplanations.jobs}
+                    onAiBoxCreated={(id) => {
+                      setSelectedAnnotationId(id);
+                      aiExplanations.openComposer(id);
+                    }}
+                    onSelectTool={handleSelectTool}
+                    onSubmitAi={(annotation, prompt) => {
+                      void aiExplanations.submit(annotation, prompt);
+                      if (activeTool === 'ai-box') {
+                        setActiveTool('select');
+                      }
+                    }}
+                    onCancelAi={(annotationId) => {
+                      void aiExplanations.cancel(annotationId);
+                      if (activeTool === 'ai-box') {
+                        setActiveTool('select');
+                      }
+                    }}
+                    onCloseAi={(annotationId) => {
+                      aiExplanations.close(annotationId);
+                      if (activeTool === 'ai-box') {
+                        setActiveTool('select');
+                      }
+                    }}
+                    onAddPageBelow={handleAddPageBelow}
+                    onDeletePage={requestDeletePage}
+                    onCopySelectedText={(text) => void handleCopySelectedText(text)}
+                    onCopyPageText={(pageNumber) => void handleCopyPageText(pageNumber)}
+                    onCopyPageImage={(pageNumber) => void handleCopyPageJpg(pageNumber)}
+                    onAskAiAboutPage={handleAskAiAboutPage}
+                    onAttachTextToAi={handleAttachSelectedTextToAi}
+                    onHighlightSelection={(style, color) =>
+                      addHighlightsFromSelection(style || 'box', false, color)
+                    }
+                    onPdfFileDrop={(file) => {
+                      const reader = new FileReader();
+                      reader.onload = async () => {
+                        if (reader.result instanceof ArrayBuffer) {
+                          await openPdfInReader(new Uint8Array(reader.result), file.name);
+                        }
+                      };
+                      reader.readAsArrayBuffer(file);
+                    }}
+                    onOpenPdfClick={handleOpenPdf}
+                    onChangeZoom={setZoom}
+                    fitPageRequest={fitPageRequest}
+                  />
 
-            {hasOpenedNotebookPanel && <React.Suspense fallback={null}>
-              <NotebookPanel zoom={notebookZoom} onZoomChange={setNotebookZoom} onActivate={activateNotebookPane} onDocumentChange={setPanelNotebook} pageRequest={notebookPageRequest} fitRequest={notebookFitRequest} isOpen={isNotebookPanelOpen && !isZenMode} />
-            </React.Suspense>}
+                  {pdfDoc && (
+                    <div
+                      className="reader-progress"
+                      role="progressbar"
+                      aria-label="Reading progress"
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                      aria-valuenow={Math.round(
+                        (companionPdfDoc && activeReaderPane === 'companion'
+                          ? companionCurrentPage / companionPdfDoc.numPages
+                          : currentPage / pdfDoc.numPages) * 100,
+                      )}
+                    >
+                      <div className="reader-progress-track">
+                        <div
+                          className="reader-progress-value"
+                          style={{
+                            width: `${
+                              (companionPdfDoc && activeReaderPane === 'companion'
+                                ? companionCurrentPage / companionPdfDoc.numPages
+                                : currentPage / pdfDoc.numPages) * 100
+                            }%`,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+                {isNoteMode && pdfDoc && (
+                  <NotePanel
+                    key={notesKey}
+                    notes={notes}
+                    docKey={notesKey}
+                    page={notebook.page}
+                    pageCount={notesCount}
+                    zoom={noteZoom}
+                    onZoomChange={setNoteZoom}
+                    pageNavRequest={noteNavRequest}
+                    fitPageRequest={noteFitRequest}
+                    activeTool={activeTool}
+                    selectedColor={selectedColor}
+                    highlightColors={highlightColors}
+                    strokeWidth={strokeWidth}
+                    opacity={opacity}
+                    highlightStyle={highlightStyle}
+                    lineHighlightStyle={lineHighlightStyle}
+                    onChangeHighlightStyle={setHighlightStyle}
+                    onChangeLineHighlightStyle={setLineHighlightStyle}
+                    onSelectTool={handleSelectTool}
+                    selectedAnnotationId={selectedAnnotationId}
+                    onSelectAnnotation={handleSelectAnnotation}
+                    onImageDrop={handleImageDropOnPage}
+                    onCursorMove={(pageNumber, x, y) => {
+                      noteCursorRef.current = { pageNumber, x, y };
+                    }}
+                    onActivate={() => setNotePaneActive(true)}
+                    onPageChange={(page) => setNotebook((value) => ({ ...value, page }))}
+                    onAddPage={addNotePage}
+                    onAddPageAfter={(page) => mutateNotePage(page, 'insert')}
+                    onDeletePage={(page) => mutateNotePage(page, 'delete')}
+                    onCapture={(entry) => {
+                      addSnippet(entry);
+                      showToast('Captured note region.');
+                    }}
+                    showToast={showToast}
+                  />
+                )}
+              </div>
+
+              {hasOpenedNotebookPanel && (
+                <React.Suspense fallback={null}>
+                  <NotebookPanel
+                    zoom={notebookZoom}
+                    onZoomChange={setNotebookZoom}
+                    onActivate={activateNotebookPane}
+                    onDocumentChange={setPanelNotebook}
+                    pageRequest={notebookPageRequest}
+                    fitRequest={notebookFitRequest}
+                    isOpen={isNotebookPanelOpen && !isZenMode}
+                  />
+                </React.Suspense>
+              )}
             </div>
 
             {!isZenMode && !isNotebookPanelOpen && (
               <button
-                onClick={() => { setIsNotebookPanelOpen(false); setIsAiPanelOpen(true); }}
+                onClick={() => {
+                  setIsNotebookPanelOpen(false);
+                  setIsAiPanelOpen(true);
+                }}
                 className={`macos-sidebar-collapse-control canvas-ai-toggle transition-all duration-200 ease-out ${
                   !isAiPanelOpen
-                    ? 'opacity-100 translate-x-0 pointer-events-auto'
-                    : 'opacity-0 translate-x-3 pointer-events-none'
+                    ? 'pointer-events-auto translate-x-0 opacity-100'
+                    : 'pointer-events-none translate-x-3 opacity-0'
                 }`}
                 title="Show AI Assistant & Chat (Cmd+J)"
               >
-                <SparkleIcon className="w-3.5 h-3.5" />
+                <SparkleIcon className="h-3.5 w-3.5" />
               </button>
             )}
 
@@ -1527,28 +1798,58 @@ export function App() {
               notebook={aiNotebook ? { ...aiNotebook, currentPage: notebook.page } : undefined}
               isDocumentLoading={isLoading}
               onWriteNotebook={async (key, write, canApply) => {
-                if (key !== activeNotesKey.current) throw new Error('The document changed. No notes were added.');
+                if (key !== activeNotesKey.current)
+                  throw new Error('The document changed. No notes were added.');
                 const snapshot = notebookWriteState.current;
                 if (write.type === 'image') {
-                  const result = await insertAiNotebookImage(snapshot.annotations, snapshot.count, snapshot.page, write.image, write.action);
-                  if (!canApply() || key !== activeNotesKey.current) throw new Error('The request was cancelled. No notes were changed.');
+                  const result = await insertAiNotebookImage(
+                    snapshot.annotations,
+                    snapshot.count,
+                    snapshot.page,
+                    write.image,
+                    write.action,
+                  );
+                  if (!canApply() || key !== activeNotesKey.current)
+                    throw new Error('The request was cancelled. No notes were changed.');
                   const latest = notebookWriteState.current;
-                  if (latest.annotations !== snapshot.annotations || latest.count !== snapshot.count) throw new Error('The notebook changed during image placement. Retry to use the latest version.');
+                  if (
+                    latest.annotations !== snapshot.annotations ||
+                    latest.count !== snapshot.count
+                  )
+                    throw new Error(
+                      'The notebook changed during image placement. Retry to use the latest version.',
+                    );
                   localStorage.setItem(`${key}:pages`, String(result.count));
                   latest.replaceAnnotations(result.annotations);
                   setNotebook({ key, count: result.count, page: result.firstPage });
                   setNoteNavRequest({ page: result.firstPage, timestamp: Date.now() });
-                  closeCompanionPdf(); setViewMode('continuous'); saveViewMode('continuous'); setIsNoteMode(true); setNotePaneActive(true);
+                  closeCompanionPdf();
+                  setViewMode('continuous');
+                  saveViewMode('continuous');
+                  setIsNoteMode(true);
+                  setNotePaneActive(true);
                   setSelectedAnnotationId(result.selectedId);
                   return `Image added to note page ${result.firstPage}.`;
                 }
                 const text = write.text;
-                const result = await appendAiNotebookText(snapshot.annotations, snapshot.count, text);
-                if (!canApply() || key !== activeNotesKey.current) throw new Error('The request was cancelled. No notes were added.');
+                const result = await appendAiNotebookText(
+                  snapshot.annotations,
+                  snapshot.count,
+                  text,
+                );
+                if (!canApply() || key !== activeNotesKey.current)
+                  throw new Error('The request was cancelled. No notes were added.');
                 const latest = notebookWriteState.current;
-                const firstPage = latest.annotations.some((annotation) => annotation.pageNumber === latest.count) ? latest.count + 1 : latest.count;
+                const firstPage = latest.annotations.some(
+                  (annotation) => annotation.pageNumber === latest.count,
+                )
+                  ? latest.count + 1
+                  : latest.count;
                 const shift = firstPage - result.firstPage;
-                result.annotations = result.annotations.map((annotation) => ({ ...annotation, pageNumber: annotation.pageNumber + shift }));
+                result.annotations = result.annotations.map((annotation) => ({
+                  ...annotation,
+                  pageNumber: annotation.pageNumber + shift,
+                }));
                 result.firstPage = firstPage;
                 result.count += shift;
                 localStorage.setItem(`${key}:pages`, String(result.count));
@@ -1561,7 +1862,9 @@ export function App() {
                 setIsNoteMode(true);
                 setNotePaneActive(true);
                 setSelectedAnnotationId(result.annotations[0].id);
-                return result.annotations.length === 1 ? `Added to note page ${result.firstPage}.` : `Added to note pages ${result.firstPage}–${result.count}.`;
+                return result.annotations.length === 1
+                  ? `Added to note page ${result.firstPage}.`
+                  : `Added to note pages ${result.firstPage}–${result.count}.`;
               }}
               isSnipCapturing={activeTool === 'snip' && snipTarget === 'ai-prompt'}
               pendingAttachments={pendingAiAttachments}
@@ -1571,7 +1874,8 @@ export function App() {
               onPasteImages={async (files) => {
                 const key = activeNotesKey.current;
                 const attachments = await Promise.all(files.map(createAiClipboardAttachment));
-                if (key === activeNotesKey.current) setPendingAiAttachments((current) => [...current, ...attachments]);
+                if (key === activeNotesKey.current)
+                  setPendingAiAttachments((current) => [...current, ...attachments]);
               }}
             />
           </div>
@@ -1587,23 +1891,39 @@ export function App() {
               opacity={opacity}
               highlightStyle={highlightStyle}
               lineHighlightStyle={lineHighlightStyle}
-              canUndo={notesActive ? notes.canUndo : activeTool === 'snip' ? canUndoSnippets : canUndoAnnotations}
-              canRedo={notesActive ? notes.canRedo : activeTool === 'snip' ? canRedoSnippets : canRedoAnnotations}
+              canUndo={
+                notesActive
+                  ? notes.canUndo
+                  : activeTool === 'snip'
+                    ? canUndoSnippets
+                    : canUndoAnnotations
+              }
+              canRedo={
+                notesActive
+                  ? notes.canRedo
+                  : activeTool === 'snip'
+                    ? canRedoSnippets
+                    : canRedoAnnotations
+              }
               onSelectTool={handleSelectTool}
               onSelectColor={(c, index) => {
                 setSelectedPaletteIndex(index);
                 setSelectedColor(c);
                 if (selectedAnnotationId) {
-                  (notesActive ? notes.updateAnnotation : updateAnnotation)(selectedAnnotationId, { color: c });
+                  (notesActive ? notes.updateAnnotation : updateAnnotation)(selectedAnnotationId, {
+                    color: c,
+                  });
                 }
               }}
               onReplaceSelectedColor={(c) => {
                 setHighlightColors((colors) =>
-                  replaceHighlightPaletteColor(colors, selectedPaletteIndex, c)
+                  replaceHighlightPaletteColor(colors, selectedPaletteIndex, c),
                 );
                 setSelectedColor(c);
                 if (selectedAnnotationId) {
-                  (notesActive ? notes.updateAnnotation : updateAnnotation)(selectedAnnotationId, { color: c });
+                  (notesActive ? notes.updateAnnotation : updateAnnotation)(selectedAnnotationId, {
+                    color: c,
+                  });
                 }
               }}
               onChangeStrokeWidth={(w) => setStrokeWidth(w)}
@@ -1613,7 +1933,11 @@ export function App() {
               onAttachImageClick={handleOpenImage}
               onUndo={handleGlobalUndo}
               onRedo={handleGlobalRedo}
-              onClearPageAnnotations={() => notesActive ? notes.clearAllAnnotationsForPage(notebook.page) : clearAllAnnotationsForPage(currentPage)}
+              onClearPageAnnotations={() =>
+                notesActive
+                  ? notes.clearAllAnnotationsForPage(notebook.page)
+                  : clearAllAnnotationsForPage(currentPage)
+              }
             />
           )}
 

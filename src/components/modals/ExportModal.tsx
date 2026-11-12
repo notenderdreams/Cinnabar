@@ -111,9 +111,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
       }, 1400);
     } catch (err: unknown) {
       console.error('Import error:', err);
-      setErrorMessage(
-        err instanceof Error ? err.message : 'Failed to import annotations file.'
-      );
+      setErrorMessage(err instanceof Error ? err.message : 'Failed to import annotations file.');
     } finally {
       setIsProcessing(false);
     }
@@ -139,9 +137,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
       }
     } catch (err: unknown) {
       console.error('Export error:', err);
-      setErrorMessage(
-        err instanceof Error ? err.message : 'Failed to export annotations file.'
-      );
+      setErrorMessage(err instanceof Error ? err.message : 'Failed to export annotations file.');
     } finally {
       setIsProcessing(false);
     }
@@ -169,9 +165,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
       }
     } catch (err: unknown) {
       console.error('Export PDF error:', err);
-      setErrorMessage(
-        err instanceof Error ? err.message : 'Failed to export modified PDF file.'
-      );
+      setErrorMessage(err instanceof Error ? err.message : 'Failed to export modified PDF file.');
     } finally {
       setIsProcessing(false);
     }
@@ -188,7 +182,13 @@ export const ExportModal: React.FC<ExportModalProps> = ({
       if (!canvas) return;
 
       const dataUrl = canvas.toDataURL('image/png');
-      if (!await saveImageFile(dataUrl, `${fileName.replace(/\.pdf$/i, '')}_page_${currentPage}.png`)) return;
+      if (
+        !(await saveImageFile(
+          dataUrl,
+          `${fileName.replace(/\.pdf$/i, '')}_page_${currentPage}.png`,
+        ))
+      )
+        return;
 
       triggerConfetti();
       setSuccessMessage(`Exported Page ${currentPage} snapshot!`);
@@ -203,13 +203,13 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in text-xs">
-      <div className="w-full max-w-md bg-[var(--popover)] border border-[var(--border)] rounded-2xl p-5 shadow-2xl flex flex-col gap-4 animate-slide-down">
+    <div className="animate-fade-in fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 text-xs backdrop-blur-xs">
+      <div className="animate-slide-down flex w-full max-w-md flex-col gap-4 rounded-2xl border border-[var(--border)] bg-[var(--popover)] p-5 shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex flex-col">
-            <h3 className="text-sm font-semibold text-zinc-100 tracking-tight flex items-center gap-1.5">
-              <FileOutput className="w-4 h-4 text-blue-500" />
+            <h3 className="flex items-center gap-1.5 text-sm font-semibold tracking-tight text-zinc-100">
+              <FileOutput className="h-4 w-4 text-blue-500" />
               <span>Annotation Transfer</span>
             </h3>
             <p className="text-[11px] text-zinc-400">
@@ -221,68 +221,71 @@ export const ExportModal: React.FC<ExportModalProps> = ({
           <button
             onClick={onClose}
             disabled={isProcessing}
-            className="btn-icon w-7 h-7 cursor-pointer"
+            className="btn-icon h-7 w-7 cursor-pointer"
           >
-            <X className="w-4 h-4" />
+            <X className="h-4 w-4" />
           </button>
         </div>
 
         {/* Feedback Alert */}
         {successMessage && (
-          <div className="p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 flex items-center gap-2 animate-slide-down">
-            <CheckCircle2 className="w-4 h-4 shrink-0" />
+          <div className="animate-slide-down flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/15 p-3 text-emerald-400">
+            <CheckCircle2 className="h-4 w-4 shrink-0" />
             <span className="font-medium">{successMessage}</span>
           </div>
         )}
         {errorMessage && (
-          <div className="p-3 rounded-xl bg-red-500/15 border border-red-500/30 text-red-400 flex items-center gap-2 animate-slide-down">
-            <AlertCircle className="w-4 h-4 shrink-0" />
+          <div className="animate-slide-down flex items-center gap-2 rounded-xl border border-red-500/30 bg-red-500/15 p-3 text-red-400">
+            <AlertCircle className="h-4 w-4 shrink-0" />
             <span className="font-medium">{errorMessage}</span>
           </div>
         )}
 
         {/* Option Group 1: Import */}
         <div className="flex flex-col gap-2">
-          <div className="text-[10.5px] font-semibold uppercase tracking-wider text-zinc-400 px-1 pt-1">
+          <div className="px-1 pt-1 text-[10.5px] font-semibold tracking-wider text-zinc-400 uppercase">
             Import
           </div>
 
           {/* Option: Import Annotations */}
-          <div className="flex flex-col gap-1.5 p-3 rounded-xl border border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/15 transition-all">
+          <div className="flex flex-col gap-1.5 rounded-xl border border-blue-500/30 bg-blue-500/10 p-3 transition-all hover:bg-blue-500/15">
             <div className="flex items-center justify-between">
               <button
                 onClick={handleImportJson}
                 disabled={isProcessing}
-                className="flex items-center gap-3 text-left flex-1 cursor-pointer group"
+                className="group flex flex-1 cursor-pointer items-center gap-3 text-left"
               >
-                <div className="w-8.5 h-8.5 rounded-lg bg-[var(--card)] border border-[var(--border)] flex items-center justify-center text-blue-500 shadow-xs group-hover:scale-105 transition-transform">
-                  <FileInput className="w-4 h-4" />
+                <div className="flex h-8.5 w-8.5 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--card)] text-blue-500 shadow-xs transition-transform group-hover:scale-105">
+                  <FileInput className="h-4 w-4" />
                 </div>
                 <div className="flex flex-col">
-                  <span className="font-semibold text-zinc-100 group-hover:text-white text-xs flex items-center gap-1.5">
+                  <span className="flex items-center gap-1.5 text-xs font-semibold text-zinc-100 group-hover:text-white">
                     Import Annotations
                   </span>
-                  <span className="text-[10.5px] text-zinc-400 leading-tight">
+                  <span className="text-[10.5px] leading-tight text-zinc-400">
                     Load shared highlights, notes & drawings
                   </span>
                 </div>
               </button>
               {isProcessing ? (
-                <Loader2 className="w-4 h-4 text-blue-400 animate-spin shrink-0" />
+                <Loader2 className="h-4 w-4 shrink-0 animate-spin text-blue-400" />
               ) : (
-                <FileInput className="w-4 h-4 text-blue-400/80 shrink-0" />
+                <FileInput className="h-4 w-4 shrink-0 text-blue-400/80" />
               )}
             </div>
 
             {hasOpenPdf && annotations.length > 0 && (
-              <label className="flex items-center gap-2 mt-1.5 pt-1.5 border-t border-blue-500/20 text-[10.5px] text-zinc-300 cursor-pointer select-none">
+              <label className="mt-1.5 flex cursor-pointer items-center gap-2 border-t border-blue-500/20 pt-1.5 text-[10.5px] text-zinc-300 select-none">
                 <input
                   type="checkbox"
                   checked={mergeMode}
                   onChange={(e) => setMergeMode(e.target.checked)}
-                  className="rounded border-[var(--border)] text-blue-500 focus:ring-blue-500 focus:ring-offset-0 bg-[var(--card)] cursor-pointer"
+                  className="cursor-pointer rounded border-[var(--border)] bg-[var(--card)] text-blue-500 focus:ring-blue-500 focus:ring-offset-0"
                 />
-                <span>Merge with existing {annotations.length} annotation{annotations.length === 1 ? '' : 's'} (uncheck to replace)</span>
+                <span>
+                  Merge with existing {annotations.length} annotation
+                  {annotations.length === 1 ? '' : 's'} (uncheck to replace)
+                </span>
               </label>
             )}
           </div>
@@ -291,7 +294,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
         {/* Option Group 2: Export Options (Only visible when a PDF is opened) */}
         {hasOpenPdf && (
           <div className="flex flex-col gap-2">
-            <div className="text-[10.5px] font-semibold uppercase tracking-wider text-zinc-400 px-1 pt-1">
+            <div className="px-1 pt-1 text-[10.5px] font-semibold tracking-wider text-zinc-400 uppercase">
               Export
             </div>
 
@@ -299,44 +302,45 @@ export const ExportModal: React.FC<ExportModalProps> = ({
             <button
               onClick={handleExportJson}
               disabled={isProcessing}
-              className="p-3 rounded-xl border border-[var(--border)] bg-[var(--secondary)] hover:bg-[var(--card)] text-left flex items-center justify-between group transition-all cursor-pointer"
+              className="group flex cursor-pointer items-center justify-between rounded-xl border border-[var(--border)] bg-[var(--secondary)] p-3 text-left transition-all hover:bg-[var(--card)]"
             >
               <div className="flex items-center gap-3">
-                <div className="w-8.5 h-8.5 rounded-lg bg-[var(--card)] border border-[var(--border)] flex items-center justify-center text-emerald-500 shadow-xs group-hover:scale-105 transition-transform">
-                  <FileOutput className="w-4 h-4" />
+                <div className="flex h-8.5 w-8.5 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--card)] text-emerald-500 shadow-xs transition-transform group-hover:scale-105">
+                  <FileOutput className="h-4 w-4" />
                 </div>
                 <div className="flex flex-col">
-                  <span className="font-medium text-zinc-200 group-hover:text-zinc-100 text-xs">
+                  <span className="text-xs font-medium text-zinc-200 group-hover:text-zinc-100">
                     Export Annotations
                   </span>
-                  <span className="text-[10.5px] text-zinc-400 leading-tight">
-                    Save {annotations.length} annotation{annotations.length === 1 ? '' : 's'} to a portable backup file
+                  <span className="text-[10.5px] leading-tight text-zinc-400">
+                    Save {annotations.length} annotation{annotations.length === 1 ? '' : 's'} to a
+                    portable backup file
                   </span>
                 </div>
               </div>
-              <FileOutput className="w-4 h-4 text-zinc-400 group-hover:text-emerald-400 transition-colors" />
+              <FileOutput className="h-4 w-4 text-zinc-400 transition-colors group-hover:text-emerald-400" />
             </button>
 
             {/* Option: Flattened PDF */}
             <button
               onClick={handleExportBakedPdf}
               disabled={isProcessing || !rawPdfBytes}
-              className="p-3 rounded-xl border border-[var(--border)] bg-[var(--secondary)] hover:bg-[var(--card)] text-left flex items-center justify-between group transition-all disabled:opacity-50 cursor-pointer"
+              className="group flex cursor-pointer items-center justify-between rounded-xl border border-[var(--border)] bg-[var(--secondary)] p-3 text-left transition-all hover:bg-[var(--card)] disabled:opacity-50"
             >
               <div className="flex items-center gap-3">
-                <div className="w-8.5 h-8.5 rounded-lg bg-[var(--card)] border border-[var(--border)] flex items-center justify-center text-amber-500 shadow-xs group-hover:scale-105 transition-transform">
-                  <FileText className="w-4 h-4" />
+                <div className="flex h-8.5 w-8.5 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--card)] text-amber-500 shadow-xs transition-transform group-hover:scale-105">
+                  <FileText className="h-4 w-4" />
                 </div>
                 <div className="flex flex-col">
-                  <span className="font-medium text-zinc-200 group-hover:text-zinc-100 text-xs">
+                  <span className="text-xs font-medium text-zinc-200 group-hover:text-zinc-100">
                     Save Modified PDF
                   </span>
-                  <span className="text-[10.5px] text-zinc-400 leading-tight">
+                  <span className="text-[10.5px] leading-tight text-zinc-400">
                     {(() => {
                       const count = annotations.filter(
                         (a) =>
                           a.type !== 'ai-explanation' &&
-                          (a.type !== 'text-note' || (a as { kind?: string }).kind === 'plain')
+                          (a.type !== 'text-note' || (a as { kind?: string }).kind === 'plain'),
                       ).length;
                       return count > 0
                         ? `Bakes ${count} annotation${count === 1 ? '' : 's'} (highlights, text & drawings) into a PDF`
@@ -345,29 +349,29 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                   </span>
                 </div>
               </div>
-              <FileDown className="w-4 h-4 text-zinc-400 group-hover:text-amber-400 transition-colors" />
+              <FileDown className="h-4 w-4 text-zinc-400 transition-colors group-hover:text-amber-400" />
             </button>
 
             {/* Option: Page Snapshot */}
             <button
               onClick={handleExportPagePng}
               disabled={isProcessing}
-              className="p-3 rounded-xl border border-[var(--border)] bg-[var(--secondary)] hover:bg-[var(--card)] text-left flex items-center justify-between group transition-all cursor-pointer"
+              className="group flex cursor-pointer items-center justify-between rounded-xl border border-[var(--border)] bg-[var(--secondary)] p-3 text-left transition-all hover:bg-[var(--card)]"
             >
               <div className="flex items-center gap-3">
-                <div className="w-8.5 h-8.5 rounded-lg bg-[var(--card)] border border-[var(--border)] flex items-center justify-center text-purple-500 shadow-xs group-hover:scale-105 transition-transform">
-                  <FileImage className="w-4 h-4" />
+                <div className="flex h-8.5 w-8.5 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--card)] text-purple-500 shadow-xs transition-transform group-hover:scale-105">
+                  <FileImage className="h-4 w-4" />
                 </div>
                 <div className="flex flex-col">
-                  <span className="font-medium text-zinc-200 group-hover:text-zinc-100 text-xs">
+                  <span className="text-xs font-medium text-zinc-200 group-hover:text-zinc-100">
                     Export Page Snapshot (Page {currentPage})
                   </span>
-                  <span className="text-[10.5px] text-zinc-400 leading-tight">
+                  <span className="text-[10.5px] leading-tight text-zinc-400">
                     High-res image snapshot of active page
                   </span>
                 </div>
               </div>
-              <FileDown className="w-4 h-4 text-zinc-400 group-hover:text-purple-400 transition-colors" />
+              <FileDown className="h-4 w-4 text-zinc-400 transition-colors group-hover:text-purple-400" />
             </button>
           </div>
         )}

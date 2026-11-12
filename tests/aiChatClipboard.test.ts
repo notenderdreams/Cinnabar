@@ -9,10 +9,13 @@ describe('AI clipboard image selection', () => {
       items: [
         { kind: 'string', type: 'text/plain', getAsFile: () => null },
         { kind: 'file', type: 'image/png', getAsFile: () => image },
-      ], files: [image],
+      ],
+      files: [image],
     } as unknown as DataTransfer;
     expect(getClipboardImageFiles(clipboard)).toEqual([image]);
-    expect(getClipboardImageFiles({ items: [clipboard.items[0]], files: [] } as unknown as DataTransfer)).toEqual([]);
+    expect(
+      getClipboardImageFiles({ items: [clipboard.items[0]], files: [] } as unknown as DataTransfer),
+    ).toEqual([]);
   });
 
   test('supports clipboard implementations that expose images through files only', () => {

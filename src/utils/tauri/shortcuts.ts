@@ -5,10 +5,7 @@ const nativeMenuHandlers = new Set<NativeMenuHandler>();
 let globalNativeMenuUnlisten: (() => void) | null = null;
 let isSettingUpNativeMenu = false;
 
-export function listenToNativeMenuEvents(
-  handler: NativeMenuHandler
-): () => void {
-
+export function listenToNativeMenuEvents(handler: NativeMenuHandler): () => void {
   // Each subscription owns its entry, even when callers reuse a callback.
   const subscription: NativeMenuHandler = (action) => handler(action);
   nativeMenuHandlers.add(subscription);
@@ -51,7 +48,9 @@ export function listenToNativeMenuEvents(
   };
 }
 
-export async function tauriGetRegisteredShortcuts(): Promise<import('../../lib/bindings').ShortcutBinding[]> {
+export async function tauriGetRegisteredShortcuts(): Promise<
+  import('../../lib/bindings').ShortcutBinding[]
+> {
   try {
     return await commands.getRegisteredShortcuts();
   } catch (err) {

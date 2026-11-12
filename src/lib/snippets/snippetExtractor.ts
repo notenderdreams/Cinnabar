@@ -9,7 +9,7 @@ export async function cropCanvasRegion(
   pageNumber: number,
   rect: { x: number; y: number; width: number; height: number },
   pdfDoc?: PDFDocumentProxy | null,
-  pageIdPrefix = 'pdf-page'
+  pageIdPrefix = 'pdf-page',
 ): Promise<SnippetImageEntry | null> {
   const safePageNum = Math.max(1, Math.floor(pageNumber));
   const pageContainer = document.getElementById(`${pageIdPrefix}-${safePageNum}`);
@@ -162,7 +162,7 @@ export interface StitchLayout {
 export function computeStitchLayout(
   snippets: SnippetEntry[],
   options?: StitchOptions,
-  imageDimensions?: Map<string, { width: number; height: number }>
+  imageDimensions?: Map<string, { width: number; height: number }>,
 ): StitchLayout {
   const padding = options?.padding ?? 24;
   const gap = options?.gap ?? 18;
@@ -246,7 +246,7 @@ function loadImage(src: string): Promise<HTMLImageElement> {
  */
 export async function stitchSnippetsToCanvas(
   snippets: SnippetEntry[],
-  options?: StitchOptions
+  options?: StitchOptions,
 ): Promise<HTMLCanvasElement | null> {
   if (!snippets || snippets.length === 0 || typeof document === 'undefined') return null;
 
@@ -454,7 +454,10 @@ export async function stitchSnippetsToCanvas(
 /**
  * Stitches all snippets into a single image and copies it to the system clipboard.
  */
-export async function copyStitchedSnippetsToClipboard(snippets: SnippetEntry[], options?: StitchOptions): Promise<boolean> {
+export async function copyStitchedSnippetsToClipboard(
+  snippets: SnippetEntry[],
+  options?: StitchOptions,
+): Promise<boolean> {
   const canvas = await stitchSnippetsToCanvas(snippets, options);
   return canvas ? tauriCopyImageToClipboard(canvas.toDataURL('image/png')) : false;
 }
@@ -462,7 +465,16 @@ export async function copyStitchedSnippetsToClipboard(snippets: SnippetEntry[], 
 /**
  * Downloads the stitched snippets image as a PNG file.
  */
-export async function downloadStitchedSnippets(snippets: SnippetEntry[], baseFileName = 'cinnabar_snippets', options?: StitchOptions): Promise<boolean> {
+export async function downloadStitchedSnippets(
+  snippets: SnippetEntry[],
+  baseFileName = 'cinnabar_snippets',
+  options?: StitchOptions,
+): Promise<boolean> {
   const canvas = await stitchSnippetsToCanvas(snippets, options);
-  return canvas ? saveImageFile(canvas.toDataURL('image/png'), `${baseFileName.replace(/\.pdf$/i, '')}_ai_digest.png`) : false;
+  return canvas
+    ? saveImageFile(
+        canvas.toDataURL('image/png'),
+        `${baseFileName.replace(/\.pdf$/i, '')}_ai_digest.png`,
+      )
+    : false;
 }

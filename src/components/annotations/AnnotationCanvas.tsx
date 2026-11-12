@@ -13,7 +13,10 @@ import type {
   TextNoteAnnotation,
   ToolType,
 } from '../../lib/types/index';
-import { resolveHighlightOpacity, toggleHighlightStyle } from '../../lib/annotations/highlightStyle';
+import {
+  resolveHighlightOpacity,
+  toggleHighlightStyle,
+} from '../../lib/annotations/highlightStyle';
 import {
   extractTextFromDomPageRegion,
   getTextLineBoundsAtPoint,
@@ -50,7 +53,10 @@ interface AnnotationCanvasProps {
   onChangeLineHighlightStyle?: (style: LineHighlightStyle) => void;
   onAddAnnotation: (ann: Annotation) => void;
   onDeleteAnnotation: (id: string) => void;
-  onCaptureSnippet?: (pageNumber: number, rect: { x: number; y: number; width: number; height: number }) => void;
+  onCaptureSnippet?: (
+    pageNumber: number,
+    rect: { x: number; y: number; width: number; height: number },
+  ) => void;
   onAiBoxCreated?: (annotationId: string) => void;
   onSelectTool?: (tool: ToolType) => void;
   pageIdPrefix?: string;
@@ -104,12 +110,14 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
 
   const isMouseDownRef = useRef(false);
   const isInteractingRef = useRef(false);
-  const clickTrackerRef = useRef<{ count: number; lastTime: number; lastX: number; lastY: number }>({
-    count: 0,
-    lastTime: 0,
-    lastX: 0,
-    lastY: 0,
-  });
+  const clickTrackerRef = useRef<{ count: number; lastTime: number; lastX: number; lastY: number }>(
+    {
+      count: 0,
+      lastTime: 0,
+      lastX: 0,
+      lastY: 0,
+    },
+  );
   const doubleClickTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -136,18 +144,20 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
             pageNumber,
             bounds,
             pageWidth,
-            pageHeight
+            pageHeight,
           )
         : findHighlightAnnotationsCoveringWord(
             annotations,
             pageNumber,
             bounds,
             pageWidth,
-            pageHeight
+            pageHeight,
           );
 
       const coverage = isLine ? computeLineHighlightCoverage(bounds, existingHighlights) : 1;
-      const shouldRemove = isLine ? existingHighlights.length > 0 && coverage >= 0.75 : existingHighlights.length > 0;
+      const shouldRemove = isLine
+        ? existingHighlights.length > 0 && coverage >= 0.75
+        : existingHighlights.length > 0;
 
       if (shouldRemove) {
         existingHighlights.forEach((a) => onDeleteAnnotation(a.id));
@@ -216,7 +226,7 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
       pageWidth,
       rectHighlightStyle,
       selectedColor,
-    ]
+    ],
   );
 
   const pageAnnotations = annotations.filter((a) => a.pageNumber === pageNumber);
@@ -228,7 +238,7 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
         a.type === 'highlight-text' ||
         a.type === 'highlight-line' ||
         a.type === 'highlight-pen' ||
-        a.type === 'pen')
+        a.type === 'pen'),
   ) as
     | RectHighlightAnnotation
     | TextHighlightAnnotation
@@ -272,10 +282,17 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
   }
 
   // Flash feedback state after capturing a snippet
-  const [capturedFlashRect, setCapturedFlashRect] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
+  const [capturedFlashRect, setCapturedFlashRect] = useState<{
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  } | null>(null);
 
   // Convert pointer event coordinates to normalized 0..1 coordinates relative to page dimensions
-  const getNormalizedCoords = (e: React.PointerEvent<HTMLDivElement> | React.MouseEvent<HTMLDivElement>): { x: number; y: number; px: number; py: number } => {
+  const getNormalizedCoords = (
+    e: React.PointerEvent<HTMLDivElement> | React.MouseEvent<HTMLDivElement>,
+  ): { x: number; y: number; px: number; py: number } => {
     if (!containerRef.current) return { x: 0, y: 0, px: 0, py: 0 };
     const rect = containerRef.current.getBoundingClientRect();
     const px = Math.max(0, Math.min(e.clientX - rect.left, pageWidth));
@@ -291,10 +308,7 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
   // Handle moving / dragging of rectangle highlights via toolbar handle
   const isDraggingHighlightRef = useRef(false);
 
-  const handleHighlightDragStart = (
-    e: React.PointerEvent,
-    rect: RectHighlightAnnotation
-  ) => {
+  const handleHighlightDragStart = (e: React.PointerEvent, rect: RectHighlightAnnotation) => {
     if (e.button !== 0) return;
     e.stopPropagation();
     e.preventDefault();
@@ -355,10 +369,7 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
   // Handle resizing of rectangle highlights via bottom-right corner handle
   const isResizingHighlightRef = useRef(false);
 
-  const handleHighlightResizeStart = (
-    e: React.PointerEvent,
-    rect: RectHighlightAnnotation
-  ) => {
+  const handleHighlightResizeStart = (e: React.PointerEvent, rect: RectHighlightAnnotation) => {
     if (e.button !== 0) return;
     e.stopPropagation();
     e.preventDefault();
@@ -419,10 +430,7 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
   // Handle moving / dragging of straight line highlights
   const isDraggingLineRef = useRef(false);
 
-  const handleLineDragStart = (
-    e: React.PointerEvent,
-    line: LineHighlightAnnotation
-  ) => {
+  const handleLineDragStart = (e: React.PointerEvent, line: LineHighlightAnnotation) => {
     if (e.button !== 0) return;
     e.stopPropagation();
     e.preventDefault();
@@ -494,7 +502,7 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
   const handleLineEndpointDragStart = (
     e: React.PointerEvent,
     line: LineHighlightAnnotation,
-    endpoint: 'start' | 'end'
+    endpoint: 'start' | 'end',
   ) => {
     if (e.button !== 0) return;
     e.stopPropagation();
@@ -636,7 +644,7 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
         fontSize: 14,
         fontFamily: 'sans',
         align: 'left',
-        width: activeTool === 'sticky-note' ? 0.20 : undefined,
+        width: activeTool === 'sticky-note' ? 0.2 : undefined,
         createdAt: Date.now(),
       };
       onAddAnnotation(newNote);
@@ -650,7 +658,10 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
 
     if (
       doubleClickTimerRef.current !== null &&
-      Math.hypot(e.clientX - clickTrackerRef.current.lastX, e.clientY - clickTrackerRef.current.lastY) > 5
+      Math.hypot(
+        e.clientX - clickTrackerRef.current.lastX,
+        e.clientY - clickTrackerRef.current.lastY,
+      ) > 5
     ) {
       clearTimeout(doubleClickTimerRef.current);
       doubleClickTimerRef.current = null;
@@ -729,13 +740,20 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
       if (Math.abs(endY - lineStart.y) * pageHeight < 10) {
         endY = lineStart.y;
       }
-      const distPx = Math.hypot((endX - lineStart.x) * pageWidth, (endY - lineStart.y) * pageHeight);
+      const distPx = Math.hypot(
+        (endX - lineStart.x) * pageWidth,
+        (endY - lineStart.y) * pageHeight,
+      );
       if (distPx > 6) {
         const minX = Math.min(lineStart.x, endX);
         const minY = Math.min(lineStart.y, endY);
         const w = Math.max(0.01, Math.abs(endX - lineStart.x));
         const h = Math.max(0.02, Math.abs(endY - lineStart.y));
-        const text = extractTextFromDomPageRegion(pageNumber, { x: minX, y: minY, width: w, height: h }, pageIdPrefix);
+        const text = extractTextFromDomPageRegion(
+          pageNumber,
+          { x: minX, y: minY, width: w, height: h },
+          pageIdPrefix,
+        );
 
         const newLine: LineHighlightAnnotation = {
           id: `line_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
@@ -746,7 +764,8 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
           endX,
           endY,
           color: selectedColor,
-          strokeWidth: lineHighlightStyle === 'underline' ? DEFAULT_UNDERLINE_WIDTH : strokeWidth * 2.8,
+          strokeWidth:
+            lineHighlightStyle === 'underline' ? DEFAULT_UNDERLINE_WIDTH : strokeWidth * 2.8,
           opacity: lineHighlightStyle === 'underline' ? 1 : opacity,
           style: lineHighlightStyle,
           text: text || undefined,
@@ -771,12 +790,16 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
         if (p.y < minY) minY = p.y;
         if (p.y > maxY) maxY = p.y;
       }
-      const text = extractTextFromDomPageRegion(pageNumber, {
-        x: minX,
-        y: minY,
-        width: Math.max(0.01, maxX - minX),
-        height: Math.max(0.01, maxY - minY),
-      }, pageIdPrefix);
+      const text = extractTextFromDomPageRegion(
+        pageNumber,
+        {
+          x: minX,
+          y: minY,
+          width: Math.max(0.01, maxX - minX),
+          height: Math.max(0.01, maxY - minY),
+        },
+        pageIdPrefix,
+      );
 
       const newDrawing: DrawingAnnotation = {
         id: `draw_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
@@ -798,7 +821,11 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
       const height = Math.abs(rectCurrent.y - rectStart.y);
 
       if (width * pageWidth > 6 && height * pageHeight > 6) {
-        const text = extractTextFromDomPageRegion(pageNumber, { x, y, width, height }, pageIdPrefix);
+        const text = extractTextFromDomPageRegion(
+          pageNumber,
+          { x, y, width, height },
+          pageIdPrefix,
+        );
 
         const newRect: RectHighlightAnnotation = {
           id: `rect_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
@@ -841,7 +868,7 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
       let height = Math.abs(aiCurrent.y - aiStart.y);
       if (width * pageWidth <= 12 || height * pageHeight <= 12) {
         const defaultW = Math.min(0.35, 240 / pageWidth);
-        const defaultH = Math.min(0.20, 140 / pageHeight);
+        const defaultH = Math.min(0.2, 140 / pageHeight);
         x = Math.max(0.01, Math.min(aiStart.x - defaultW / 2, 0.99 - defaultW));
         y = Math.max(0.01, Math.min(aiStart.y - defaultH / 2, 0.99 - defaultH));
         width = defaultW;
@@ -908,17 +935,16 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       onPointerCancel={handlePointerCancel}
-      className={`absolute inset-0 select-none touch-none ${
+      className={`absolute inset-0 touch-none select-none ${
         activeTool === 'select' || activeTool === 'image' || activeTool === 'eraser'
           ? 'pointer-events-none'
           : `${activeTool === 'text' ? 'cursor-text' : 'cursor-default'} pointer-events-auto`
       }`}
     >
-
       {/* 1. Highlight SVG Layer (Blends directly with PDF canvas underneath text) */}
       <svg
         data-pdf-highlight-layer
-        className="w-full h-full absolute inset-0 z-[5] pointer-events-none"
+        className="pointer-events-none absolute inset-0 z-[5] h-full w-full"
         style={{
           width: `${pageWidth}px`,
           height: `${pageHeight}px`,
@@ -981,7 +1007,10 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
                 x2={line.endX * pageWidth}
                 y2={line.endY * pageHeight}
                 stroke={line.color}
-                strokeWidth={(line.style === 'underline' ? DEFAULT_UNDERLINE_WIDTH : line.strokeWidth) * zoomScale}
+                strokeWidth={
+                  (line.style === 'underline' ? DEFAULT_UNDERLINE_WIDTH : line.strokeWidth) *
+                  zoomScale
+                }
                 strokeOpacity={line.style === 'underline' ? 1 : line.opacity}
                 strokeLinecap={line.style === 'underline' ? 'round' : 'square'}
               />
@@ -1012,23 +1041,29 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
         {activeTool === 'highlight-line' &&
           lineStart &&
           lineCurrent &&
-          Math.hypot((lineCurrent.x - lineStart.x) * pageWidth, (lineCurrent.y - lineStart.y) * pageHeight) > 3 && (
-          <line
-            className={colorFilterClass}
-            x1={lineStart.x * pageWidth}
-            y1={lineStart.y * pageHeight}
-            x2={lineCurrent.x * pageWidth}
-            y2={
-              Math.abs(lineCurrent.y - lineStart.y) * pageHeight < 10
-                ? lineStart.y * pageHeight
-                : lineCurrent.y * pageHeight
-            }
-            stroke={selectedColor}
-            strokeWidth={(lineHighlightStyle === 'underline' ? DEFAULT_UNDERLINE_WIDTH : strokeWidth * 2.8) * zoomScale}
-            strokeOpacity={lineHighlightStyle === 'underline' ? 1 : opacity}
-            strokeLinecap={lineHighlightStyle === 'underline' ? 'round' : 'square'}
-          />
-        )}
+          Math.hypot(
+            (lineCurrent.x - lineStart.x) * pageWidth,
+            (lineCurrent.y - lineStart.y) * pageHeight,
+          ) > 3 && (
+            <line
+              className={colorFilterClass}
+              x1={lineStart.x * pageWidth}
+              y1={lineStart.y * pageHeight}
+              x2={lineCurrent.x * pageWidth}
+              y2={
+                Math.abs(lineCurrent.y - lineStart.y) * pageHeight < 10
+                  ? lineStart.y * pageHeight
+                  : lineCurrent.y * pageHeight
+              }
+              stroke={selectedColor}
+              strokeWidth={
+                (lineHighlightStyle === 'underline' ? DEFAULT_UNDERLINE_WIDTH : strokeWidth * 2.8) *
+                zoomScale
+              }
+              strokeOpacity={lineHighlightStyle === 'underline' ? 1 : opacity}
+              strokeLinecap={lineHighlightStyle === 'underline' ? 'round' : 'square'}
+            />
+          )}
 
         {/* Active Freehand Highlight Pen in progress */}
         {activeTool === 'highlight-pen' && currentStroke && currentStroke.length > 1 && (
@@ -1051,24 +1086,24 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
           rectCurrent &&
           (Math.abs(rectCurrent.x - rectStart.x) * pageWidth > 3 ||
             Math.abs(rectCurrent.y - rectStart.y) * pageHeight > 3) && (
-          <rect
-            className={colorFilterClass}
-            x={Math.min(rectStart.x, rectCurrent.x) * pageWidth}
-            y={Math.min(rectStart.y, rectCurrent.y) * pageHeight}
-            width={Math.abs(rectCurrent.x - rectStart.x) * pageWidth}
-            height={Math.abs(rectCurrent.y - rectStart.y) * pageHeight}
-            fill={selectedColor}
-            fillOpacity={opacity}
-            stroke={selectedColor}
-            strokeWidth={Math.max(0.5, 1 * zoomScale)}
-          />
-        )}
+            <rect
+              className={colorFilterClass}
+              x={Math.min(rectStart.x, rectCurrent.x) * pageWidth}
+              y={Math.min(rectStart.y, rectCurrent.y) * pageHeight}
+              width={Math.abs(rectCurrent.x - rectStart.x) * pageWidth}
+              height={Math.abs(rectCurrent.y - rectStart.y) * pageHeight}
+              fill={selectedColor}
+              fillOpacity={opacity}
+              stroke={selectedColor}
+              strokeWidth={Math.max(0.5, 1 * zoomScale)}
+            />
+          )}
       </svg>
 
       {/* 2. Drawing, Strokes, Selection Outlines & Interactive Hit-Targets Layer */}
       <svg
         data-pdf-drawing-layer
-        className="w-full h-full absolute inset-0 z-20 pointer-events-none"
+        className="pointer-events-none absolute inset-0 z-20 h-full w-full"
         style={{ width: `${pageWidth}px`, height: `${pageHeight}px` }}
       >
         {/* Underlines for Text Highlights */}
@@ -1098,7 +1133,9 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
 
         {/* Outlines and Underlines for Rect Highlights */}
         {pageAnnotations
-          .filter((a) => a.type === 'highlight-rect' && (a.style === 'stroke' || a.style === 'underline'))
+          .filter(
+            (a) => a.type === 'highlight-rect' && (a.style === 'stroke' || a.style === 'underline'),
+          )
           .map((a) => {
             const rect = a as RectHighlightAnnotation;
             if (rect.style === 'stroke') {
@@ -1140,18 +1177,18 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
           rectCurrent &&
           (Math.abs(rectCurrent.x - rectStart.x) * pageWidth > 3 ||
             Math.abs(rectCurrent.y - rectStart.y) * pageHeight > 3) && (
-          <rect
-            className={colorFilterClass}
-            x={Math.min(rectStart.x, rectCurrent.x) * pageWidth}
-            y={Math.min(rectStart.y, rectCurrent.y) * pageHeight}
-            width={Math.abs(rectCurrent.x - rectStart.x) * pageWidth}
-            height={Math.abs(rectCurrent.y - rectStart.y) * pageHeight}
-            fill="none"
-            stroke={selectedColor}
-            strokeWidth={DEFAULT_RECT_STROKE_WIDTH * zoomScale}
-            strokeOpacity={1}
-          />
-        )}
+            <rect
+              className={colorFilterClass}
+              x={Math.min(rectStart.x, rectCurrent.x) * pageWidth}
+              y={Math.min(rectStart.y, rectCurrent.y) * pageHeight}
+              width={Math.abs(rectCurrent.x - rectStart.x) * pageWidth}
+              height={Math.abs(rectCurrent.y - rectStart.y) * pageHeight}
+              fill="none"
+              stroke={selectedColor}
+              strokeWidth={DEFAULT_RECT_STROKE_WIDTH * zoomScale}
+              strokeOpacity={1}
+            />
+          )}
         {/* Regular Pen Freehand Drawings */}
         {pageAnnotations
           .filter((a) => a.type === 'pen')
@@ -1185,8 +1222,6 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
             fill="none"
           />
         )}
-
-
 
         {/* Active Snip Rectangle in progress */}
         {activeTool === 'snip' && snipStart && snipCurrent && (
@@ -1241,7 +1276,11 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
             return (
               <g
                 key={`hit_th_${textHighlight.id}`}
-                className={activeTool === 'select' && isSelected ? 'pointer-events-auto cursor-pointer' : undefined}
+                className={
+                  activeTool === 'select' && isSelected
+                    ? 'pointer-events-auto cursor-pointer'
+                    : undefined
+                }
                 onClick={(e) => {
                   if (activeTool === 'select') {
                     e.stopPropagation();
@@ -1286,7 +1325,11 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
             return (
               <g
                 key={`hit_rect_${rect.id}`}
-                className={activeTool === 'select' && isSelected ? 'pointer-events-auto cursor-pointer' : undefined}
+                className={
+                  activeTool === 'select' && isSelected
+                    ? 'pointer-events-auto cursor-pointer'
+                    : undefined
+                }
                 onClick={(e) => {
                   if (activeTool === 'select') {
                     e.stopPropagation();
@@ -1326,7 +1369,9 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
             return (
               <g
                 key={`hit_line_${line.id}`}
-                className={activeTool === 'select' ? 'pointer-events-auto cursor-pointer' : undefined}
+                className={
+                  activeTool === 'select' ? 'pointer-events-auto cursor-pointer' : undefined
+                }
                 onClick={(e) => {
                   if (activeTool === 'select') {
                     e.stopPropagation();
@@ -1361,11 +1406,12 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
             left: `${Math.min(snipStart.x, snipCurrent.x) * pageWidth + 6}px`,
             top: `${Math.max(4, Math.min(snipStart.y, snipCurrent.y) * pageHeight - 24)}px`,
           }}
-          className="absolute z-50 px-2 py-0.5 rounded-md bg-blue-600/95 text-white font-mono text-[10px] shadow-lg pointer-events-none flex items-center gap-1.5 backdrop-blur-xs animate-fade-in whitespace-nowrap"
+          className="animate-fade-in pointer-events-none absolute z-50 flex items-center gap-1.5 rounded-md bg-blue-600/95 px-2 py-0.5 font-mono text-[10px] whitespace-nowrap text-white shadow-lg backdrop-blur-xs"
         >
           <span className="font-semibold text-blue-100">Snip P.{pageNumber}</span>
           <span className="text-white/80">
-            {Math.round(Math.abs(snipCurrent.x - snipStart.x) * pageWidth)} × {Math.round(Math.abs(snipCurrent.y - snipStart.y) * pageHeight)}px
+            {Math.round(Math.abs(snipCurrent.x - snipStart.x) * pageWidth)} ×{' '}
+            {Math.round(Math.abs(snipCurrent.y - snipStart.y) * pageHeight)}px
           </span>
         </div>
       )}
@@ -1377,7 +1423,7 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
             left: `${capturedFlashRect.x * pageWidth + 6}px`,
             top: `${Math.max(4, capturedFlashRect.y * pageHeight - 24)}px`,
           }}
-          className="absolute z-50 px-2.5 py-1 rounded-md bg-emerald-600 text-white font-medium text-[11px] shadow-xl pointer-events-none flex items-center gap-1.5 backdrop-blur-xs animate-fade-in whitespace-nowrap ring-1 ring-emerald-400"
+          className="animate-fade-in pointer-events-none absolute z-50 flex items-center gap-1.5 rounded-md bg-emerald-600 px-2.5 py-1 text-[11px] font-medium whitespace-nowrap text-white shadow-xl ring-1 ring-emerald-400 backdrop-blur-xs"
         >
           <span>✓ Region captured</span>
         </div>
@@ -1391,9 +1437,11 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
             top: `${(selectedHighlight.y + selectedHighlight.height) * pageHeight}px`,
             transform: 'translate(-50%, -50%)',
           }}
-          onPointerDown={(e) => handleHighlightResizeStart(e, selectedHighlight as RectHighlightAnnotation)}
+          onPointerDown={(e) =>
+            handleHighlightResizeStart(e, selectedHighlight as RectHighlightAnnotation)
+          }
           onMouseDown={(e) => e.stopPropagation()}
-          className="absolute z-40 w-3.5 h-3.5 bg-blue-500 border-2 border-white rounded-full cursor-nwse-resize shadow-md hover:scale-125 transition-transform pointer-events-auto select-none touch-none"
+          className="pointer-events-auto absolute z-40 h-3.5 w-3.5 cursor-nwse-resize touch-none rounded-full border-2 border-white bg-blue-500 shadow-md transition-transform select-none hover:scale-125"
           title="Drag to resize highlight"
           aria-label="Drag to resize highlight"
         />
@@ -1408,9 +1456,11 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
               top: `${selectedHighlight.startY * pageHeight}px`,
               transform: 'translate(-50%, -50%)',
             }}
-            onPointerDown={(e) => handleLineEndpointDragStart(e, selectedHighlight as LineHighlightAnnotation, 'start')}
+            onPointerDown={(e) =>
+              handleLineEndpointDragStart(e, selectedHighlight as LineHighlightAnnotation, 'start')
+            }
             onMouseDown={(e) => e.stopPropagation()}
-            className="absolute z-40 w-3.5 h-3.5 bg-blue-500 border-2 border-white rounded-full cursor-move shadow-md hover:scale-125 transition-transform pointer-events-auto select-none touch-none"
+            className="pointer-events-auto absolute z-40 h-3.5 w-3.5 cursor-move touch-none rounded-full border-2 border-white bg-blue-500 shadow-md transition-transform select-none hover:scale-125"
             title="Drag to adjust start point"
             aria-label="Drag to adjust start point"
           />
@@ -1420,9 +1470,11 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
               top: `${selectedHighlight.endY * pageHeight}px`,
               transform: 'translate(-50%, -50%)',
             }}
-            onPointerDown={(e) => handleLineEndpointDragStart(e, selectedHighlight as LineHighlightAnnotation, 'end')}
+            onPointerDown={(e) =>
+              handleLineEndpointDragStart(e, selectedHighlight as LineHighlightAnnotation, 'end')
+            }
             onMouseDown={(e) => e.stopPropagation()}
-            className="absolute z-40 w-3.5 h-3.5 bg-blue-500 border-2 border-white rounded-full cursor-move shadow-md hover:scale-125 transition-transform pointer-events-auto select-none touch-none"
+            className="pointer-events-auto absolute z-40 h-3.5 w-3.5 cursor-move touch-none rounded-full border-2 border-white bg-blue-500 shadow-md transition-transform select-none hover:scale-125"
             title="Drag to adjust end point"
             aria-label="Drag to adjust end point"
           />
@@ -1436,13 +1488,14 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
             left: `${Math.max(8, Math.min(selectedHighlightPos.x, pageWidth - 290))}px`,
             top: `${Math.max(8, selectedHighlightPos.y - 38)}px`,
           }}
-          className="absolute z-50 flex items-center gap-1.5 p-1 px-1.5 rounded-lg bg-[var(--popover)]/95 border border-[var(--border)] shadow-xl backdrop-blur-md pointer-events-auto select-none"
+          className="pointer-events-auto absolute z-50 flex items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--popover)]/95 p-1 px-1.5 shadow-xl backdrop-blur-md select-none"
           onClick={(e) => e.stopPropagation()}
           onMouseDown={(e) => e.stopPropagation()}
           onPointerDown={(e) => e.stopPropagation()}
         >
           {/* Drag Grip Handle for Rect or Line Highlight */}
-          {(selectedHighlight.type === 'highlight-rect' || selectedHighlight.type === 'highlight-line') && (
+          {(selectedHighlight.type === 'highlight-rect' ||
+            selectedHighlight.type === 'highlight-line') && (
             <div
               onPointerDown={(e) => {
                 if (selectedHighlight.type === 'highlight-rect') {
@@ -1451,24 +1504,24 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
                   handleLineDragStart(e, selectedHighlight as LineHighlightAnnotation);
                 }
               }}
-              className="flex items-center justify-center px-1.5 py-1 rounded-md bg-black/8 hover:bg-black/15 dark:bg-white/5 dark:hover:bg-white/10 text-[var(--muted-foreground)] hover:text-[var(--foreground)] cursor-grab active:cursor-grabbing transition-colors touch-none"
+              className="flex cursor-grab touch-none items-center justify-center rounded-md bg-black/8 px-1.5 py-1 text-[var(--muted-foreground)] transition-colors hover:bg-black/15 hover:text-[var(--foreground)] active:cursor-grabbing dark:bg-white/5 dark:hover:bg-white/10"
               title="Drag to move highlight"
               aria-label="Drag to move highlight"
             >
-              <GripHorizontal className="w-3.5 h-3.5" />
+              <GripHorizontal className="h-3.5 w-3.5" />
             </div>
           )}
 
           {/* Color Swatches */}
-          <div className="flex items-center gap-1 pr-1.5 border-r border-[var(--border)]">
+          <div className="flex items-center gap-1 border-r border-[var(--border)] pr-1.5">
             {highlightColors.map((c) => (
               <button
                 key={c}
                 type="button"
                 onClick={() => onUpdateAnnotation?.(selectedHighlight.id, { color: c })}
-                className={`w-4 h-4 rounded-full border transition-transform hover:scale-115 ${
+                className={`h-4 w-4 rounded-full border transition-transform hover:scale-115 ${
                   selectedHighlight.color.toLowerCase() === c.toLowerCase()
-                    ? 'ring-2 ring-blue-500 scale-110 border-white/60'
+                    ? 'scale-110 border-white/60 ring-2 ring-blue-500'
                     : 'border-black/20 hover:border-white/40'
                 }`}
                 style={{ backgroundColor: c }}
@@ -1489,15 +1542,23 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
                 });
                 onChangeHighlightStyle?.(nextStyle);
               }}
-              className={`w-5 h-5 rounded flex items-center justify-center transition-colors border ${
+              className={`flex h-5 w-5 items-center justify-center rounded border transition-colors ${
                 selectedHighlight.style === 'stroke'
-                  ? 'bg-blue-500/20 text-blue-400 border-blue-500/35'
-                  : 'border-transparent text-zinc-400 hover:text-zinc-200 hover:bg-[var(--secondary)]'
+                  ? 'border-blue-500/35 bg-blue-500/20 text-blue-400'
+                  : 'border-transparent text-zinc-400 hover:bg-[var(--secondary)] hover:text-zinc-200'
               }`}
-              title={selectedHighlight.style === 'stroke' ? 'Switch to Filled Box Highlight' : 'Switch to Outline / Stroke'}
-              aria-label={selectedHighlight.style === 'stroke' ? 'Switch to Filled Box Highlight' : 'Switch to Outline / Stroke'}
+              title={
+                selectedHighlight.style === 'stroke'
+                  ? 'Switch to Filled Box Highlight'
+                  : 'Switch to Outline / Stroke'
+              }
+              aria-label={
+                selectedHighlight.style === 'stroke'
+                  ? 'Switch to Filled Box Highlight'
+                  : 'Switch to Outline / Stroke'
+              }
             >
-              <Square className="w-3.5 h-3.5" />
+              <Square className="h-3.5 w-3.5" />
             </button>
           )}
 
@@ -1517,16 +1578,16 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
                 });
                 if (selectedHighlight.type === 'highlight-line') {
                   onChangeLineHighlightStyle?.(
-                    nextStyle === 'underline' ? 'underline' : 'highlight'
+                    nextStyle === 'underline' ? 'underline' : 'highlight',
                   );
                 } else {
                   onChangeHighlightStyle?.(nextStyle);
                 }
               }}
-              className={`w-5 h-5 rounded flex items-center justify-center transition-colors border ${
+              className={`flex h-5 w-5 items-center justify-center rounded border transition-colors ${
                 selectedHighlight.style === 'underline'
-                  ? 'bg-blue-500/20 text-blue-400 border-blue-500/35'
-                  : 'border-transparent text-zinc-400 hover:text-zinc-200 hover:bg-[var(--secondary)]'
+                  ? 'border-blue-500/35 bg-blue-500/20 text-blue-400'
+                  : 'border-transparent text-zinc-400 hover:bg-[var(--secondary)] hover:text-zinc-200'
               }`}
               title={
                 selectedHighlight.style === 'underline'
@@ -1543,7 +1604,7 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
                   : 'Switch to Underline'
               }
             >
-              <Underline className="w-3.5 h-3.5" />
+              <Underline className="h-3.5 w-3.5" />
             </button>
           )}
 
@@ -1554,20 +1615,20 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
               onDeleteAnnotation(selectedHighlight.id);
               onSelectAnnotation?.(null);
             }}
-            className="w-5 h-5 rounded flex items-center justify-center text-zinc-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+            className="flex h-5 w-5 items-center justify-center rounded text-zinc-400 transition-colors hover:bg-red-500/10 hover:text-red-400"
             title="Delete highlight"
           >
-            <Trash2 className="w-3.5 h-3.5" />
+            <Trash2 className="h-3.5 w-3.5" />
           </button>
 
           {/* Close Button */}
           <button
             type="button"
             onClick={() => onSelectAnnotation?.(null)}
-            className="w-5 h-5 rounded flex items-center justify-center text-zinc-400 hover:text-zinc-200 hover:bg-[var(--secondary)] transition-colors"
+            className="flex h-5 w-5 items-center justify-center rounded text-zinc-400 transition-colors hover:bg-[var(--secondary)] hover:text-zinc-200"
             title="Deselect"
           >
-            <X className="w-3 h-3" />
+            <X className="h-3 w-3" />
           </button>
         </div>
       )}

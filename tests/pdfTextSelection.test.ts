@@ -10,11 +10,11 @@ describe('PDF text selection', () => {
     ]);
 
     expect(pageSource).toContain("activeTool === 'select'");
-    expect(pageSource).toContain('select-text pointer-events-auto cursor-text');
+    expect(pageSource).toMatch(/pointer-events-auto cursor-text select-text/);
     expect(pageSource).toContain('data-pdf-canvas-layer');
     expect(pageSource).toContain('data-pdf-text-layer');
     expect(pageSource.indexOf('data-pdf-text-layer')).toBeGreaterThan(
-      pageSource.indexOf('data-pdf-canvas-layer')
+      pageSource.indexOf('data-pdf-canvas-layer'),
     );
 
     const selectionRule = styles.match(/\.textLayer ::selection\s*{([^}]*)}/)?.[1] ?? '';

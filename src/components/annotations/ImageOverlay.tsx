@@ -43,9 +43,8 @@ export const ImageOverlay: React.FC<ImageOverlayProps> = ({
 
   const isDarkTheme = usesInvertedColorSpace(currentTheme);
   const wasAttachedInDark = Boolean(annotation.attachedInInvertedMode);
-  const autoInvertEnabled = annotation.invertInLightMode !== undefined
-    ? annotation.invertInLightMode
-    : true; // Default auto-invert ON for adaptive reading
+  const autoInvertEnabled =
+    annotation.invertInLightMode !== undefined ? annotation.invertInLightMode : true; // Default auto-invert ON for adaptive reading
 
   // Compute CSS filter for the image so text/diagrams stay readable across both light and dark themes
   let imageFilterStyle: React.CSSProperties = {};
@@ -59,7 +58,8 @@ export const ImageOverlay: React.FC<ImageOverlayProps> = ({
     }
   }
 
-  const imageClassName = 'w-full h-full object-contain pointer-events-none rounded transition-all duration-200';
+  const imageClassName =
+    'w-full h-full object-contain pointer-events-none rounded transition-all duration-200';
 
   // Handle Dragging
   const handleMouseDownDrag = (e: React.MouseEvent) => {
@@ -129,7 +129,7 @@ export const ImageOverlay: React.FC<ImageOverlayProps> = ({
 
       const targetWidth = Math.max(
         0.04,
-        Math.min(initialAnnPosRef.current.width + dx, upperLimitWidth)
+        Math.min(initialAnnPosRef.current.width + dx, upperLimitWidth),
       );
       const targetPixelWidth = targetWidth * pageWidth;
       const targetPixelHeight = targetPixelWidth / aspectRatio;
@@ -155,10 +155,12 @@ export const ImageOverlay: React.FC<ImageOverlayProps> = ({
     e.stopPropagation();
     if (!annotation.extractedText) return;
     try {
-      if (!await tauriCopyTextToClipboard(annotation.extractedText)) return;
+      if (!(await tauriCopyTextToClipboard(annotation.extractedText))) return;
       setCopiedText(true);
       setTimeout(() => setCopiedText(false), 2000);
-    } catch (error) { console.error('Failed to copy text:', error); }
+    } catch (error) {
+      console.error('Failed to copy text:', error);
+    }
   };
 
   return (
@@ -191,12 +193,12 @@ export const ImageOverlay: React.FC<ImageOverlayProps> = ({
           handleMouseDownDrag(e);
         }
       }}
-      className={`group select-none transition-shadow ${
+      className={`group transition-shadow select-none ${
         activeTool === 'eraser'
-          ? 'cursor-pointer hover:opacity-40 ring-2 ring-red-400'
+          ? 'cursor-pointer ring-2 ring-red-400 hover:opacity-40'
           : isSelected
-          ? 'cursor-grab active:cursor-grabbing ring-2 ring-blue-500 shadow-[0_0_20px_rgba(59,130,246,0.5)] rounded-lg'
-          : 'cursor-grab active:cursor-grabbing hover:ring-1 hover:ring-white/40'
+            ? 'cursor-grab rounded-lg shadow-[0_0_20px_rgba(59,130,246,0.5)] ring-2 ring-blue-500 active:cursor-grabbing'
+            : 'cursor-grab hover:ring-1 hover:ring-white/40 active:cursor-grabbing'
       }`}
     >
       {/* The Attached Image */}
@@ -212,10 +214,7 @@ export const ImageOverlay: React.FC<ImageOverlayProps> = ({
           const naturalH = img.naturalHeight;
           if (naturalW > 0 && naturalH > 0 && pageWidth > 0 && pageHeight > 0) {
             const actualRatio = naturalW / naturalH;
-            if (
-              !annotation.aspectRatio ||
-              Math.abs(annotation.aspectRatio - actualRatio) > 0.05
-            ) {
+            if (!annotation.aspectRatio || Math.abs(annotation.aspectRatio - actualRatio) > 0.05) {
               const maxAllowedW = Math.max(0.04, 1 - annotation.x);
               const maxAllowedH = Math.max(0.04, 1 - annotation.y);
               const maxWidthFromBottom = (maxAllowedH * pageHeight * actualRatio) / pageWidth;
@@ -240,17 +239,21 @@ export const ImageOverlay: React.FC<ImageOverlayProps> = ({
         <>
           {/* Quick Floating Action Bar on top */}
           <div
-            className="absolute -top-12 left-1/2 -translate-x-1/2 flex items-center gap-1.5 p-1.5 rounded-xl bg-[#141418]/95 border border-white/20 backdrop-blur-xl shadow-2xl z-50 animate-slide-up whitespace-nowrap"
+            className="animate-slide-up absolute -top-12 left-1/2 z-50 flex -translate-x-1/2 items-center gap-1.5 rounded-xl border border-white/20 bg-[#141418]/95 p-1.5 whitespace-nowrap shadow-2xl backdrop-blur-xl"
             onMouseDown={(e) => e.stopPropagation()}
           >
             {/* Copy Raw Text (available when rasterized from text region) */}
             {annotation.extractedText && (
               <button
                 onClick={handleCopyRawText}
-                className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10.5px] font-medium bg-blue-600 hover:bg-blue-500 text-white transition-colors shadow-xs"
+                className="flex items-center gap-1 rounded-lg bg-blue-600 px-2.5 py-1 text-[10.5px] font-medium text-white shadow-xs transition-colors hover:bg-blue-500"
                 title="Copy extracted raw text from this region"
               >
-                {copiedText ? <Check className="w-3 h-3 text-white" /> : <Copy className="w-3 h-3 text-white" />}
+                {copiedText ? (
+                  <Check className="h-3 w-3 text-white" />
+                ) : (
+                  <Copy className="h-3 w-3 text-white" />
+                )}
                 <span>{copiedText ? 'Copied' : 'Copy Text'}</span>
               </button>
             )}
@@ -264,19 +267,17 @@ export const ImageOverlay: React.FC<ImageOverlayProps> = ({
               onChange={(e) =>
                 onUpdate(annotation.id, { opacity: parseInt(e.target.value, 10) / 100 })
               }
-              className="w-12 h-1.5 accent-blue-500 cursor-pointer ml-1"
+              className="ml-1 h-1.5 w-12 cursor-pointer accent-blue-500"
               title="Image Opacity"
             />
 
             {/* Smart Auto-Invert Mode Toggle */}
             <button
-              onClick={() =>
-                onUpdate(annotation.id, { invertInLightMode: !autoInvertEnabled })
-              }
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10.5px] font-medium border transition-all ${
+              onClick={() => onUpdate(annotation.id, { invertInLightMode: !autoInvertEnabled })}
+              className={`flex items-center gap-1 rounded-lg border px-2.5 py-1 text-[10.5px] font-medium transition-all ${
                 autoInvertEnabled
-                  ? 'bg-blue-500/20 border-blue-500/40 text-blue-300 shadow-xs'
-                  : 'bg-white/5 border-white/10 text-zinc-400 hover:text-white'
+                  ? 'border-blue-500/40 bg-blue-500/20 text-blue-300 shadow-xs'
+                  : 'border-white/10 bg-white/5 text-zinc-400 hover:text-white'
               }`}
               title={
                 autoInvertEnabled
@@ -285,9 +286,9 @@ export const ImageOverlay: React.FC<ImageOverlayProps> = ({
               }
             >
               {autoInvertEnabled ? (
-                <Moon className="w-3 h-3 text-blue-400" />
+                <Moon className="h-3 w-3 text-blue-400" />
               ) : (
-                <Sun className="w-3 h-3 text-zinc-400" />
+                <Sun className="h-3 w-3 text-zinc-400" />
               )}
               <span>{autoInvertEnabled ? 'Auto-Invert ON' : 'Auto-Invert OFF'}</span>
             </button>
@@ -297,31 +298,31 @@ export const ImageOverlay: React.FC<ImageOverlayProps> = ({
               onClick={() =>
                 onUpdate(annotation.id, { rotation: ((annotation.rotation || 0) + 90) % 360 })
               }
-              className="p-1.5 rounded-lg text-zinc-300 hover:text-white hover:bg-white/10"
+              className="rounded-lg p-1.5 text-zinc-300 hover:bg-white/10 hover:text-white"
               title="Rotate 90°"
             >
-              <RotateCw className="w-3.5 h-3.5" />
+              <RotateCw className="h-3.5 w-3.5" />
             </button>
 
             {/* Delete */}
             <button
               onClick={() => onDelete(annotation.id)}
-              className="p-1.5 rounded-lg text-red-400 hover:text-red-300 hover:bg-red-500/20"
+              className="rounded-lg p-1.5 text-red-400 hover:bg-red-500/20 hover:text-red-300"
               title="Delete Image"
             >
-              <Trash2 className="w-3.5 h-3.5" />
+              <Trash2 className="h-3.5 w-3.5" />
             </button>
           </div>
 
           {/* Corner Resize Handles */}
           <div
             onMouseDown={handleMouseDownResize}
-            className="absolute -bottom-2 -right-2 w-4 h-4 bg-blue-500 border-2 border-white rounded-full cursor-nwse-resize shadow-md hover:scale-125 transition-transform"
+            className="absolute -right-2 -bottom-2 h-4 w-4 cursor-nwse-resize rounded-full border-2 border-white bg-blue-500 shadow-md transition-transform hover:scale-125"
             title="Drag to resize"
           />
-          <div className="absolute -top-1.5 -left-1.5 w-3 h-3 bg-blue-500/80 rounded-full pointer-events-none" />
-          <div className="absolute -top-1.5 -right-1.5 w-3 h-3 bg-blue-500/80 rounded-full pointer-events-none" />
-          <div className="absolute -bottom-1.5 -left-1.5 w-3 h-3 bg-blue-500/80 rounded-full pointer-events-none" />
+          <div className="pointer-events-none absolute -top-1.5 -left-1.5 h-3 w-3 rounded-full bg-blue-500/80" />
+          <div className="pointer-events-none absolute -top-1.5 -right-1.5 h-3 w-3 rounded-full bg-blue-500/80" />
+          <div className="pointer-events-none absolute -bottom-1.5 -left-1.5 h-3 w-3 rounded-full bg-blue-500/80" />
         </>
       )}
     </div>

@@ -14,7 +14,11 @@ export interface ScannedPdfResult {
   num_pages?: number | null;
 }
 
-export async function tauriOpenPdf(): Promise<{ fileName: string; filePath: string; data: Uint8Array } | null> {
+export async function tauriOpenPdf(): Promise<{
+  fileName: string;
+  filePath: string;
+  data: Uint8Array;
+} | null> {
   try {
     const res = await commands.openPdfDialog();
     if (res && res.data) {
@@ -30,7 +34,9 @@ export async function tauriOpenPdf(): Promise<{ fileName: string; filePath: stri
   return null;
 }
 
-export async function tauriReadFile(filePath: string): Promise<{ fileName: string; filePath: string; data: Uint8Array } | null> {
+export async function tauriReadFile(
+  filePath: string,
+): Promise<{ fileName: string; filePath: string; data: Uint8Array } | null> {
   try {
     const res = await commands.readFileFromPath(filePath);
     if (res && res.data) {
@@ -46,7 +52,11 @@ export async function tauriReadFile(filePath: string): Promise<{ fileName: strin
   return null;
 }
 
-export async function tauriOpenImage(): Promise<{ fileName: string; filePath: string; dataUrl: string } | null> {
+export async function tauriOpenImage(): Promise<{
+  fileName: string;
+  filePath: string;
+  dataUrl: string;
+} | null> {
   try {
     const res = await commands.openImageDialog();
     if (res && res.data_url) {
@@ -62,7 +72,10 @@ export async function tauriOpenImage(): Promise<{ fileName: string; filePath: st
   return null;
 }
 
-export async function tauriSavePdf(pdfBytes: Uint8Array, defaultName: string): Promise<{ success: boolean; path?: string }> {
+export async function tauriSavePdf(
+  pdfBytes: Uint8Array,
+  defaultName: string,
+): Promise<{ success: boolean; path?: string }> {
   try {
     const res = await commands.savePdfDialog(Array.from(pdfBytes), defaultName);
     return {
@@ -85,7 +98,10 @@ export async function tauriWritePdf(pdfBytes: Uint8Array, filePath: string): Pro
   }
 }
 
-export async function tauriSaveJson(jsonString: string, defaultName: string): Promise<{ success: boolean; path?: string }> {
+export async function tauriSaveJson(
+  jsonString: string,
+  defaultName: string,
+): Promise<{ success: boolean; path?: string }> {
   try {
     const res = await commands.saveJsonDialog(jsonString, defaultName);
     return {
@@ -98,7 +114,11 @@ export async function tauriSaveJson(jsonString: string, defaultName: string): Pr
   }
 }
 
-export async function tauriOpenJson(): Promise<{ fileName: string; filePath: string; content: string } | null> {
+export async function tauriOpenJson(): Promise<{
+  fileName: string;
+  filePath: string;
+  content: string;
+} | null> {
   try {
     const res = await commands.openJsonDialog();
     if (res && res.data) {

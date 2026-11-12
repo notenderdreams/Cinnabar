@@ -5,7 +5,7 @@ describe('normalizeSelectionRects', () => {
   test('converts browser selection rectangles to normalized PDF page coordinates', () => {
     const rects = normalizeSelectionRects(
       [{ left: 120, top: 240, right: 320, bottom: 260, width: 200, height: 20 }],
-      { left: 100, top: 200, right: 500, bottom: 800, width: 400, height: 600 }
+      { left: 100, top: 200, right: 500, bottom: 800, width: 400, height: 600 },
     );
 
     expect(rects).toEqual([
@@ -25,7 +25,7 @@ describe('normalizeSelectionRects', () => {
         { left: 80, top: 120, right: 180, bottom: 140, width: 100, height: 20 },
         { left: 120, top: 720, right: 220, bottom: 740, width: 100, height: 20 },
       ],
-      page
+      page,
     );
 
     expect(rects).toEqual([
@@ -48,7 +48,7 @@ describe('normalizeSelectionRects', () => {
         { left: 355, top: 199, right: 480, bottom: 219, width: 125, height: 20 }, // 5px word space
         { left: 480, top: 200, right: 600, bottom: 220, width: 120, height: 20 },
       ],
-      page
+      page,
     );
 
     // Must result in exactly ONE single unified rectangle spanning from 100 to 600
@@ -60,7 +60,10 @@ describe('normalizeSelectionRects', () => {
 });
 
 describe('getLineSpansAtTarget and selectFullLineAtTarget', () => {
-  function createMockSpan(text: string, rect: { left: number; right: number; top: number; bottom: number }) {
+  function createMockSpan(
+    text: string,
+    rect: { left: number; right: number; top: number; bottom: number },
+  ) {
     const span = {
       textContent: text,
       childNodes: [{ nodeType: 3, textContent: text }],
@@ -87,12 +90,18 @@ describe('getLineSpansAtTarget and selectFullLineAtTarget', () => {
   }
 
   test('groups multiple spans on the same horizontal line into a single line selection', async () => {
-    const { getLineSpansAtTarget, selectFullLineAtTarget } = await import('../src/lib/annotations/textHighlight');
+    const { getLineSpansAtTarget, selectFullLineAtTarget } =
+      await import('../src/lib/annotations/textHighlight');
 
     const span1 = createMockSpan('The quick ', { left: 50, right: 120, top: 100, bottom: 120 });
     const span2 = createMockSpan('brown fox ', { left: 125, right: 195, top: 100, bottom: 120 });
     const span3 = createMockSpan('jumps', { left: 200, right: 250, top: 100, bottom: 120 });
-    const span4 = createMockSpan('Second line of text', { left: 50, right: 200, top: 130, bottom: 150 });
+    const span4 = createMockSpan('Second line of text', {
+      left: 50,
+      right: 200,
+      top: 130,
+      bottom: 150,
+    });
 
     const container = createMockContainer([span1, span2, span3, span4]);
 
@@ -114,7 +123,11 @@ describe('getLineSpansAtTarget and selectFullLineAtTarget', () => {
     (globalThis as unknown as { window: { getSelection: () => unknown } }).window = {
       getSelection: () => mockSelection,
     };
-    (globalThis as unknown as { document: { createRange: () => unknown; createTreeWalker: (node: unknown) => unknown } }).document = {
+    (
+      globalThis as unknown as {
+        document: { createRange: () => unknown; createTreeWalker: (node: unknown) => unknown };
+      }
+    ).document = {
       createRange: () => ({
         setStart: () => {},
         setEnd: () => {},
@@ -138,7 +151,8 @@ describe('getLineSpansAtTarget and selectFullLineAtTarget', () => {
       expect(setRangeCalled).toBe(true);
     } finally {
       if (origGetSelection) {
-        (globalThis as unknown as { window: { getSelection: unknown } }).window.getSelection = origGetSelection;
+        (globalThis as unknown as { window: { getSelection: unknown } }).window.getSelection =
+          origGetSelection;
       }
       if (origDoc) {
         (globalThis as unknown as { document: unknown }).document = origDoc;
@@ -151,9 +165,19 @@ describe('getLineSpansAtTarget and selectFullLineAtTarget', () => {
   test('does not group spans across large column gaps on multi-column pages', async () => {
     const { getLineSpansAtTarget } = await import('../src/lib/annotations/textHighlight');
 
-    const col1Span1 = createMockSpan('Column 1 text ', { left: 50, right: 150, top: 100, bottom: 120 });
+    const col1Span1 = createMockSpan('Column 1 text ', {
+      left: 50,
+      right: 150,
+      top: 100,
+      bottom: 120,
+    });
     const col1Span2 = createMockSpan('here', { left: 155, right: 200, top: 100, bottom: 120 });
-    const col2Span = createMockSpan('Column 2 parallel text', { left: 450, right: 600, top: 100, bottom: 120 });
+    const col2Span = createMockSpan('Column 2 parallel text', {
+      left: 450,
+      right: 600,
+      top: 100,
+      bottom: 120,
+    });
 
     const container = createMockContainer([col1Span1, col1Span2, col2Span]);
 
@@ -163,9 +187,8 @@ describe('getLineSpansAtTarget and selectFullLineAtTarget', () => {
   });
 
   test('findHighlightAnnotationsCoveringWord and findHighlightAnnotationsCoveringLine find overlapping highlights', async () => {
-    const { findHighlightAnnotationsCoveringWord, findHighlightAnnotationsCoveringLine } = await import(
-      '../src/lib/annotations/textHighlight'
-    );
+    const { findHighlightAnnotationsCoveringWord, findHighlightAnnotationsCoveringLine } =
+      await import('../src/lib/annotations/textHighlight');
 
     const rectHighlight = {
       id: 'rect_1',
@@ -234,11 +257,23 @@ describe('getLineSpansAtTarget and selectFullLineAtTarget', () => {
 
     const annotations = [rectHighlight, otherPageHighlight];
 
-    const wordHits = findHighlightAnnotationsCoveringWord(annotations, 1, wordBoundsInside, 1000, 1000);
+    const wordHits = findHighlightAnnotationsCoveringWord(
+      annotations,
+      1,
+      wordBoundsInside,
+      1000,
+      1000,
+    );
     expect(wordHits).toHaveLength(1);
     expect(wordHits[0].id).toBe('rect_1');
 
-    const wordMisses = findHighlightAnnotationsCoveringWord(annotations, 1, wordBoundsOutside, 1000, 1000);
+    const wordMisses = findHighlightAnnotationsCoveringWord(
+      annotations,
+      1,
+      wordBoundsOutside,
+      1000,
+      1000,
+    );
     expect(wordMisses).toHaveLength(0);
 
     const lineHits = findHighlightAnnotationsCoveringLine(annotations, 1, lineBounds, 1000, 1000);

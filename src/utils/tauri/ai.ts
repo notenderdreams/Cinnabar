@@ -45,8 +45,7 @@ export interface AiExplanationRequest {
 }
 
 export type AiExplanationResult =
-  | { ok: true; response: string }
-  | { ok: false; code: AiExplanationErrorCode; message: string };
+  { ok: true; response: string } | { ok: false; code: AiExplanationErrorCode; message: string };
 
 const AI_ERROR_CODES = new Set<AiExplanationErrorCode>([
   'missing_cli',
@@ -58,7 +57,9 @@ const AI_ERROR_CODES = new Set<AiExplanationErrorCode>([
   'malformed_output',
 ]);
 
-function normalizeProviderStatus(status: Awaited<ReturnType<typeof commands.getAiProviderStatus>>): AiProviderStatus {
+function normalizeProviderStatus(
+  status: Awaited<ReturnType<typeof commands.getAiProviderStatus>>,
+): AiProviderStatus {
   const value = unwrapNativeResult(status);
   const availableProviders: DiscoveredAiProvider[] = (value.availableProviders || []).map((p) => ({
     id: p.id,
@@ -105,9 +106,10 @@ function normalizeExplanationResult(
   if (value.ok && typeof value.response === 'string') {
     return { ok: true, response: value.response };
   }
-  const code = typeof value.code === 'string' && AI_ERROR_CODES.has(value.code as AiExplanationErrorCode)
-    ? value.code as AiExplanationErrorCode
-    : 'process_failed';
+  const code =
+    typeof value.code === 'string' && AI_ERROR_CODES.has(value.code as AiExplanationErrorCode)
+      ? (value.code as AiExplanationErrorCode)
+      : 'process_failed';
   return {
     ok: false,
     code,
@@ -127,14 +129,27 @@ export async function setAiProviderPreference(
   providerId: string,
   executablePath?: string | null,
 ): Promise<AiProviderStatus> {
-  return normalizeProviderStatus(await commands.setAiProviderPreference(providerId, executablePath ?? null));
+  return normalizeProviderStatus(
+    await commands.setAiProviderPreference(providerId, executablePath ?? null),
+  );
 }
 
-export async function runAiExplanation(request: AiExplanationRequest): Promise<AiExplanationResult> {
+export async function runAiExplanation(
+  request: AiExplanationRequest,
+): Promise<AiExplanationResult> {
   try {
-    return normalizeExplanationResult(await commands.runAiExplanation({ ...request, responseFormat: request.responseFormat ?? null }));
+    return normalizeExplanationResult(
+      await commands.runAiExplanation({
+        ...request,
+        responseFormat: request.responseFormat ?? null,
+      }),
+    );
   } catch (error) {
-    return { ok: false, code: 'process_failed', message: error instanceof Error ? error.message : String(error) };
+    return {
+      ok: false,
+      code: 'process_failed',
+      message: error instanceof Error ? error.message : String(error),
+    };
   }
 }
 

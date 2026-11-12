@@ -15,14 +15,26 @@ describe('Highlight layer and line highlight selection', () => {
     // text layer. Its children straddle the text layer instead: highlight fills
     // below it, with drawings and interactive controls above it.
     expect(pageSource).toContain('data-pdf-text-layer');
-    expect(pageSource).toContain('leading-none z-10');
+    expect(pageSource).toMatch(/className=\{`textLayer[^`]*\bz-10\b/);
     expect(canvasSource).not.toContain('absolute inset-0 z-20 select-none touch-none');
-    expect(canvasSource).toContain(
-      'data-pdf-highlight-layer\n        className="w-full h-full absolute inset-0 z-[5] pointer-events-none"'
-    );
-    expect(canvasSource).toContain(
-      'data-pdf-drawing-layer\n        className="w-full h-full absolute inset-0 z-20 pointer-events-none"'
-    );
+    for (const [layer, zIndex] of [
+      ['highlight', 'z-[5]'],
+      ['drawing', 'z-20'],
+    ]) {
+      const classes = canvasSource
+        .match(new RegExp(`data-pdf-${layer}-layer\\s+className="([^"]+)"`))?.[1]
+        .split(/\s+/);
+      expect(classes).toEqual(
+        expect.arrayContaining([
+          'w-full',
+          'h-full',
+          'absolute',
+          'inset-0',
+          zIndex,
+          'pointer-events-none',
+        ]),
+      );
+    }
   });
 
   test('makes straight line highlights selectable, draggable, and resizable with endpoint handles', async () => {
@@ -65,7 +77,9 @@ describe('Highlight layer and line highlight selection', () => {
     expect(canvasSource).toContain('const zoomScale = Math.max(0.1, scale);');
     expect(canvasSource).toContain('const DEFAULT_UNDERLINE_WIDTH = 1.5;');
     expect(canvasSource).toContain('const DEFAULT_RECT_STROKE_WIDTH = 1.5;');
-    expect(canvasSource).toContain("strokeWidth={(line.style === 'underline' ? DEFAULT_UNDERLINE_WIDTH : line.strokeWidth) * zoomScale}");
+    expect(canvasSource).toMatch(
+      /strokeWidth=\{\s*\(line\.style === 'underline' \? DEFAULT_UNDERLINE_WIDTH : line\.strokeWidth\)\s*\*\s*zoomScale\s*\}/,
+    );
     expect(canvasSource).toContain('strokeWidth={draw.strokeWidth * zoomScale}');
     expect(canvasSource).toContain('strokeWidth={DEFAULT_UNDERLINE_WIDTH * zoomScale}');
     expect(canvasSource).toContain('strokeWidth={DEFAULT_RECT_STROKE_WIDTH * zoomScale}');

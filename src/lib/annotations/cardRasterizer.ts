@@ -61,7 +61,7 @@ function getEmbeddedStyles(): string {
  */
 function trimExcessBottomPadding(
   dataUrl: string,
-  dpr: number = 2
+  dpr: number = 2,
 ): Promise<{ dataUrl: string; width: number; height: number }> {
   return new Promise((resolve) => {
     if (typeof document === 'undefined') {
@@ -109,7 +109,7 @@ function trimExcessBottomPadding(
         const paddingBottomPx = Math.round(10 * dpr);
         const trimmedHeight = Math.min(
           height,
-          Math.max(Math.round(50 * dpr), bottomContentY + paddingBottomPx)
+          Math.max(Math.round(50 * dpr), bottomContentY + paddingBottomPx),
         );
 
         if (trimmedHeight < height - 10) {
@@ -146,7 +146,7 @@ export async function rasterizeResponseCard(
   cardElement: HTMLElement | null,
   prompt: string,
   response: string,
-  isDarkTheme: boolean = false
+  isDarkTheme: boolean = false,
 ): Promise<{ dataUrl: string; width: number; height: number }> {
   if (cardElement && typeof document !== 'undefined') {
     try {
@@ -168,20 +168,26 @@ export async function rasterizeResponseCard(
       const prevBoxShadow = cardElement.style.boxShadow;
 
       // Temporarily hide Question section and Action buttons before measuring height
-      const questionEl = cardElement.querySelector('[data-ai-question="true"], .ai-question-section');
-      const prevQuestionDisplay = questionEl instanceof HTMLElement ? questionEl.style.display : null;
+      const questionEl = cardElement.querySelector(
+        '[data-ai-question="true"], .ai-question-section',
+      );
+      const prevQuestionDisplay =
+        questionEl instanceof HTMLElement ? questionEl.style.display : null;
       if (questionEl instanceof HTMLElement) {
         questionEl.style.display = 'none';
       }
 
       const buttonBar = cardElement.querySelector('.flex.items-center.justify-end');
-      const prevButtonBarDisplay = buttonBar instanceof HTMLElement ? buttonBar.style.display : null;
+      const prevButtonBarDisplay =
+        buttonBar instanceof HTMLElement ? buttonBar.style.display : null;
       if (buttonBar instanceof HTMLElement) {
         buttonBar.style.display = 'none';
       }
 
       // Hide all buttons
-      const buttons = cardElement.querySelectorAll('button, .btn-icon, .btn-ghost, .btn-primary, .btn-secondary');
+      const buttons = cardElement.querySelectorAll(
+        'button, .btn-icon, .btn-ghost, .btn-primary, .btn-secondary',
+      );
       const prevDisplayMap = new Map<HTMLElement, string>();
       buttons.forEach((btn) => {
         if (btn instanceof HTMLElement) {
@@ -192,7 +198,7 @@ export async function rasterizeResponseCard(
 
       // Ensure nested math/scroll containers don't clip
       const nestedScrolls = cardElement.querySelectorAll(
-        '.katex-display, pre, table, .overflow-auto, .overflow-x-auto'
+        '.katex-display, pre, table, .overflow-auto, .overflow-x-auto',
       );
       const prevScrollStyles = new Map<HTMLElement, { overflow: string; maxWidth: string }>();
       nestedScrolls.forEach((node) => {
@@ -223,8 +229,14 @@ export async function rasterizeResponseCard(
       cardElement.style.boxShadow = 'none';
 
       // Measure actual rendered bounding box
-      const targetWidth = Math.max(360, Math.ceil(cardElement.offsetWidth || cardElement.scrollWidth || 440));
-      const targetHeight = Math.max(60, Math.ceil(cardElement.scrollHeight || cardElement.offsetHeight || 180));
+      const targetWidth = Math.max(
+        360,
+        Math.ceil(cardElement.offsetWidth || cardElement.scrollWidth || 440),
+      );
+      const targetHeight = Math.max(
+        60,
+        Math.ceil(cardElement.scrollHeight || cardElement.offsetHeight || 180),
+      );
 
       const embeddedStyles = getEmbeddedStyles();
 
@@ -322,7 +334,11 @@ export async function rasterizeResponseCard(
       cardElement.style.backgroundColor = prevBackgroundColor;
       cardElement.style.boxShadow = prevBoxShadow;
 
-      if (rawDataUrl && rawDataUrl.length > 200 && rawDataUrl.startsWith('data:image/png;base64,')) {
+      if (
+        rawDataUrl &&
+        rawDataUrl.length > 200 &&
+        rawDataUrl.startsWith('data:image/png;base64,')
+      ) {
         return await trimExcessBottomPadding(rawDataUrl, 2);
       }
     } catch (err) {
@@ -435,11 +451,7 @@ function parseMarkdownLines(markdown: string): RenderItem[] {
   return items;
 }
 
-function wrapText(
-  text: string,
-  maxWidth: number,
-  measureFn: (str: string) => number
-): string[] {
+function wrapText(text: string, maxWidth: number, measureFn: (str: string) => number): string[] {
   const words = text.split(' ');
   const lines: string[] = [];
   let currentLine = '';
@@ -464,7 +476,7 @@ function wrapText(
 export function renderAiExplanationCardToCanvas(
   _prompt: string,
   response: string,
-  isDark: boolean = false
+  isDark: boolean = false,
 ): { dataUrl: string; width: number; height: number } {
   const cardWidth = 520;
   const padding = 16;
@@ -626,7 +638,7 @@ function drawFormattedLine(
   line: string,
   startX: number,
   y: number,
-  defaultColor: string
+  defaultColor: string,
 ) {
   const spans = parseFormattedSpans(line);
   let currentX = startX;

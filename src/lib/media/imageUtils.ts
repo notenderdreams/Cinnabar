@@ -66,7 +66,9 @@ export function calculateImagePlacement(options: ImagePlacementOptions): ImagePl
 
   const dpr =
     options.devicePixelRatio ||
-    (typeof window !== 'undefined' && window.devicePixelRatio ? Math.max(1, window.devicePixelRatio) : 2);
+    (typeof window !== 'undefined' && window.devicePixelRatio
+      ? Math.max(1, window.devicePixelRatio)
+      : 2);
 
   const imgW = options.imageWidth;
   const naturalWidthRatio = imgW ? imgW / dpr / pWidth : 0.32;

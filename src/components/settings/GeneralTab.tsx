@@ -7,23 +7,24 @@ interface GeneralTabProps {
   onChangeViewMode?: (mode: ViewMode) => void;
 }
 
-export const VIEW_MODES: { id: ViewMode; label: string; icon: React.FC<{ className?: string }> }[] = [
-  { id: 'continuous' as ViewMode, label: 'Continuous Scroll', icon: Layers },
-  { id: 'single' as ViewMode, label: 'Single Page', icon: FileText },
-  { id: 'spread' as ViewMode, label: 'Side by Side', icon: BookOpen },
-];
+export const VIEW_MODES: { id: ViewMode; label: string; icon: React.FC<{ className?: string }> }[] =
+  [
+    { id: 'continuous' as ViewMode, label: 'Continuous Scroll', icon: Layers },
+    { id: 'single' as ViewMode, label: 'Single Page', icon: FileText },
+    { id: 'spread' as ViewMode, label: 'Side by Side', icon: BookOpen },
+  ];
 
 export function GeneralTab({ viewMode, onChangeViewMode }: GeneralTabProps) {
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <h3 className="text-sm font-semibold text-[var(--foreground)] mb-1">General Preferences</h3>
-        <p className="text-zinc-400 text-[11px] leading-relaxed">
+        <h3 className="mb-1 text-sm font-semibold text-[var(--foreground)]">General Preferences</h3>
+        <p className="text-[11px] leading-relaxed text-zinc-400">
           Configure document layout, reading behavior, and default startup preferences.
         </p>
       </div>
 
-      <div className="flex flex-col gap-3 p-3.5 rounded-xl bg-[var(--card)] border border-[var(--border)]">
+      <div className="flex flex-col gap-3 rounded-xl border border-[var(--border)] bg-[var(--card)] p-3.5">
         <div className="flex flex-col gap-1">
           <span className="font-medium text-zinc-200">Default Reading Layout</span>
           <span className="text-[11px] text-zinc-400">
@@ -40,13 +41,13 @@ export function GeneralTab({ viewMode, onChangeViewMode }: GeneralTabProps) {
                 key={mode.id}
                 type="button"
                 onClick={() => onChangeViewMode?.(mode.id)}
-                className={`flex flex-col items-center justify-center gap-1.5 p-3 rounded-lg border text-center transition-all ${
+                className={`flex flex-col items-center justify-center gap-1.5 rounded-lg border p-3 text-center transition-all ${
                   isCurrent
-                    ? 'bg-blue-600 text-white border-blue-500 font-semibold shadow-sm'
-                    : 'bg-[var(--secondary)] border-[var(--border)] text-zinc-300 hover:bg-black/5 dark:hover:bg-white/5'
+                    ? 'border-blue-500 bg-blue-600 font-semibold text-white shadow-sm'
+                    : 'border-[var(--border)] bg-[var(--secondary)] text-zinc-300 hover:bg-black/5 dark:hover:bg-white/5'
                 }`}
               >
-                <Icon className={`w-4 h-4 ${isCurrent ? 'text-white' : 'text-zinc-400'}`} />
+                <Icon className={`h-4 w-4 ${isCurrent ? 'text-white' : 'text-zinc-400'}`} />
                 <span className="text-[11px]">{mode.label}</span>
               </button>
             );

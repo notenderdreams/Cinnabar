@@ -5,7 +5,9 @@ let deliver: (event: { payload: string }) => void;
 let resolveListen: (unlisten: () => void) => void;
 const listen = mock((_name: string, callback: typeof deliver) => {
   deliver = callback;
-  return new Promise<() => void>((resolve) => { resolveListen = resolve; });
+  return new Promise<() => void>((resolve) => {
+    resolveListen = resolve;
+  });
 });
 mock.module('@tauri-apps/api/event', () => ({ listen }));
 

@@ -69,14 +69,17 @@ export async function createSamplePDF(): Promise<Uint8Array> {
     color: rgb(0.15, 0.35, 0.8),
   });
 
-  page1.drawText('Welcome to Cinnabar. You can test all features on this document:\n1. Use the Highlighter (H) to mark key phrases or draw highlight boxes over charts.\n2. Invert colors (Cmd+I) or switch between OLED, Sepia, Nord & Matrix reading themes.\n3. Attach images, stamps, or logos (I) anywhere on the page and resize/drag them.\n4. Click "Export PDF" (Cmd+S) to permanently bake all annotations into a new PDF!', {
-    x: 55,
-    y: p1H - 195,
-    size: 9.5,
-    font: fontHelvetica,
-    color: rgb(0.2, 0.25, 0.35),
-    lineHeight: 14,
-  });
+  page1.drawText(
+    'Welcome to Cinnabar. You can test all features on this document:\n1. Use the Highlighter (H) to mark key phrases or draw highlight boxes over charts.\n2. Invert colors (Cmd+I) or switch between OLED, Sepia, Nord & Matrix reading themes.\n3. Attach images, stamps, or logos (I) anywhere on the page and resize/drag them.\n4. Click "Export PDF" (Cmd+S) to permanently bake all annotations into a new PDF!',
+    {
+      x: 55,
+      y: p1H - 195,
+      size: 9.5,
+      font: fontHelvetica,
+      color: rgb(0.2, 0.25, 0.35),
+      lineHeight: 14,
+    },
+  );
 
   // Section 1
   page1.drawText('1. Continuous Canvas Rendering Pipeline', {

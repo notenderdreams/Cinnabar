@@ -16,7 +16,11 @@ export function useAnnotations(docKey: string, docInfo?: DocumentInfo | null) {
     if (docInfo?.filePath && docInfo.filePath !== docKey) {
       keys.push(docInfo.filePath);
     }
-    if (docInfo?.fingerprint && docInfo.fingerprint !== docKey && !keys.includes(docInfo.fingerprint)) {
+    if (
+      docInfo?.fingerprint &&
+      docInfo.fingerprint !== docKey &&
+      !keys.includes(docInfo.fingerprint)
+    ) {
       keys.push(docInfo.fingerprint);
     }
     if (docInfo?.fileName && (docInfo?.numPages || docInfo?.fileSize)) {
@@ -26,11 +30,18 @@ export function useAnnotations(docKey: string, docInfo?: DocumentInfo | null) {
       }
     }
     return keys;
-  }, [docInfo?.filePath, docInfo?.fileName, docInfo?.fingerprint, docInfo?.numPages, docInfo?.fileSize, docKey]);
+  }, [
+    docInfo?.filePath,
+    docInfo?.fileName,
+    docInfo?.fingerprint,
+    docInfo?.numPages,
+    docInfo?.fileSize,
+    docKey,
+  ]);
 
   const storageIdentity = useMemo(
     () => [docKey, ...fallbackKeys].join('\u0000'),
-    [docKey, fallbackKeys]
+    [docKey, fallbackKeys],
   );
 
   const [annotations, setAnnotations] = useState<Annotation[]>(() => {
@@ -46,7 +57,7 @@ export function useAnnotations(docKey: string, docInfo?: DocumentInfo | null) {
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'error'>('saved');
   const [loadedRecordIdentity, setLoadedRecordIdentity] = useState('');
   const [loadedIdentity, setLoadedIdentity] = useState<string | null>(() =>
-    docKey ? [docKey, ...fallbackKeys].join('\u0000') : null
+    docKey ? [docKey, ...fallbackKeys].join('\u0000') : null,
   );
   const annotationsRef = useRef<Annotation[]>(annotations);
   const mutationVersionRef = useRef(0);
@@ -130,47 +141,65 @@ export function useAnnotations(docKey: string, docInfo?: DocumentInfo | null) {
 
   annotationsRef.current = annotations;
 
-  const pushState = useCallback((newAnnotations: Annotation[]) => {
-    mutationVersionRef.current += 1;
-    setHistory((prevHistory) => {
-      const upToCurrent = prevHistory.slice(0, historyIndex + 1);
-      const updated = [...upToCurrent, newAnnotations];
-      // Keep last 40 history states for memory efficiency
-      if (updated.length > 40) {
-        updated.shift();
-      }
-      return updated;
-    });
-    setHistoryIndex((prev) => Math.min(prev + 1, 39));
-    setAnnotations(newAnnotations);
-    annotationsRef.current = newAnnotations;
-  }, [historyIndex]);
+  const pushState = useCallback(
+    (newAnnotations: Annotation[]) => {
+      mutationVersionRef.current += 1;
+      setHistory((prevHistory) => {
+        const upToCurrent = prevHistory.slice(0, historyIndex + 1);
+        const updated = [...upToCurrent, newAnnotations];
+        // Keep last 40 history states for memory efficiency
+        if (updated.length > 40) {
+          updated.shift();
+        }
+        return updated;
+      });
+      setHistoryIndex((prev) => Math.min(prev + 1, 39));
+      setAnnotations(newAnnotations);
+      annotationsRef.current = newAnnotations;
+    },
+    [historyIndex],
+  );
 
-  const addAnnotation = useCallback((annotation: Annotation) => {
-    const updated = [...annotationsRef.current, annotation];
-    pushState(updated);
-  }, [pushState]);
+  const addAnnotation = useCallback(
+    (annotation: Annotation) => {
+      const updated = [...annotationsRef.current, annotation];
+      pushState(updated);
+    },
+    [pushState],
+  );
 
-  const addAnnotations = useCallback((items: Annotation[]) => {
-    if (items.length) pushState([...annotationsRef.current, ...items]);
-  }, [pushState]);
+  const addAnnotations = useCallback(
+    (items: Annotation[]) => {
+      if (items.length) pushState([...annotationsRef.current, ...items]);
+    },
+    [pushState],
+  );
 
-  const updateAnnotation = useCallback((id: string, updates: Partial<Annotation>) => {
-    const updated = annotationsRef.current.map((item) =>
-      item.id === id ? ({ ...item, ...updates } as Annotation) : item
-    );
-    pushState(updated);
-  }, [pushState]);
+  const updateAnnotation = useCallback(
+    (id: string, updates: Partial<Annotation>) => {
+      const updated = annotationsRef.current.map((item) =>
+        item.id === id ? ({ ...item, ...updates } as Annotation) : item,
+      );
+      pushState(updated);
+    },
+    [pushState],
+  );
 
-  const deleteAnnotation = useCallback((id: string) => {
-    const updated = annotationsRef.current.filter((item) => item.id !== id);
-    pushState(updated);
-  }, [pushState]);
+  const deleteAnnotation = useCallback(
+    (id: string) => {
+      const updated = annotationsRef.current.filter((item) => item.id !== id);
+      pushState(updated);
+    },
+    [pushState],
+  );
 
-  const clearAllAnnotationsForPage = useCallback((pageNumber: number) => {
-    const updated = annotationsRef.current.filter((item) => item.pageNumber !== pageNumber);
-    pushState(updated);
-  }, [pushState]);
+  const clearAllAnnotationsForPage = useCallback(
+    (pageNumber: number) => {
+      const updated = annotationsRef.current.filter((item) => item.pageNumber !== pageNumber);
+      pushState(updated);
+    },
+    [pushState],
+  );
 
   const clearAllAnnotations = useCallback(() => {
     pushState([]);
@@ -210,69 +239,72 @@ export function useAnnotations(docKey: string, docInfo?: DocumentInfo | null) {
   const canRedo = historyIndex < history.length - 1;
 
   // Add attached image helper
-  const addAttachedImage = useCallback((
-    pageNumber: number,
-    dataUrl: string,
-    aspectRatio: number = 1.33,
-    name: string = 'Attached Image',
-    options?: {
-      x?: number;
-      y?: number;
-      width?: number;
-      height?: number;
-      pageWidth?: number;
-      pageHeight?: number;
-      imageWidth?: number;
-      imageHeight?: number;
-      attachedInInvertedMode?: boolean;
-      invertInLightMode?: boolean;
-    }
-  ) => {
-    let x = options?.x;
-    let y = options?.y;
-    let width = options?.width;
-    let height = options?.height;
-    let ar = aspectRatio;
+  const addAttachedImage = useCallback(
+    (
+      pageNumber: number,
+      dataUrl: string,
+      aspectRatio: number = 1.33,
+      name: string = 'Attached Image',
+      options?: {
+        x?: number;
+        y?: number;
+        width?: number;
+        height?: number;
+        pageWidth?: number;
+        pageHeight?: number;
+        imageWidth?: number;
+        imageHeight?: number;
+        attachedInInvertedMode?: boolean;
+        invertInLightMode?: boolean;
+      },
+    ) => {
+      let x = options?.x;
+      let y = options?.y;
+      let width = options?.width;
+      let height = options?.height;
+      let ar = aspectRatio;
 
-    if (!width || !height || x === undefined || y === undefined) {
-      const placement = calculateImagePlacement({
-        imageWidth: options?.imageWidth,
-        imageHeight: options?.imageHeight,
+      if (!width || !height || x === undefined || y === undefined) {
+        const placement = calculateImagePlacement({
+          imageWidth: options?.imageWidth,
+          imageHeight: options?.imageHeight,
+          aspectRatio: ar,
+          pageWidth: options?.pageWidth,
+          pageHeight: options?.pageHeight,
+          cursorX: options?.x,
+          cursorY: options?.y,
+        });
+
+        if (x === undefined) x = placement.x;
+        if (y === undefined) y = placement.y;
+        if (!width) width = placement.width;
+        if (!height) height = placement.height;
+        if (!ar || ar <= 0) ar = placement.aspectRatio;
+      }
+
+      const newImage: AttachedImageAnnotation = {
+        id: `img_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+        pageNumber,
+        type: 'image',
+        dataUrl,
+        x,
+        y,
+        width,
+        height,
+        rotation: 0,
+        opacity: 1,
         aspectRatio: ar,
-        pageWidth: options?.pageWidth,
-        pageHeight: options?.pageHeight,
-        cursorX: options?.x,
-        cursorY: options?.y,
-      });
+        name,
+        createdAt: Date.now(),
+        attachedInInvertedMode: options?.attachedInInvertedMode ?? false,
+        invertInLightMode: options?.invertInLightMode ?? options?.attachedInInvertedMode ?? false,
+      };
 
-      if (x === undefined) x = placement.x;
-      if (y === undefined) y = placement.y;
-      if (!width) width = placement.width;
-      if (!height) height = placement.height;
-      if (!ar || ar <= 0) ar = placement.aspectRatio;
-    }
-
-    const newImage: AttachedImageAnnotation = {
-      id: `img_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-      pageNumber,
-      type: 'image',
-      dataUrl,
-      x,
-      y,
-      width,
-      height,
-      rotation: 0,
-      opacity: 1,
-      aspectRatio: ar,
-      name,
-      createdAt: Date.now(),
-      attachedInInvertedMode: options?.attachedInInvertedMode ?? false,
-      invertInLightMode: options?.invertInLightMode ?? (options?.attachedInInvertedMode ?? false),
-    };
-
-    addAnnotation(newImage);
-    return newImage;
-  }, [addAnnotation]);
+      addAnnotation(newImage);
+      return newImage;
+    },
+    [addAnnotation],
+  );
 
   return {
     annotations,

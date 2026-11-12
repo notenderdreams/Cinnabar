@@ -20,10 +20,7 @@ const createLocalStorageMock = () => {
 const mockStorage = createLocalStorageMock();
 (globalThis as unknown as { localStorage: typeof mockStorage }).localStorage = mockStorage;
 
-import {
-  loadAnnotationRecordForDocSync,
-  saveAnnotationsForDoc,
-} from '../src/lib/storage/storage';
+import { loadAnnotationRecordForDocSync, saveAnnotationsForDoc } from '../src/lib/storage/storage';
 import type { Annotation, RectHighlightAnnotation } from '../src/lib/types/index';
 
 const projectFile = (path: string) => Bun.file(new URL(`../${path}`, import.meta.url)).text();
@@ -66,13 +63,13 @@ describe('Annotation Isolation between PDFs', () => {
     // Store older annotations under primary docKey
     localStorage.setItem(
       `pdfuck_annotations_${docKey}`,
-      JSON.stringify({ annotations: [primaryAnnotation], updatedAt: 1000 })
+      JSON.stringify({ annotations: [primaryAnnotation], updatedAt: 1000 }),
     );
 
     // Store newer annotations under fallbackKey (e.g. from another document or previous run)
     localStorage.setItem(
       `pdfuck_annotations_${fallbackKey}`,
-      JSON.stringify({ annotations: [fallbackAnnotation], updatedAt: 9999 })
+      JSON.stringify({ annotations: [fallbackAnnotation], updatedAt: 9999 }),
     );
 
     const loaded = loadAnnotationRecordForDocSync(docKey, [fallbackKey]);
@@ -100,7 +97,7 @@ describe('Annotation Isolation between PDFs', () => {
 
     localStorage.setItem(
       `pdfuck_annotations_${fallbackKey}`,
-      JSON.stringify({ annotations: [legacyAnnotation], updatedAt: 500 })
+      JSON.stringify({ annotations: [legacyAnnotation], updatedAt: 500 }),
     );
 
     const loaded = loadAnnotationRecordForDocSync(docKey, [fallbackKey]);

@@ -111,12 +111,12 @@ export const SnippetPanel: React.FC<SnippetPanelProps> = ({
   const imageCount = snippets.filter((s) => s.type === 'image').length;
 
   return (
-    <div className="flex flex-col h-full select-none text-xs">
+    <div className="flex h-full flex-col text-xs select-none">
       {/* Top Banner / Snip Mode Toggle */}
-      <div className="p-3 border-b border-[var(--border)] flex flex-col gap-2 bg-[var(--background)]">
+      <div className="flex flex-col gap-2 border-b border-[var(--border)] bg-[var(--background)] p-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5 font-semibold text-zinc-100">
-            <Layers className="w-4 h-4 text-blue-500" />
+            <Layers className="h-4 w-4 text-blue-500" />
             <span>AI Snippet Compactor</span>
           </div>
           <div className="flex items-center gap-1">
@@ -124,23 +124,23 @@ export const SnippetPanel: React.FC<SnippetPanelProps> = ({
               <button
                 onClick={onUndo}
                 disabled={!canUndo}
-                className="p-1 rounded-md text-zinc-400 hover:text-zinc-200 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
+                className="rounded-md p-1 text-zinc-400 transition-all hover:bg-black/5 hover:text-zinc-200 disabled:opacity-30 disabled:hover:bg-transparent dark:hover:bg-white/5"
                 title="Undo Snippet Action (Cmd+Z)"
               >
-                <Undo2 className="w-3.5 h-3.5" />
+                <Undo2 className="h-3.5 w-3.5" />
               </button>
             )}
             {onRedo && (
               <button
                 onClick={onRedo}
                 disabled={!canRedo}
-                className="p-1 rounded-md text-zinc-400 hover:text-zinc-200 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
+                className="rounded-md p-1 text-zinc-400 transition-all hover:bg-black/5 hover:text-zinc-200 disabled:opacity-30 disabled:hover:bg-transparent dark:hover:bg-white/5"
                 title="Redo Snippet Action (Cmd+Shift+Z / Cmd+Y)"
               >
-                <Redo2 className="w-3.5 h-3.5" />
+                <Redo2 className="h-3.5 w-3.5" />
               </button>
             )}
-            <span className="text-[10.5px] px-2 py-0.5 rounded-full bg-[var(--secondary)] text-zinc-400 font-mono font-medium border border-[var(--border)]">
+            <span className="rounded-full border border-[var(--border)] bg-[var(--secondary)] px-2 py-0.5 font-mono text-[10.5px] font-medium text-zinc-400">
               {imageCount} {imageCount === 1 ? 'snip' : 'snips'}
             </span>
           </div>
@@ -148,28 +148,29 @@ export const SnippetPanel: React.FC<SnippetPanelProps> = ({
 
         <button
           onClick={onToggleSnipTool}
-          className={`w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-medium transition-all ${
+          className={`flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs font-medium transition-all ${
             isSnipActive
-              ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-[0_0_12px_rgba(59,130,246,0.35)] ring-1 ring-blue-400'
-              : 'bg-[var(--card)] hover:bg-[var(--secondary)] text-zinc-200 border border-[var(--border)] shadow-xs'
+              ? 'bg-blue-600 text-white shadow-[0_0_12px_rgba(59,130,246,0.35)] ring-1 ring-blue-400 hover:bg-blue-500'
+              : 'border border-[var(--border)] bg-[var(--card)] text-zinc-200 shadow-xs hover:bg-[var(--secondary)]'
           }`}
         >
-          <Crop className="w-3.5 h-3.5" />
+          <Crop className="h-3.5 w-3.5" />
           <span>{isSnipActive ? 'Snip Active (Drag on page)' : 'Snip New Rectangle'}</span>
         </button>
       </div>
 
       {/* Snippet List Content */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-2.5">
+      <div className="flex-1 space-y-2.5 overflow-y-auto p-3">
         {snippets.length === 0 ? (
-          <div className="flex flex-col items-center justify-center text-center p-6 my-auto text-zinc-400 gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-[var(--secondary)] border border-[var(--border)] flex items-center justify-center text-zinc-300 shadow-xs">
-              <Crop className="w-5 h-5 text-blue-500" />
+          <div className="my-auto flex flex-col items-center justify-center gap-3 p-6 text-center text-zinc-400">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-[var(--border)] bg-[var(--secondary)] text-zinc-300 shadow-xs">
+              <Crop className="h-5 w-5 text-blue-500" />
             </div>
             <div className="space-y-1">
               <p className="text-xs font-semibold text-zinc-200">No Snippets Yet</p>
-              <p className="text-[11px] text-zinc-400 leading-relaxed">
-                Click <span className="text-blue-500 font-medium">Snip New Rectangle</span> and drag over formulas, tables, or charts on any page to collect them here.
+              <p className="text-[11px] leading-relaxed text-zinc-400">
+                Click <span className="font-medium text-blue-500">Snip New Rectangle</span> and drag
+                over formulas, tables, or charts on any page to collect them here.
               </p>
             </div>
           </div>
@@ -182,41 +183,41 @@ export const SnippetPanel: React.FC<SnippetPanelProps> = ({
               return (
                 <div
                   key={entry.id}
-                  className="p-2.5 rounded-xl bg-[var(--secondary)] border border-[var(--border)] flex items-center gap-2 group transition-all"
+                  className="group flex items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--secondary)] p-2.5 transition-all"
                 >
-                  <Minus className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
+                  <Minus className="h-3.5 w-3.5 shrink-0 text-zinc-400" />
                   <input
                     type="text"
                     value={entry.label || ''}
                     onChange={(e) => onUpdateDivider(entry.id, { label: e.target.value })}
                     placeholder="Divider label (optional)..."
-                    className="flex-1 bg-transparent text-[11px] text-zinc-200 placeholder:text-zinc-500 focus:outline-none focus:text-white"
+                    className="flex-1 bg-transparent text-[11px] text-zinc-200 placeholder:text-zinc-500 focus:text-white focus:outline-none"
                   />
 
                   {/* Divider Actions */}
-                  <div className="flex items-center gap-0.5 opacity-60 group-hover:opacity-100 transition-opacity">
+                  <div className="flex items-center gap-0.5 opacity-60 transition-opacity group-hover:opacity-100">
                     <button
                       onClick={() => onMoveEntry(entry.id, 'up')}
                       disabled={isFirst}
-                      className="p-1 rounded-md text-zinc-400 hover:text-white hover:bg-black/5 dark:hover:bg-white/10 disabled:opacity-20"
+                      className="rounded-md p-1 text-zinc-400 hover:bg-black/5 hover:text-white disabled:opacity-20 dark:hover:bg-white/10"
                       title="Move Up"
                     >
-                      <ChevronUp className="w-3 h-3" />
+                      <ChevronUp className="h-3 w-3" />
                     </button>
                     <button
                       onClick={() => onMoveEntry(entry.id, 'down')}
                       disabled={isLast}
-                      className="p-1 rounded-md text-zinc-400 hover:text-white hover:bg-black/5 dark:hover:bg-white/10 disabled:opacity-20"
+                      className="rounded-md p-1 text-zinc-400 hover:bg-black/5 hover:text-white disabled:opacity-20 dark:hover:bg-white/10"
                       title="Move Down"
                     >
-                      <ChevronDown className="w-3 h-3" />
+                      <ChevronDown className="h-3 w-3" />
                     </button>
                     <button
                       onClick={() => onRemoveEntry(entry.id)}
-                      className="p-1 rounded-md text-red-400 hover:text-red-300 hover:bg-red-500/20"
+                      className="rounded-md p-1 text-red-400 hover:bg-red-500/20 hover:text-red-300"
                       title="Remove Divider"
                     >
-                      <Trash2 className="w-3 h-3" />
+                      <Trash2 className="h-3 w-3" />
                     </button>
                   </div>
                 </div>
@@ -227,60 +228,60 @@ export const SnippetPanel: React.FC<SnippetPanelProps> = ({
             return (
               <div
                 key={entry.id}
-                className="group relative rounded-xl bg-[var(--card)] border border-[var(--border)] hover:border-zinc-400/40 p-2.5 flex flex-col gap-2 transition-all shadow-xs"
+                className="group relative flex flex-col gap-2 rounded-xl border border-[var(--border)] bg-[var(--card)] p-2.5 shadow-xs transition-all hover:border-zinc-400/40"
               >
                 {/* Header info strip */}
                 <div className="flex items-center justify-between">
                   <button
                     onClick={() => onJumpToPage(entry.pageNumber)}
-                    className="flex items-center gap-1 text-[10.5px] font-mono text-zinc-400 hover:text-blue-500 transition-colors font-medium"
+                    className="flex items-center gap-1 font-mono text-[10.5px] font-medium text-zinc-400 transition-colors hover:text-blue-500"
                     title={`Jump to Page ${entry.pageNumber}`}
                   >
                     <span className="font-semibold text-zinc-300">P.{entry.pageNumber}</span>
-                    <ExternalLink className="w-2.5 h-2.5" />
+                    <ExternalLink className="h-2.5 w-2.5" />
                   </button>
 
                   {/* Reorder and Delete Controls */}
-                  <div className="flex items-center gap-0.5 opacity-60 group-hover:opacity-100 transition-opacity">
+                  <div className="flex items-center gap-0.5 opacity-60 transition-opacity group-hover:opacity-100">
                     <button
                       onClick={() => onMoveEntry(entry.id, 'up')}
                       disabled={isFirst}
-                      className="p-1 rounded-md text-zinc-400 hover:text-white hover:bg-black/5 dark:hover:bg-white/10 disabled:opacity-20"
+                      className="rounded-md p-1 text-zinc-400 hover:bg-black/5 hover:text-white disabled:opacity-20 dark:hover:bg-white/10"
                       title="Move Up"
                     >
-                      <ChevronUp className="w-3 h-3" />
+                      <ChevronUp className="h-3 w-3" />
                     </button>
                     <button
                       onClick={() => onMoveEntry(entry.id, 'down')}
                       disabled={isLast}
-                      className="p-1 rounded-md text-zinc-400 hover:text-white hover:bg-black/5 dark:hover:bg-white/10 disabled:opacity-20"
+                      className="rounded-md p-1 text-zinc-400 hover:bg-black/5 hover:text-white disabled:opacity-20 dark:hover:bg-white/10"
                       title="Move Down"
                     >
-                      <ChevronDown className="w-3 h-3" />
+                      <ChevronDown className="h-3 w-3" />
                     </button>
                     <button
                       onClick={() => onAddDivider(entry.id)}
-                      className="p-1 rounded-md text-zinc-400 hover:text-zinc-200 hover:bg-black/5 dark:hover:bg-white/10"
+                      className="rounded-md p-1 text-zinc-400 hover:bg-black/5 hover:text-zinc-200 dark:hover:bg-white/10"
                       title="Insert Divider Below"
                     >
-                      <Plus className="w-3 h-3" />
+                      <Plus className="h-3 w-3" />
                     </button>
                     <button
                       onClick={() => onRemoveEntry(entry.id)}
-                      className="p-1 rounded-md text-red-400 hover:text-red-300 hover:bg-red-500/20"
+                      className="rounded-md p-1 text-red-400 hover:bg-red-500/20 hover:text-red-300"
                       title="Remove Snippet"
                     >
-                      <Trash2 className="w-3 h-3" />
+                      <Trash2 className="h-3 w-3" />
                     </button>
                   </div>
                 </div>
 
                 {/* Thumbnail Preview */}
-                <div className="w-full bg-white rounded-lg overflow-hidden border border-[var(--border)] flex items-center justify-center max-h-36 shadow-2xs">
+                <div className="flex max-h-36 w-full items-center justify-center overflow-hidden rounded-lg border border-[var(--border)] bg-white shadow-2xs">
                   <img
                     src={entry.dataUrl}
                     alt={entry.label || `Snippet Page ${entry.pageNumber}`}
-                    className="max-w-full max-h-36 object-contain"
+                    className="max-h-36 max-w-full object-contain"
                   />
                 </div>
 
@@ -290,7 +291,7 @@ export const SnippetPanel: React.FC<SnippetPanelProps> = ({
                   value={entry.label || ''}
                   onChange={(e) => onUpdateSnippetLabel(entry.id, e.target.value)}
                   placeholder={`Label (e.g. Page ${entry.pageNumber})...`}
-                  className="w-full bg-[var(--secondary)] border border-[var(--border)] rounded-md px-2 py-1 text-[10.5px] text-zinc-200 placeholder:text-zinc-500 focus:outline-none focus:border-blue-500"
+                  className="w-full rounded-md border border-[var(--border)] bg-[var(--secondary)] px-2 py-1 text-[10.5px] text-zinc-200 placeholder:text-zinc-500 focus:border-blue-500 focus:outline-none"
                 />
               </div>
             );
@@ -300,18 +301,18 @@ export const SnippetPanel: React.FC<SnippetPanelProps> = ({
 
       {/* Bottom Sticky Action Footer */}
       {snippets.length > 0 && (
-        <div className="p-3 border-t border-[var(--border)] bg-[var(--background)] flex flex-col gap-2.5">
+        <div className="flex flex-col gap-2.5 border-t border-[var(--border)] bg-[var(--background)] p-3">
           {/* Settings Sub-row Toggle */}
           {showSettings && (
-            <div className="p-2.5 rounded-xl bg-[var(--secondary)] border border-[var(--border)] space-y-2 mb-1 animate-slide-down shadow-xs">
+            <div className="animate-slide-down mb-1 space-y-2 rounded-xl border border-[var(--border)] bg-[var(--secondary)] p-2.5 shadow-xs">
               <div className="flex items-center justify-between text-[11px] text-zinc-300">
                 <span>Background</span>
                 <div className="flex items-center gap-1">
                   <button
                     onClick={() => setBackgroundColor('#ffffff')}
-                    className={`px-2 py-0.5 rounded-md text-[10px] ${
+                    className={`rounded-md px-2 py-0.5 text-[10px] ${
                       backgroundColor === '#ffffff'
-                        ? 'bg-blue-600 text-white font-medium shadow-2xs'
+                        ? 'bg-blue-600 font-medium text-white shadow-2xs'
                         : 'bg-[var(--card)] text-zinc-400'
                     }`}
                   >
@@ -319,9 +320,9 @@ export const SnippetPanel: React.FC<SnippetPanelProps> = ({
                   </button>
                   <button
                     onClick={() => setBackgroundColor('#1e1e24')}
-                    className={`px-2 py-0.5 rounded-md text-[10px] ${
+                    className={`rounded-md px-2 py-0.5 text-[10px] ${
                       backgroundColor === '#1e1e24'
-                        ? 'bg-blue-600 text-white font-medium shadow-2xs'
+                        ? 'bg-blue-600 font-medium text-white shadow-2xs'
                         : 'bg-[var(--card)] text-zinc-400'
                     }`}
                   >
@@ -334,9 +335,9 @@ export const SnippetPanel: React.FC<SnippetPanelProps> = ({
                 <span>Page Badges</span>
                 <button
                   onClick={() => setIncludePageBadges((prev) => !prev)}
-                  className={`px-2 py-0.5 rounded-md text-[10px] ${
+                  className={`rounded-md px-2 py-0.5 text-[10px] ${
                     includePageBadges
-                      ? 'bg-blue-600 text-white font-medium shadow-2xs'
+                      ? 'bg-blue-600 font-medium text-white shadow-2xs'
                       : 'bg-[var(--card)] text-zinc-400'
                   }`}
                 >
@@ -350,25 +351,25 @@ export const SnippetPanel: React.FC<SnippetPanelProps> = ({
           <div className="flex items-center gap-2">
             <button
               onClick={() => onAddDivider()}
-              className="flex-1 btn-secondary text-xs py-1.5 flex items-center justify-center gap-1.5"
+              className="btn-secondary flex flex-1 items-center justify-center gap-1.5 py-1.5 text-xs"
               title="Add a horizontal divider line"
             >
-              <Minus className="w-3 h-3 text-zinc-400" />
+              <Minus className="h-3 w-3 text-zinc-400" />
               <span>Add Divider</span>
             </button>
             <button
               onClick={() => setShowSettings((prev) => !prev)}
-              className={`btn-icon w-8 h-8 ${showSettings ? 'bg-black/5 dark:bg-white/10 text-blue-500' : ''}`}
+              className={`btn-icon h-8 w-8 ${showSettings ? 'bg-black/5 text-blue-500 dark:bg-white/10' : ''}`}
               title="Stitch Settings"
             >
-              <SlidersHorizontal className="w-3.5 h-3.5" />
+              <SlidersHorizontal className="h-3.5 w-3.5" />
             </button>
             <button
               onClick={onClearAll}
-              className="btn-icon w-8 h-8 text-red-400 hover:text-red-300 hover:bg-red-500/20"
+              className="btn-icon h-8 w-8 text-red-400 hover:bg-red-500/20 hover:text-red-300"
               title="Dump / Clear All Snippets (Cmd+Shift+X / Cmd+Alt+X)"
             >
-              <Trash2 className="w-3.5 h-3.5" />
+              <Trash2 className="h-3.5 w-3.5" />
             </button>
           </div>
 
@@ -377,13 +378,13 @@ export const SnippetPanel: React.FC<SnippetPanelProps> = ({
             <button
               onClick={handleCopy}
               disabled={isCopying}
-              className="flex-1 btn-primary py-2 text-xs flex items-center justify-center gap-1.5 font-medium shadow-md active:scale-98"
+              className="btn-primary flex flex-1 items-center justify-center gap-1.5 py-2 text-xs font-medium shadow-md active:scale-98"
               title="Copy Stitched Image (Cmd+Shift+S / Cmd+Alt+C)"
             >
               {isCopying ? (
-                <span className="inline-block w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
               ) : (
-                <Copy className="w-3.5 h-3.5 text-white" />
+                <Copy className="h-3.5 w-3.5 text-white" />
               )}
               <span>Copy Stitched Image</span>
             </button>
@@ -391,10 +392,10 @@ export const SnippetPanel: React.FC<SnippetPanelProps> = ({
             <button
               onClick={handleDownload}
               disabled={isDownloading}
-              className="btn-secondary w-9 py-2 flex items-center justify-center"
+              className="btn-secondary flex w-9 items-center justify-center py-2"
               title="Download PNG"
             >
-              <Download className="w-3.5 h-3.5" />
+              <Download className="h-3.5 w-3.5" />
             </button>
           </div>
         </div>

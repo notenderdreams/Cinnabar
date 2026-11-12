@@ -123,7 +123,12 @@ export const Toolbar: React.FC<ToolbarProps> = ({
     };
   }, [showPalette]);
 
-  const tools: { id: ToolType; icon: React.FC<{ className?: string }>; label: string; shortcut: string }[] = [
+  const tools: {
+    id: ToolType;
+    icon: React.FC<{ className?: string }>;
+    label: string;
+    shortcut: string;
+  }[] = [
     { id: 'select', icon: MousePointer, label: 'Pointer', shortcut: 'V' },
     { id: 'highlight-line', icon: PenLine, label: 'Line Highlight', shortcut: 'L / U' },
     { id: 'highlight-pen', icon: Highlighter, label: 'Freehand', shortcut: 'H' },
@@ -137,10 +142,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   ];
 
   return (
-    <nav
-      aria-label="Annotation Dock"
-      className="macos-annotation-dock select-none"
-    >
+    <nav aria-label="Annotation Dock" className="macos-annotation-dock select-none">
       {/* Smooth Sliding Active Circle Indicator */}
       <div
         className="macos-dock-sliding-indicator"
@@ -183,7 +185,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               aria-label={tool.label}
               aria-pressed={isActive}
             >
-              <Icon className="w-4 h-4" />
+              <Icon className="h-4 w-4" />
             </button>
           </div>
         );
@@ -193,7 +195,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
       <div className="macos-dock-divider z-10" aria-hidden="true" />
 
       {/* Color Swatch Orb & Floating Palette */}
-      <div className="relative flex items-center justify-center z-10" ref={paletteRef}>
+      <div className="relative z-10 flex items-center justify-center" ref={paletteRef}>
         {hoveredTool === 'color' && !showPalette && (
           <div className="macos-dock-tooltip">
             <span>Color & Stroke</span>
@@ -221,8 +223,8 @@ export const Toolbar: React.FC<ToolbarProps> = ({
 
         {/* Glossy Frosted Glass Palette Popover */}
         {showPalette && (
-          <div className="absolute bottom-12 left-1/2 -translate-x-1/2 p-3.5 rounded-2xl bg-[var(--popover)]/95 border border-white/20 backdrop-blur-2xl shadow-2xl flex flex-col gap-3 min-w-[200px] animate-slide-up z-50">
-            <div className="flex items-center justify-between text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">
+          <div className="animate-slide-up absolute bottom-12 left-1/2 z-50 flex min-w-[200px] -translate-x-1/2 flex-col gap-3 rounded-2xl border border-white/20 bg-[var(--popover)]/95 p-3.5 shadow-2xl backdrop-blur-2xl">
+            <div className="flex items-center justify-between text-[10px] font-semibold tracking-wider text-zinc-400 uppercase">
               <span>Swatches</span>
               <label
                 className={`relative flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--secondary)] text-[var(--foreground)] transition-colors hover:bg-[var(--accent)] ${
@@ -256,16 +258,16 @@ export const Toolbar: React.FC<ToolbarProps> = ({
                   title={`${index + 1}: Select this highlight color`}
                 >
                   <span
-                    className={`block w-6 h-6 rounded-lg transition-all ${
+                    className={`block h-6 w-6 rounded-lg transition-all ${
                       isInvertedColorMode ? 'annotation-color-preview-invert' : ''
                     } ${
                       selectedColor.toLowerCase() === colorHex.toLowerCase()
-                        ? 'ring-2 ring-blue-500 scale-110 shadow-md'
-                        : 'opacity-85 group-hover:opacity-100 border border-black/20'
+                        ? 'scale-110 shadow-md ring-2 ring-blue-500'
+                        : 'border border-black/20 opacity-85 group-hover:opacity-100'
                     }`}
                     style={{ backgroundColor: colorHex }}
                   />
-                  <span className="text-[9px] leading-none font-mono font-semibold text-[var(--muted-foreground)] group-hover:text-[var(--foreground)]">
+                  <span className="font-mono text-[9px] leading-none font-semibold text-[var(--muted-foreground)] group-hover:text-[var(--foreground)]">
                     {index + 1}
                   </span>
                 </button>
@@ -273,10 +275,10 @@ export const Toolbar: React.FC<ToolbarProps> = ({
             </div>
 
             {/* Stroke Slider */}
-            <div className="pt-2.5 border-t border-[var(--border)] flex flex-col gap-1.5">
-              <div className="flex justify-between text-[10.5px] text-zinc-400 font-medium">
+            <div className="flex flex-col gap-1.5 border-t border-[var(--border)] pt-2.5">
+              <div className="flex justify-between text-[10.5px] font-medium text-zinc-400">
                 <span>Stroke Size</span>
-                <span className="font-mono text-zinc-200 font-semibold">{strokeWidth}px</span>
+                <span className="font-mono font-semibold text-zinc-200">{strokeWidth}px</span>
               </div>
               <input
                 type="range"
@@ -284,12 +286,12 @@ export const Toolbar: React.FC<ToolbarProps> = ({
                 max="20"
                 value={strokeWidth}
                 onChange={(e) => onChangeStrokeWidth(parseInt(e.target.value, 10))}
-                className="w-full accent-blue-500 cursor-pointer h-1"
+                className="h-1 w-full cursor-pointer accent-blue-500"
               />
             </div>
 
-            <div className="pt-2.5 border-t border-[var(--border)] flex flex-col gap-1.5">
-              <span className="text-[10.5px] text-zinc-400 font-medium">Highlight Style</span>
+            <div className="flex flex-col gap-1.5 border-t border-[var(--border)] pt-2.5">
+              <span className="text-[10.5px] font-medium text-zinc-400">Highlight Style</span>
               <div
                 className={`grid gap-1.5 ${activeTool === 'highlight-rect' || activeTool === 'highlight-line' ? 'grid-cols-1' : 'grid-cols-2'}`}
                 role="group"
@@ -298,7 +300,9 @@ export const Toolbar: React.FC<ToolbarProps> = ({
                 {activeTool !== 'highlight-line' && (
                   <button
                     type="button"
-                    onClick={() => onChangeHighlightStyle(toggleHighlightStyle(highlightStyle, 'stroke'))}
+                    onClick={() =>
+                      onChangeHighlightStyle(toggleHighlightStyle(highlightStyle, 'stroke'))
+                    }
                     className={`flex items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-[10.5px] font-medium transition-colors ${
                       highlightStyle === 'stroke'
                         ? 'bg-blue-500/20 text-blue-400 ring-1 ring-blue-500/40'
@@ -307,7 +311,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
                     aria-pressed={highlightStyle === 'stroke'}
                     title="Draw new area highlights as fully opaque outlines"
                   >
-                    <Square className="w-3.5 h-3.5" />
+                    <Square className="h-3.5 w-3.5" />
                     Stroke
                   </button>
                 )}
@@ -317,16 +321,18 @@ export const Toolbar: React.FC<ToolbarProps> = ({
                     onClick={() => {
                       if (activeTool === 'highlight-line') {
                         onChangeLineHighlightStyle(
-                          lineHighlightStyle === 'underline' ? 'highlight' : 'underline'
+                          lineHighlightStyle === 'underline' ? 'highlight' : 'underline',
                         );
                       } else {
                         onChangeHighlightStyle(toggleHighlightStyle(highlightStyle, 'underline'));
                       }
                     }}
                     className={`flex items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-[10.5px] font-medium transition-colors ${
-                      (activeTool === 'highlight-line'
-                        ? lineHighlightStyle === 'underline'
-                        : highlightStyle === 'underline')
+                      (
+                        activeTool === 'highlight-line'
+                          ? lineHighlightStyle === 'underline'
+                          : highlightStyle === 'underline'
+                      )
                         ? 'bg-blue-500/20 text-blue-400 ring-1 ring-blue-500/40'
                         : 'bg-[var(--secondary)] text-[var(--muted-foreground)] hover:text-[var(--foreground)]'
                     }`}
@@ -337,7 +343,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
                     }
                     title="Draw new highlights as fully opaque underlines"
                   >
-                    <Underline className="w-3.5 h-3.5" />
+                    <Underline className="h-3.5 w-3.5" />
                     Underline
                   </button>
                 )}

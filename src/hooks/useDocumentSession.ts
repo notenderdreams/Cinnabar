@@ -16,7 +16,10 @@ import {
 import type { usePDFDocument } from './usePDFDocument';
 import type { useCompanionPDF } from './useCompanionPDF';
 
-type DocumentSessionOptions = Pick<ReturnType<typeof usePDFDocument>, 'pdfDoc' | 'docInfo' | 'currentPage' | 'loadPdf'> &
+type DocumentSessionOptions = Pick<
+  ReturnType<typeof usePDFDocument>,
+  'pdfDoc' | 'docInfo' | 'currentPage' | 'loadPdf'
+> &
   Pick<ReturnType<typeof useCompanionPDF>, 'closeCompanionPdf' | 'loadCompanionPdf'> & {
     onScreenChange: (screen: AppScreen) => void;
     showToast: (message: string, isError?: boolean) => void;
@@ -33,7 +36,9 @@ export function useDocumentSession({
   onScreenChange,
   showToast,
 }: DocumentSessionOptions) {
-  const [lastActiveDoc, setLastActiveDoc] = useState<LastActiveDocument | null>(() => loadLastActiveDoc());
+  const [lastActiveDoc, setLastActiveDoc] = useState<LastActiveDocument | null>(() =>
+    loadLastActiveDoc(),
+  );
 
   useEffect(() => {
     if (docInfo && pdfDoc) {
@@ -56,7 +61,7 @@ export function useDocumentSession({
       fileName: string,
       filePath?: string,
       initialPage?: number,
-      documentId?: string
+      documentId?: string,
     ) => {
       closeCompanionPdf();
       const bytes = data instanceof Uint8Array ? data : new Uint8Array(data);
@@ -64,11 +69,10 @@ export function useDocumentSession({
       if (loaded) {
         void idbSaveActivePdf(bytes, fileName);
         onScreenChange('reader');
-      }
-      else showToast(`Could not open ${fileName}.`, true);
+      } else showToast(`Could not open ${fileName}.`, true);
       return loaded;
     },
-    [closeCompanionPdf, loadPdf, showToast, onScreenChange]
+    [closeCompanionPdf, loadPdf, showToast, onScreenChange],
   );
 
   const handleResumeReading = useCallback(async () => {
@@ -91,7 +95,7 @@ export function useDocumentSession({
             fileData.fileName,
             fileData.filePath,
             targetDoc.lastReadPage,
-            targetDoc.documentId
+            targetDoc.documentId,
           );
           if (loaded) return;
         }
@@ -104,7 +108,7 @@ export function useDocumentSession({
             cached.fileName,
             undefined,
             targetDoc.lastReadPage,
-            targetDoc.documentId
+            targetDoc.documentId,
           );
           if (loaded) return;
         }
@@ -118,20 +122,26 @@ export function useDocumentSession({
 
   const openPdfPairInReader = useCallback(
     async (
-      primary: { data: Uint8Array; fileName: string; filePath?: string; initialPageNumber?: number; documentId?: string },
-      companion: { data: Uint8Array; fileName: string; filePath?: string }
+      primary: {
+        data: Uint8Array;
+        fileName: string;
+        filePath?: string;
+        initialPageNumber?: number;
+        documentId?: string;
+      },
+      companion: { data: Uint8Array; fileName: string; filePath?: string },
     ) => {
       const primaryOpened = await openPdfInReader(
         primary.data,
         primary.fileName,
         primary.filePath,
         primary.initialPageNumber,
-        primary.documentId
+        primary.documentId,
       );
       if (!primaryOpened) return false;
       return loadCompanionPdf(companion.data, companion.fileName);
     },
-    [loadCompanionPdf, openPdfInReader]
+    [loadCompanionPdf, openPdfInReader],
   );
 
   // Open PDF using the native library dialog.
@@ -153,11 +163,10 @@ export function useDocumentSession({
           fileData.fileName,
           fileData.filePath,
           imported.lastReadPage,
-          imported.id
+          imported.id,
         );
       }
     }
-
   };
 
   return {

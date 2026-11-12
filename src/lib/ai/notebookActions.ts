@@ -1,6 +1,16 @@
-import type { Annotation, TextNoteAnnotation, AiChatAttachment, NotebookImageAsset } from '../types';
+import type {
+  Annotation,
+  TextNoteAnnotation,
+  AiChatAttachment,
+  NotebookImageAsset,
+} from '../types';
 import { paginateNotebookMarkdown, insertNotebookImageMarkdown } from './notebookMarkdown';
-import { identifyBlocks, markdownBlocks, notebookCarrier, withNotebook } from '../notebook/document';
+import {
+  identifyBlocks,
+  markdownBlocks,
+  notebookCarrier,
+  withNotebook,
+} from '../notebook/document';
 
 export interface AiNotebookContext {
   docKey: string;
@@ -15,8 +25,9 @@ export interface AiNotebookImageAction {
   placement: 'after_title' | 'end';
 }
 
-export type AiNotebookWrite = { type: 'text'; text: string } |
-  { type: 'image'; image: AiChatAttachment; action: AiNotebookImageAction };
+export type AiNotebookWrite =
+  | { type: 'text'; text: string }
+  | { type: 'image'; image: AiChatAttachment; action: AiNotebookImageAction };
 
 export interface AiNotebookReply {
   message: string;
@@ -26,18 +37,30 @@ export interface AiNotebookReply {
 
 const MAX_NOTE_LENGTH = 20_000;
 
-export function getAiNotebookContext(docKey: string, pageCount: number, annotations: Annotation[]): AiNotebookContext {
-  const text = [...annotations].sort((a, b) => a.pageNumber - b.pageNumber)
+export function getAiNotebookContext(
+  docKey: string,
+  pageCount: number,
+  annotations: Annotation[],
+): AiNotebookContext {
+  const text = [...annotations]
+    .sort((a, b) => a.pageNumber - b.pageNumber)
     .flatMap((annotation) => {
-      const content = annotation.type === 'ai-explanation' ? annotation.response
-        : annotation.type === 'image' ? `[Image: ${annotation.name}] ${annotation.extractedText ?? ''}`
-        : annotation.text;
+      const content =
+        annotation.type === 'ai-explanation'
+          ? annotation.response
+          : annotation.type === 'image'
+            ? `[Image: ${annotation.name}] ${annotation.extractedText ?? ''}`
+            : annotation.text;
       return content ? [`Page ${annotation.pageNumber}: ${content}`] : [];
-    }).join('\n\n');
+    })
+    .join('\n\n');
   return { docKey, pageCount, text: text.slice(0, 16_000) };
 }
 
-export function notebookInstructions(context: AiNotebookContext, images: AiChatAttachment[] = []): string {
+export function notebookInstructions(
+  context: AiNotebookContext,
+  images: AiChatAttachment[] = [],
+): string {
   return [
     'You can append editable Markdown text using notebookText, or insert an attached image using notebookImage.',
     'Only set notebookText or notebookImage when the LATEST user message explicitly asks you to add, save, or write content to their notes/notebook. Otherwise use null.',
@@ -57,91 +80,220 @@ export function notebookInstructions(context: AiNotebookContext, images: AiChatA
 }
 
 export function parseNotebookReply(response: string): AiNotebookReply {
-  const trimmed = response.trim().replace(/^```(?:json)?\s*\n?/, '').replace(/\n?```$/, '');
+  const trimmed = response
+    .trim()
+    .replace(/^```(?:json)?\s*\n?/, '')
+    .replace(/\n?```$/, '');
   const value: unknown = JSON.parse(trimmed);
-  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Invalid notebook response.');
+  if (!value || typeof value !== 'object' || Array.isArray(value))
+    throw new Error('Invalid notebook response.');
   const record = value as Record<string, unknown>;
-  if (Object.keys(record).some((key) => !['message', 'notebookText', 'notebookImage'].includes(key)) ||
-    typeof record.message !== 'string' || !record.message.trim() ||
-    !(record.notebookText === null || (typeof record.notebookText === 'string' && record.notebookText.trim() && record.notebookText.length <= MAX_NOTE_LENGTH))) {
+  if (
+    Object.keys(record).some(
+      (key) => !['message', 'notebookText', 'notebookImage'].includes(key),
+    ) ||
+    typeof record.message !== 'string' ||
+    !record.message.trim() ||
+    !(
+      record.notebookText === null ||
+      (typeof record.notebookText === 'string' &&
+        record.notebookText.trim() &&
+        record.notebookText.length <= MAX_NOTE_LENGTH)
+    )
+  ) {
     throw new Error('The AI returned an invalid notebook action. No notes were added.');
   }
   const image = record.notebookImage;
   if (image !== undefined && image !== null) {
-    if (typeof image !== 'object' || Array.isArray(image)) throw new Error('Invalid notebook image action.');
+    if (typeof image !== 'object' || Array.isArray(image))
+      throw new Error('Invalid notebook image action.');
     const action = image as Record<string, unknown>;
-    if (Object.keys(action).some((key) => !['attachmentId', 'pageNumber', 'placement'].includes(key)) ||
-      typeof action.attachmentId !== 'string' || !action.attachmentId.trim() || action.attachmentId.length > 200 ||
-      !(action.pageNumber === null || (Number.isSafeInteger(action.pageNumber) && Number(action.pageNumber) > 0)) ||
-      !['after_title', 'end'].includes(String(action.placement)) || record.notebookText !== null) throw new Error('Invalid notebook image action.');
+    if (
+      Object.keys(action).some(
+        (key) => !['attachmentId', 'pageNumber', 'placement'].includes(key),
+      ) ||
+      typeof action.attachmentId !== 'string' ||
+      !action.attachmentId.trim() ||
+      action.attachmentId.length > 200 ||
+      !(
+        action.pageNumber === null ||
+        (Number.isSafeInteger(action.pageNumber) && Number(action.pageNumber) > 0)
+      ) ||
+      !['after_title', 'end'].includes(String(action.placement)) ||
+      record.notebookText !== null
+    )
+      throw new Error('Invalid notebook image action.');
   }
-  return { message: record.message.trim(), notebookText: typeof record.notebookText === 'string' ? record.notebookText.trim() : null,
-    ...(image !== undefined ? { notebookImage: image as AiNotebookImageAction | null } : {}) };
+  return {
+    message: record.message.trim(),
+    notebookText: typeof record.notebookText === 'string' ? record.notebookText.trim() : null,
+    ...(image !== undefined ? { notebookImage: image as AiNotebookImageAction | null } : {}),
+  };
 }
 
-export async function insertAiNotebookImage(annotations: Annotation[], count: number, currentPage: number,
-  image: AiChatAttachment, action: AiNotebookImageAction) {
-  if (image.id !== action.attachmentId || image.type !== 'image' || !image.dataUrl?.startsWith('data:image/png;base64,') ||
-    !image.width || !image.height) throw new Error('Attach the image again before adding it to the notebook.');
+export async function insertAiNotebookImage(
+  annotations: Annotation[],
+  count: number,
+  currentPage: number,
+  image: AiChatAttachment,
+  action: AiNotebookImageAction,
+) {
+  if (
+    image.id !== action.attachmentId ||
+    image.type !== 'image' ||
+    !image.dataUrl?.startsWith('data:image/png;base64,') ||
+    !image.width ||
+    !image.height
+  )
+    throw new Error('Attach the image again before adding it to the notebook.');
   const structured = notebookCarrier(annotations)?.notebookDocument;
   if (structured) {
     const assetId = crypto.randomUUID();
-    const blocks = [...structured.content.content ?? []];
-    const title = blocks.findIndex(block => block.type === 'heading');
-    if (action.placement === 'after_title' && title < 0) throw new Error('The notebook has no title.');
-    const block = identifyBlocks({ type: 'image', attrs: { src: image.dataUrl, assetId, caption: 'Notebook image', width: Math.min(499, image.width) } });
+    const blocks = [...(structured.content.content ?? [])];
+    const title = blocks.findIndex((block) => block.type === 'heading');
+    if (action.placement === 'after_title' && title < 0)
+      throw new Error('The notebook has no title.');
+    const block = identifyBlocks({
+      type: 'image',
+      attrs: {
+        src: image.dataUrl,
+        assetId,
+        caption: 'Notebook image',
+        width: Math.min(499, image.width),
+      },
+    });
     blocks.splice(action.placement === 'after_title' ? title + 1 : blocks.length, 0, block);
-    return { annotations: withNotebook(annotations, { ...structured, content: { ...structured.content, content: blocks },
-      assets: { ...structured.assets, [assetId]: { dataUrl: image.dataUrl, width: image.width, height: image.height } } }),
-      count, firstPage: action.pageNumber ?? currentPage, selectedId: notebookCarrier(annotations)!.id };
+    return {
+      annotations: withNotebook(annotations, {
+        ...structured,
+        content: { ...structured.content, content: blocks },
+        assets: {
+          ...structured.assets,
+          [assetId]: { dataUrl: image.dataUrl, width: image.width, height: image.height },
+        },
+      }),
+      count,
+      firstPage: action.pageNumber ?? currentPage,
+      selectedId: notebookCarrier(annotations)!.id,
+    };
   }
   let page = action.pageNumber ?? currentPage;
   if (page < 1 || page > count) throw new Error('The requested note page does not exist.');
-  let target = annotations.find((annotation): annotation is TextNoteAnnotation => annotation.pageNumber === page &&
-    annotation.type === 'text-note' && annotation.format === 'markdown');
-  if (action.placement === 'after_title' && action.pageNumber === null && !/^#\s/m.test(target?.text ?? '')) {
-    target = annotations.find((annotation): annotation is TextNoteAnnotation => annotation.type === 'text-note' &&
-      annotation.format === 'markdown' && /^#\s/m.test(annotation.text));
+  let target = annotations.find(
+    (annotation): annotation is TextNoteAnnotation =>
+      annotation.pageNumber === page &&
+      annotation.type === 'text-note' &&
+      annotation.format === 'markdown',
+  );
+  if (
+    action.placement === 'after_title' &&
+    action.pageNumber === null &&
+    !/^#\s/m.test(target?.text ?? '')
+  ) {
+    target = annotations.find(
+      (annotation): annotation is TextNoteAnnotation =>
+        annotation.type === 'text-note' &&
+        annotation.format === 'markdown' &&
+        /^#\s/m.test(annotation.text),
+    );
     if (target) page = target.pageNumber;
   }
-  if (!target) throw new Error('Select the notebook page containing the title, then retry this request.');
-  if (action.placement === 'after_title' && !/^#\s/m.test(target.text)) throw new Error('That notebook page has no title. Select the page with the title and retry.');
+  if (!target)
+    throw new Error('Select the notebook page containing the title, then retry this request.');
+  if (action.placement === 'after_title' && !/^#\s/m.test(target.text))
+    throw new Error('That notebook page has no title. Select the page with the title and retry.');
   const assetId = crypto.randomUUID();
-  const images: Record<string, NotebookImageAsset> = { ...target.inlineImages,
-    [assetId]: { dataUrl: image.dataUrl, width: image.width, height: image.height } };
+  const images: Record<string, NotebookImageAsset> = {
+    ...target.inlineImages,
+    [assetId]: { dataUrl: image.dataUrl, width: image.width, height: image.height },
+  };
   const markdown = insertNotebookImageMarkdown(target.text, assetId, action.placement);
-  const pages = typeof document === 'undefined'
-    ? paginateNotebookMarkdown(markdown, (content) => Math.ceil(content.length / 55) * 20 + (content.match(/notebook-image\//g)?.length ?? 0) * 220)
-    : await (await import('../annotations/notebookRendering')).layoutNotebookMarkdown(markdown, images);
+  const pages =
+    typeof document === 'undefined'
+      ? paginateNotebookMarkdown(
+          markdown,
+          (content) =>
+            Math.ceil(content.length / 55) * 20 +
+            (content.match(/notebook-image\//g)?.length ?? 0) * 220,
+        )
+      : await (
+          await import('../annotations/notebookRendering')
+        ).layoutNotebookMarkdown(markdown, images);
   const spill = pages.length - 1;
-  const replaced = pages.map((text, index): TextNoteAnnotation => ({ ...target, id: index === 0 ? target.id : crypto.randomUUID(),
-    pageNumber: page + index, text, inlineImages: Object.fromEntries(Object.entries(images).filter(([id]) => text.includes(`notebook-image/${id}`))) }));
-  const rest = annotations.filter((annotation) => annotation.id !== target.id).map((annotation) =>
-    annotation.pageNumber > page ? { ...annotation, pageNumber: annotation.pageNumber + spill } : annotation);
-  return { annotations: [...rest, ...replaced], count: count + spill, firstPage: page, selectedId: replaced[0].id };
+  const replaced = pages.map((text, index): TextNoteAnnotation => ({
+    ...target,
+    id: index === 0 ? target.id : crypto.randomUUID(),
+    pageNumber: page + index,
+    text,
+    inlineImages: Object.fromEntries(
+      Object.entries(images).filter(([id]) => text.includes(`notebook-image/${id}`)),
+    ),
+  }));
+  const rest = annotations
+    .filter((annotation) => annotation.id !== target.id)
+    .map((annotation) =>
+      annotation.pageNumber > page
+        ? { ...annotation, pageNumber: annotation.pageNumber + spill }
+        : annotation,
+    );
+  return {
+    annotations: [...rest, ...replaced],
+    count: count + spill,
+    firstPage: page,
+    selectedId: replaced[0].id,
+  };
 }
 
 /** Use the final sheet only if empty; existing writing and cutouts are never covered. */
-export async function appendAiNotebookText(annotations: Annotation[], pageCount: number, text: string) {
-  if (!text.trim() || text.length > MAX_NOTE_LENGTH) throw new Error('Note text must contain 1–20000 characters.');
+export async function appendAiNotebookText(
+  annotations: Annotation[],
+  pageCount: number,
+  text: string,
+) {
+  if (!text.trim() || text.length > MAX_NOTE_LENGTH)
+    throw new Error('Note text must contain 1–20000 characters.');
   const structured = notebookCarrier(annotations)?.notebookDocument;
   if (structured) {
-    return { annotations: withNotebook(annotations, { ...structured,
-      content: { ...structured.content, content: [...structured.content.content ?? [], ...markdownBlocks(text)] } }),
-      count: pageCount, firstPage: pageCount };
+    return {
+      annotations: withNotebook(annotations, {
+        ...structured,
+        content: {
+          ...structured.content,
+          content: [...(structured.content.content ?? []), ...markdownBlocks(text)],
+        },
+      }),
+      count: pageCount,
+      firstPage: pageCount,
+    };
   }
   const markdown = text.replace(/\r\n?/g, '\n');
-  const pages = typeof document === 'undefined'
-    ? paginateNotebookMarkdown(markdown, (content) => Math.ceil(content.length / 55) * 20 + content.split('\n').length * 8)
-    : await (await import('../annotations/notebookRendering')).layoutNotebookMarkdown(markdown);
+  const pages =
+    typeof document === 'undefined'
+      ? paginateNotebookMarkdown(
+          markdown,
+          (content) => Math.ceil(content.length / 55) * 20 + content.split('\n').length * 8,
+        )
+      : await (await import('../annotations/notebookRendering')).layoutNotebookMarkdown(markdown);
   if (!pages.length) throw new Error('The note contains no visible content.');
-  const firstPage = annotations.some((annotation) => annotation.pageNumber === pageCount) ? pageCount + 1 : pageCount;
+  const firstPage = annotations.some((annotation) => annotation.pageNumber === pageCount)
+    ? pageCount + 1
+    : pageCount;
   const notes: TextNoteAnnotation[] = [];
   for (const page of pages) {
     notes.push({
-      id: crypto.randomUUID(), type: 'text-note', kind: 'plain', pageNumber: firstPage + notes.length,
-      x: .08, y: .08, width: .84, text: page, format: 'markdown',
-      color: '#243247', fontSize: 13, fontFamily: 'sans', createdAt: Date.now(),
+      id: crypto.randomUUID(),
+      type: 'text-note',
+      kind: 'plain',
+      pageNumber: firstPage + notes.length,
+      x: 0.08,
+      y: 0.08,
+      width: 0.84,
+      text: page,
+      format: 'markdown',
+      color: '#243247',
+      fontSize: 13,
+      fontFamily: 'sans',
+      createdAt: Date.now(),
     });
   }
   return { annotations: notes, count: firstPage + notes.length - 1, firstPage };

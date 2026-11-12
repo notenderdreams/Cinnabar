@@ -1,9 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { PDFDocument } from 'pdf-lib';
-import {
-  deletePageFromPdf,
-  reindexAfterPageDeletion,
-} from '../src/lib/pdf/pageExtractor';
+import { deletePageFromPdf, reindexAfterPageDeletion } from '../src/lib/pdf/pageExtractor';
 
 describe('page deletion', () => {
   test('removes the requested PDF page', async () => {
@@ -25,7 +22,7 @@ describe('page deletion', () => {
     source.addPage();
 
     await expect(deletePageFromPdf(await source.save(), 1)).rejects.toThrow(
-      'A PDF must keep at least one page.'
+      'A PDF must keep at least one page.',
     );
   });
 
@@ -65,9 +62,7 @@ describe('page deletion', () => {
     expect(doc.getPage(0).getWidth()).toBe(300);
 
     // Deleting the last remaining page should throw
-    await expect(deletePageFromPdf(bytes, 1)).rejects.toThrow(
-      'A PDF must keep at least one page.'
-    );
+    await expect(deletePageFromPdf(bytes, 1)).rejects.toThrow('A PDF must keep at least one page.');
   });
 
   test('keeps owned raw bytes intact when passing a slice to external loaders', async () => {

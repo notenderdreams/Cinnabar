@@ -1,9 +1,10 @@
 import { describe, expect, test } from 'bun:test';
-import {
-  parseAnnotationsJson,
-  mergeAnnotations,
-} from '../src/lib/annotations/annotationTransfer';
-import type { Annotation, TextHighlightAnnotation, DrawingAnnotation } from '../src/lib/types/index';
+import { parseAnnotationsJson, mergeAnnotations } from '../src/lib/annotations/annotationTransfer';
+import type {
+  Annotation,
+  TextHighlightAnnotation,
+  DrawingAnnotation,
+} from '../src/lib/types/index';
 
 const projectFile = (path: string) => Bun.file(new URL(`../${path}`, import.meta.url)).text();
 
@@ -98,8 +99,12 @@ describe('annotationTransfer - parseAnnotationsJson', () => {
   test('filters out invalid items and throws error if no valid annotations remain', () => {
     expect(() => parseAnnotationsJson('')).toThrow('The selected file is empty.');
     expect(() => parseAnnotationsJson('{ invalid json')).toThrow('Failed to parse JSON');
-    expect(() => parseAnnotationsJson('{"something": "else"}')).toThrow('Invalid annotations file format');
-    expect(() => parseAnnotationsJson('[{"invalid": 123}]')).toThrow('No valid annotations were found');
+    expect(() => parseAnnotationsJson('{"something": "else"}')).toThrow(
+      'Invalid annotations file format',
+    );
+    expect(() => parseAnnotationsJson('[{"invalid": 123}]')).toThrow(
+      'No valid annotations were found',
+    );
   });
 
   test('filters out invalid page numbers or invalid coordinates while keeping valid items', () => {
@@ -202,7 +207,10 @@ describe('annotationTransfer - mergeAnnotations', () => {
 describe('annotation import/export UI and native menu wiring', () => {
   test('Native macOS Menu Bar and shortcuts expose Import / Export and ExportModal supports importing', async () => {
     const [tauriAppSource, modalSource, appSource, shortcutsSource] = await Promise.all([
-      Promise.all([projectFile('src-tauri/src/app/menu.rs'), projectFile('src-tauri/src/app.rs')]).then(parts => parts.join('\n')),
+      Promise.all([
+        projectFile('src-tauri/src/app/menu.rs'),
+        projectFile('src-tauri/src/app.rs'),
+      ]).then((parts) => parts.join('\n')),
       projectFile('src/components/modals/ExportModal.tsx'),
       projectFile('src/App.tsx'),
       projectFile('src/components/modals/KeyboardShortcutsModal.tsx'),

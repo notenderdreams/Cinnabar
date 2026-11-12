@@ -36,10 +36,7 @@ export interface KeyboardShortcutOptions {
   onAddPageBelow?: () => void;
 }
 
-export function handleKeyboardShortcut(
-  e: KeyboardEvent,
-  options: KeyboardShortcutOptions
-) {
+export function handleKeyboardShortcut(e: KeyboardEvent, options: KeyboardShortcutOptions) {
   if (e.defaultPrevented) return;
 
   const target = e.target as HTMLElement | null;
@@ -58,9 +55,7 @@ export function handleKeyboardShortcut(
   // Don't intercept other shortcuts if user is typing in an input, textarea or contenteditable
   if (
     target &&
-    (target.tagName === 'INPUT' ||
-      target.tagName === 'TEXTAREA' ||
-      target.isContentEditable)
+    (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)
   ) {
     // Only allow Escape to close inside inputs
     if (e.key === 'Escape') {

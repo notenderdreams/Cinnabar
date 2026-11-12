@@ -33,7 +33,7 @@ export function resolveNoteColor(colorHex: string | undefined): NoteColorPreset 
 export function wrapTextLines(
   text: string,
   maxWidth: number,
-  measureFn: (str: string) => number
+  measureFn: (str: string) => number,
 ): string[] {
   const rawParagraphs = text.split('\n');
   const wrappedLines: string[] = [];
@@ -122,7 +122,7 @@ export async function canvasToPngBytes(canvas: HTMLCanvasElement): Promise<Uint8
 
 export async function rasterizeStickyNote(
   annotation: TextNoteAnnotation,
-  pageWidth: number
+  pageWidth: number,
 ): Promise<{ pngBytes: Uint8Array; width: number; height: number } | null> {
   if (typeof document === 'undefined' || typeof document.createElement !== 'function') {
     return null;
@@ -130,20 +130,25 @@ export async function rasterizeStickyNote(
 
   const relScale = pageWidth / 612;
   const color = resolveNoteColor(annotation.color);
-  const targetWidth = Math.round((annotation.width ?? 0.20) * pageWidth);
+  const targetWidth = Math.round((annotation.width ?? 0.2) * pageWidth);
 
   const padding = Math.max(3, Math.round(6 * relScale));
   const contentWidth = Math.max(20, targetWidth - padding * 2);
   const baseFontSize = annotation.fontSize ? annotation.fontSize * 0.65 : 8.5;
   const fontSize = Math.max(5.5, Math.round(baseFontSize * relScale));
-  const fontStack = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+  const fontStack =
+    '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
 
   const measureCanvas = document.createElement('canvas');
   const mctx = measureCanvas.getContext('2d');
   if (!mctx) return null;
   mctx.font = `${fontSize}px ${fontStack}`;
 
-  const lines = wrapTextLines(annotation.text || '', contentWidth, (s) => mctx.measureText(s).width);
+  const lines = wrapTextLines(
+    annotation.text || '',
+    contentWidth,
+    (s) => mctx.measureText(s).width,
+  );
   const lineHeight = Math.round(fontSize * 1.35);
   const headerHeight = Math.max(10, Math.round(16 * relScale));
   const bodyHeight = lines.length * lineHeight;
@@ -218,7 +223,7 @@ export async function rasterizeStickyNote(
 
 export async function rasterizePlainText(
   annotation: TextNoteAnnotation,
-  pageWidth: number
+  pageWidth: number,
 ): Promise<{ pngBytes: Uint8Array; width: number; height: number } | null> {
   if (typeof document === 'undefined' || typeof document.createElement !== 'function') {
     return null;
@@ -251,7 +256,7 @@ export async function rasterizePlainText(
     lines = wrapTextLines(
       annotation.text || '',
       Math.max(20, targetWidth - Math.round(8 * relScale)),
-      (s) => mctx.measureText(s).width
+      (s) => mctx.measureText(s).width,
     );
   } else {
     const rawLines = (annotation.text || '').split('\n');

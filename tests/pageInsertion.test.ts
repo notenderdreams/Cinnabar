@@ -1,9 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { degrees, PDFDocument } from 'pdf-lib';
-import {
-  addBlankPageBelow,
-  reindexAfterPageInsertion,
-} from '../src/lib/pdf/pageExtractor';
+import { addBlankPageBelow, reindexAfterPageInsertion } from '../src/lib/pdf/pageExtractor';
 
 const projectFile = (path: string) => Bun.file(new URL(`../${path}`, import.meta.url)).text();
 

@@ -101,145 +101,149 @@ export const PageContextMenu: React.FC<PageContextMenuProps> = ({
       onPointerDown={(event) => event.stopPropagation()}
       onContextMenu={(event) => event.preventDefault()}
     >
-      {!pageActionsOnly && <>
-      {/* 1. Highlight / Annotation specific actions */}
-      {hitAnnotation && (
+      {!pageActionsOnly && (
         <>
+          {/* 1. Highlight / Annotation specific actions */}
+          {hitAnnotation && (
+            <>
+              <button
+                type="button"
+                role="menuitem"
+                className={itemClass}
+                onClick={run(() => onCopyAnnotationText?.(hitAnnotation))}
+              >
+                <span className="page-context-menu__icon" aria-hidden="true">
+                  <Copy />
+                </span>
+                <span>{getCopyAnnotationTextLabel()}</span>
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                className={itemClass}
+                onClick={run(() => onCopyAnnotationImage?.(hitAnnotation))}
+              >
+                <span className="page-context-menu__icon" aria-hidden="true">
+                  <Image />
+                </span>
+                <span>Copy region as image</span>
+              </button>
+              {onDeleteAnnotation && (
+                <button
+                  type="button"
+                  role="menuitem"
+                  className={`${itemClass} page-context-menu__item--destructive`}
+                  onClick={run(() => onDeleteAnnotation(hitAnnotation.id))}
+                >
+                  <span className="page-context-menu__icon" aria-hidden="true">
+                    <Trash2 />
+                  </span>
+                  <span>{getDeleteAnnotationLabel()}</span>
+                </button>
+              )}
+              {onAttachTextToAi && (
+                <button
+                  type="button"
+                  role="menuitem"
+                  className={itemClass}
+                  onClick={run(() => {
+                    const text = getAnnotationCoveredText(hitAnnotation);
+                    if (text) onAttachTextToAi(text);
+                  })}
+                >
+                  <span className="page-context-menu__icon" aria-hidden="true">
+                    <SparkleIcon />
+                  </span>
+                  <span>Attach highlight to AI prompt</span>
+                </button>
+              )}
+              <div className="page-context-menu__separator" role="separator" />
+            </>
+          )}
+
+          {/* 2. Text selection action */}
+          {hasSelectedText && onHighlightSelectedText && (
+            <button
+              type="button"
+              role="menuitem"
+              className={itemClass}
+              onClick={run(onHighlightSelectedText)}
+            >
+              <span className="page-context-menu__icon" aria-hidden="true">
+                <Highlighter />
+              </span>
+              <span>Highlight selection</span>
+            </button>
+          )}
+          {hasSelectedText && onUnderlineSelectedText && (
+            <button
+              type="button"
+              role="menuitem"
+              className={itemClass}
+              onClick={run(onUnderlineSelectedText)}
+            >
+              <span className="page-context-menu__icon" aria-hidden="true">
+                <Underline />
+              </span>
+              <span>Underline selection</span>
+            </button>
+          )}
           <button
             type="button"
             role="menuitem"
             className={itemClass}
-            onClick={run(() => onCopyAnnotationText?.(hitAnnotation))}
+            disabled={!hasSelectedText}
+            onClick={hasSelectedText && onCopySelectedText ? run(onCopySelectedText) : undefined}
           >
             <span className="page-context-menu__icon" aria-hidden="true">
               <Copy />
             </span>
-            <span>{getCopyAnnotationTextLabel()}</span>
+            <span>Copy text</span>
           </button>
-          <button
-            type="button"
-            role="menuitem"
-            className={itemClass}
-            onClick={run(() => onCopyAnnotationImage?.(hitAnnotation))}
-          >
-            <span className="page-context-menu__icon" aria-hidden="true">
-              <Image />
-            </span>
-            <span>Copy region as image</span>
-          </button>
-          {onDeleteAnnotation && (
-            <button
-              type="button"
-              role="menuitem"
-              className={`${itemClass} page-context-menu__item--destructive`}
-              onClick={run(() => onDeleteAnnotation(hitAnnotation.id))}
-            >
-              <span className="page-context-menu__icon" aria-hidden="true">
-                <Trash2 />
-              </span>
-              <span>{getDeleteAnnotationLabel()}</span>
-            </button>
-          )}
-          {onAttachTextToAi && (
+          {hasSelectedText && onAttachTextToAi && (
             <button
               type="button"
               role="menuitem"
               className={itemClass}
               onClick={run(() => {
-                const text = getAnnotationCoveredText(hitAnnotation);
+                const sel = window.getSelection();
+                const text = sel ? sel.toString().trim() : '';
                 if (text) onAttachTextToAi(text);
               })}
             >
               <span className="page-context-menu__icon" aria-hidden="true">
                 <SparkleIcon />
               </span>
-              <span>Attach highlight to AI prompt</span>
+              <span>Attach selection to AI prompt</span>
             </button>
           )}
-          <div className="page-context-menu__separator" role="separator" />
+
+          {/* 3. Page level actions */}
+          <button type="button" role="menuitem" className={itemClass} onClick={run(onCopyPageText)}>
+            <span className="page-context-menu__icon" aria-hidden="true">
+              <FileText />
+            </span>
+            <span>Copy page text</span>
+          </button>
         </>
       )}
-
-      {/* 2. Text selection action */}
-      {hasSelectedText && onHighlightSelectedText && (
-        <button
-          type="button"
-          role="menuitem"
-          className={itemClass}
-          onClick={run(onHighlightSelectedText)}
-        >
-          <span className="page-context-menu__icon" aria-hidden="true">
-            <Highlighter />
-          </span>
-          <span>Highlight selection</span>
-        </button>
-      )}
-      {hasSelectedText && onUnderlineSelectedText && (
-        <button
-          type="button"
-          role="menuitem"
-          className={itemClass}
-          onClick={run(onUnderlineSelectedText)}
-        >
-          <span className="page-context-menu__icon" aria-hidden="true">
-            <Underline />
-          </span>
-          <span>Underline selection</span>
-        </button>
-      )}
-      <button
-        type="button"
-        role="menuitem"
-        className={itemClass}
-        disabled={!hasSelectedText}
-        onClick={hasSelectedText && onCopySelectedText ? run(onCopySelectedText) : undefined}
-      >
-        <span className="page-context-menu__icon" aria-hidden="true">
-          <Copy />
-        </span>
-        <span>Copy text</span>
-      </button>
-      {hasSelectedText && onAttachTextToAi && (
-        <button
-          type="button"
-          role="menuitem"
-          className={itemClass}
-          onClick={run(() => {
-            const sel = window.getSelection();
-            const text = sel ? sel.toString().trim() : '';
-            if (text) onAttachTextToAi(text);
-          })}
-        >
-          <span className="page-context-menu__icon" aria-hidden="true">
-            <SparkleIcon />
-          </span>
-          <span>Attach selection to AI prompt</span>
-        </button>
-      )}
-
-      {/* 3. Page level actions */}
-      <button type="button" role="menuitem" className={itemClass} onClick={run(onCopyPageText)}>
-        <span className="page-context-menu__icon" aria-hidden="true">
-          <FileText />
-        </span>
-        <span>Copy page text</span>
-      </button>
-      </>}
       <button type="button" role="menuitem" className={itemClass} onClick={run(onCopyPageImage)}>
         <span className="page-context-menu__icon" aria-hidden="true">
           <Image />
         </span>
         <span>Copy page as image</span>
       </button>
-      {!pageActionsOnly && <>
-      <button type="button" role="menuitem" className={itemClass} onClick={run(onAskAi)}>
-        <span className="page-context-menu__icon" aria-hidden="true">
-          <SparkleIcon />
-        </span>
-        <span>Ask AI about this page</span>
-      </button>
-      <div className="page-context-menu__separator" role="separator" />
-      </>}
+      {!pageActionsOnly && (
+        <>
+          <button type="button" role="menuitem" className={itemClass} onClick={run(onAskAi)}>
+            <span className="page-context-menu__icon" aria-hidden="true">
+              <SparkleIcon />
+            </span>
+            <span>Ask AI about this page</span>
+          </button>
+          <div className="page-context-menu__separator" role="separator" />
+        </>
+      )}
       <button type="button" role="menuitem" className={itemClass} onClick={run(onAddPageBelow)}>
         <span className="page-context-menu__icon" aria-hidden="true">
           <FilePlus />

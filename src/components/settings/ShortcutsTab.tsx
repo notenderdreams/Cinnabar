@@ -1,4 +1,3 @@
-
 export const SHORTCUT_GROUPS = [
   {
     title: 'Reading Layout',
@@ -59,8 +58,8 @@ export function ShortcutsTab() {
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <h3 className="text-sm font-semibold text-[var(--foreground)] mb-1">Keyboard Shortcuts</h3>
-        <p className="text-zinc-400 text-[11px]">
+        <h3 className="mb-1 text-sm font-semibold text-[var(--foreground)]">Keyboard Shortcuts</h3>
+        <p className="text-[11px] text-zinc-400">
           Quick reference for document navigation, tool selection, and editing.
         </p>
       </div>
@@ -68,21 +67,21 @@ export function ShortcutsTab() {
       <div className="flex flex-col gap-4">
         {SHORTCUT_GROUPS.map((group) => (
           <div key={group.title} className="flex flex-col gap-1.5">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400 px-1">
+            <span className="px-1 text-[10px] font-semibold tracking-wider text-zinc-400 uppercase">
               {group.title}
             </span>
-            <div className="grid grid-cols-1 gap-1 p-2 rounded-xl bg-[var(--card)] border border-[var(--border)]">
+            <div className="grid grid-cols-1 gap-1 rounded-xl border border-[var(--border)] bg-[var(--card)] p-2">
               {group.items.map((item, idx) => (
                 <div
                   key={idx}
-                  className="flex items-center justify-between py-1 px-1.5 rounded hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+                  className="flex items-center justify-between rounded px-1.5 py-1 transition-colors hover:bg-black/5 dark:hover:bg-white/5"
                 >
-                  <span className="text-zinc-300 text-[11px]">{item.desc}</span>
+                  <span className="text-[11px] text-zinc-300">{item.desc}</span>
                   <div className="flex items-center gap-1">
                     {item.keys.map((k, kIdx) => (
                       <kbd
                         key={kIdx}
-                        className="px-1.5 py-0.5 text-[10px] font-mono font-medium text-zinc-300 bg-[var(--secondary)] border border-[var(--border)] rounded shadow-2xs"
+                        className="rounded border border-[var(--border)] bg-[var(--secondary)] px-1.5 py-0.5 font-mono text-[10px] font-medium text-zinc-300 shadow-2xs"
                       >
                         {k}
                       </kbd>

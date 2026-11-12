@@ -28,13 +28,19 @@ function loadSnippetsSync(docKey: string, fallbackKeys: string[] = []): SnippetE
 export function useSnippets(docKey: string, fallbackKeys: string[] = []) {
   const [activeDocKey, setActiveDocKey] = useState<string>(docKey);
   const storageIdentity = [docKey, ...fallbackKeys].join('\u0000');
-  const [snippets, setSnippets] = useState<SnippetEntry[]>(() => loadSnippetsSync(docKey, fallbackKeys));
-  const [history, setHistory] = useState<SnippetEntry[][]>(() => [loadSnippetsSync(docKey, fallbackKeys)]);
+  const [snippets, setSnippets] = useState<SnippetEntry[]>(() =>
+    loadSnippetsSync(docKey, fallbackKeys),
+  );
+  const [history, setHistory] = useState<SnippetEntry[][]>(() => [
+    loadSnippetsSync(docKey, fallbackKeys),
+  ]);
   const [historyIndex, setHistoryIndex] = useState<number>(0);
   const isLoadedRef = useRef(Boolean(docKey));
   const snippetsRef = useRef<SnippetEntry[]>(snippets);
   snippetsRef.current = snippets;
-  const [loadedIdentity, setLoadedIdentity] = useState<string | null>(() => (docKey ? storageIdentity : null));
+  const [loadedIdentity, setLoadedIdentity] = useState<string | null>(() =>
+    docKey ? storageIdentity : null,
+  );
 
   // Synchronously switch document snippets during render to prevent stale leaks
   if (docKey !== activeDocKey) {
@@ -97,7 +103,7 @@ export function useSnippets(docKey: string, fallbackKeys: string[] = []) {
       setSnippets(newEntries);
       snippetsRef.current = newEntries;
     },
-    [historyIndex]
+    [historyIndex],
   );
 
   const undo = useCallback(() => {
@@ -131,7 +137,7 @@ export function useSnippets(docKey: string, fallbackKeys: string[] = []) {
       const updated = [...snippetsRef.current, snippet];
       pushState(updated);
     },
-    [pushState]
+    [pushState],
   );
 
   const addDivider = useCallback(
@@ -159,7 +165,7 @@ export function useSnippets(docKey: string, fallbackKeys: string[] = []) {
       }
       pushState(updated);
     },
-    [pushState]
+    [pushState],
   );
 
   const removeEntry = useCallback(
@@ -167,7 +173,7 @@ export function useSnippets(docKey: string, fallbackKeys: string[] = []) {
       const updated = snippetsRef.current.filter((item) => item.id !== id);
       pushState(updated);
     },
-    [pushState]
+    [pushState],
   );
 
   const moveEntry = useCallback(
@@ -183,7 +189,7 @@ export function useSnippets(docKey: string, fallbackKeys: string[] = []) {
       updated.splice(targetIndex, 0, item);
       pushState(updated);
     },
-    [pushState]
+    [pushState],
   );
 
   const updateDivider = useCallback(
@@ -196,7 +202,7 @@ export function useSnippets(docKey: string, fallbackKeys: string[] = []) {
       });
       pushState(updated);
     },
-    [pushState]
+    [pushState],
   );
 
   const updateSnippetLabel = useCallback(
@@ -209,7 +215,7 @@ export function useSnippets(docKey: string, fallbackKeys: string[] = []) {
       });
       pushState(updated);
     },
-    [pushState]
+    [pushState],
   );
 
   const clearAll = useCallback(() => {

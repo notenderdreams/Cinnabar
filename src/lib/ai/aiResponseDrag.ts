@@ -87,7 +87,9 @@ if (typeof window !== 'undefined') {
 }
 
 /** Extract the payload from a drop/drag event's dataTransfer, or null when absent/invalid. */
-export function extractAiResponseDragPayload(dataTransfer: DataTransfer): AiResponseDragPayload | null {
+export function extractAiResponseDragPayload(
+  dataTransfer: DataTransfer,
+): AiResponseDragPayload | null {
   const raw = dataTransfer.getData(AI_RESPONSE_DRAG_MIME);
   if (!raw) return null;
   try {
@@ -193,11 +195,16 @@ export function createAiResponseDragGhost(prompt: string, response: string): HTM
 /** Find the nearest preceding user message that produced the assistant reply at `assistantIndex`. */
 export function findOriginatingPrompt(
   messages: Array<{ role: string; content: string }>,
-  assistantIndex: number
+  assistantIndex: number,
 ): string {
   for (let i = assistantIndex - 1; i >= 0; i--) {
     const message = messages[i];
-    if (message.role === 'user' && typeof message.content === 'string' && message.content.trim() && message.content !== '(Attached snippet/reference)') {
+    if (
+      message.role === 'user' &&
+      typeof message.content === 'string' &&
+      message.content.trim() &&
+      message.content !== '(Attached snippet/reference)'
+    ) {
       return message.content;
     }
   }

@@ -1,9 +1,19 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import type { PDFDocumentProxy } from 'pdfjs-dist';
-import type { AiChatAttachment, AiChatMessage, AiChatSession, DocumentInfo } from '../lib/types/index';
+import type {
+  AiChatAttachment,
+  AiChatMessage,
+  AiChatSession,
+  DocumentInfo,
+} from '../lib/types/index';
 import { extractPageText } from '../lib/pdf/pageExtractor';
 import { runAiExplanation, cancelAiExplanation } from '../utils/tauriBridge';
-import { notebookInstructions, parseNotebookReply, type AiNotebookContext, type AiNotebookWrite } from '../lib/ai/notebookActions';
+import {
+  notebookInstructions,
+  parseNotebookReply,
+  type AiNotebookContext,
+  type AiNotebookWrite,
+} from '../lib/ai/notebookActions';
 import { getChatRetry } from '../lib/ai/chatRetry';
 
 const STORAGE_KEY = 'cinnabar_ai_chat_sessions';
@@ -22,7 +32,7 @@ function loadPersistedSessions(): AiChatSession[] {
               content: typeof m.content === 'string' ? m.content : '',
               attachments: Array.isArray(m.attachments)
                 ? (m.attachments as AiChatAttachment[]).filter(
-                    (a) => a && (typeof a.text === 'string' || typeof a.dataUrl === 'string')
+                    (a) => a && (typeof a.text === 'string' || typeof a.dataUrl === 'string'),
                   )
                 : undefined,
             }))
@@ -48,11 +58,22 @@ interface UseAiChatOptions {
   docInfo?: DocumentInfo | null;
   currentPage: number;
   notebook?: AiNotebookContext;
-  onWriteNotebook?: (docKey: string, write: AiNotebookWrite, canApply: () => boolean) => Promise<string>;
+  onWriteNotebook?: (
+    docKey: string,
+    write: AiNotebookWrite,
+    canApply: () => boolean,
+  ) => Promise<string>;
   isDocumentLoading?: boolean;
 }
 
-export function useAiChat({ pdfDoc, docInfo, currentPage, notebook, onWriteNotebook, isDocumentLoading = false }: UseAiChatOptions) {
+export function useAiChat({
+  pdfDoc,
+  docInfo,
+  currentPage,
+  notebook,
+  onWriteNotebook,
+  isDocumentLoading = false,
+}: UseAiChatOptions) {
   const [sessions, setSessions] = useState<AiChatSession[]>(() => {
     const persisted = loadPersistedSessions();
     if (persisted.length > 0) return persisted;
@@ -76,7 +97,8 @@ export function useAiChat({ pdfDoc, docInfo, currentPage, notebook, onWriteNoteb
   const activeRequestIdRef = useRef<string | null>(null);
   const notebookRef = useRef({ notebook, onWriteNotebook, isDocumentLoading });
   notebookRef.current = { notebook, onWriteNotebook, isDocumentLoading };
-  const documentIdentity = notebook?.docKey ?? docInfo?.filePath ?? docInfo?.fingerprint ?? docInfo?.fileName;
+  const documentIdentity =
+    notebook?.docKey ?? docInfo?.filePath ?? docInfo?.fingerprint ?? docInfo?.fileName;
 
   useEffect(() => {
     setIsLoading(false);
@@ -97,57 +119,65 @@ export function useAiChat({ pdfDoc, docInfo, currentPage, notebook, onWriteNoteb
     return sessions.find((s) => s.id === activeSessionId) || sessions[0] || null;
   }, [sessions, activeSessionId]);
 
-  const createNewSession = useCallback((title = 'New Chat') => {
-    const newSession: AiChatSession = {
-      id: `session_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-      title,
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-      docName: docInfo?.fileName,
-      messages: [],
-    };
-    setSessions((prev) => [newSession, ...prev]);
-    setActiveSessionId(newSession.id);
-    return newSession.id;
-  }, [docInfo?.fileName]);
+  const createNewSession = useCallback(
+    (title = 'New Chat') => {
+      const newSession: AiChatSession = {
+        id: `session_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+        title,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        docName: docInfo?.fileName,
+        messages: [],
+      };
+      setSessions((prev) => [newSession, ...prev]);
+      setActiveSessionId(newSession.id);
+      return newSession.id;
+    },
+    [docInfo?.fileName],
+  );
 
   const selectSession = useCallback((id: string) => {
     setActiveSessionId(id);
   }, []);
 
-  const deleteSession = useCallback((id: string) => {
-    setSessions((prev) => {
-      const filtered = prev.filter((s) => s.id !== id);
-      if (filtered.length === 0) {
-        const fresh: AiChatSession = {
-          id: `session_${Date.now()}`,
-          title: 'New Chat',
-          createdAt: Date.now(),
-          updatedAt: Date.now(),
-          docName: docInfo?.fileName,
-          messages: [],
-        };
-        setActiveSessionId(fresh.id);
-        return [fresh];
-      }
-      if (activeSessionId === id) {
-        setActiveSessionId(filtered[0].id);
-      }
-      return filtered;
-    });
-  }, [activeSessionId, docInfo?.fileName]);
+  const deleteSession = useCallback(
+    (id: string) => {
+      setSessions((prev) => {
+        const filtered = prev.filter((s) => s.id !== id);
+        if (filtered.length === 0) {
+          const fresh: AiChatSession = {
+            id: `session_${Date.now()}`,
+            title: 'New Chat',
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+            docName: docInfo?.fileName,
+            messages: [],
+          };
+          setActiveSessionId(fresh.id);
+          return [fresh];
+        }
+        if (activeSessionId === id) {
+          setActiveSessionId(filtered[0].id);
+        }
+        return filtered;
+      });
+    },
+    [activeSessionId, docInfo?.fileName],
+  );
 
   const renameSession = useCallback((id: string, newTitle: string) => {
     if (!newTitle.trim()) return;
     setSessions((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, title: newTitle.trim(), updatedAt: Date.now() } : s))
+      prev.map((s) => (s.id === id ? { ...s, title: newTitle.trim(), updatedAt: Date.now() } : s)),
     );
   }, []);
 
   const clearCurrentSession = useCallback(() => {
     if (!activeSession) return;
     setSessions((prev) =>
-      prev.map((s) => (s.id === activeSession.id ? { ...s, messages: [], updatedAt: Date.now() } : s))
+      prev.map((s) =>
+        s.id === activeSession.id ? { ...s, messages: [], updatedAt: Date.now() } : s,
+      ),
     );
   }, [activeSession]);
 
@@ -168,18 +198,28 @@ export function useAiChat({ pdfDoc, docInfo, currentPage, notebook, onWriteNoteb
         pageNumber?: number;
         attachments?: AiChatAttachment[];
         retryMessageId?: string;
-      }
+      },
     ) => {
       const trimmed = text.trim();
       const attachments = options?.attachments || [];
-      if ((!trimmed && attachments.length === 0) || !activeSession || isLoading || activeRequestIdRef.current) return;
+      if (
+        (!trimmed && attachments.length === 0) ||
+        !activeSession ||
+        isLoading ||
+        activeRequestIdRef.current
+      )
+        return;
       if (notebookRef.current.isDocumentLoading) return;
-      const retry = options?.retryMessageId ? getChatRetry(activeSession.messages, options.retryMessageId, documentIdentity) : null;
+      const retry = options?.retryMessageId
+        ? getChatRetry(activeSession.messages, options.retryMessageId, documentIdentity)
+        : null;
       if (options?.retryMessageId && !retry) return;
       const requestNotebook = notebookRef.current.notebook;
       const conversation = retry?.history ?? activeSession.messages;
-      const availableImages = [...conversation.slice(-6).flatMap((message) => message.attachments ?? []), ...attachments]
-        .filter((attachment) => attachment.type === 'image' && attachment.dataUrl);
+      const availableImages = [
+        ...conversation.slice(-6).flatMap((message) => message.attachments ?? []),
+        ...attachments,
+      ].filter((attachment) => attachment.type === 'image' && attachment.dataUrl);
 
       const targetPage = options?.pageNumber ?? currentPage;
       const userMessage: AiChatMessage = {
@@ -195,7 +235,8 @@ export function useAiChat({ pdfDoc, docInfo, currentPage, notebook, onWriteNoteb
 
       // Auto title session from first user message if still default
       const effectiveText = trimmed || 'Snippet Analysis';
-      const shouldAutoTitle = activeSession.title === 'New Chat' && activeSession.messages.length === 0;
+      const shouldAutoTitle =
+        activeSession.title === 'New Chat' && activeSession.messages.length === 0;
       const autoTitle = shouldAutoTitle
         ? effectiveText.length > 28
           ? `${effectiveText.slice(0, 28).trim()}…`
@@ -203,17 +244,18 @@ export function useAiChat({ pdfDoc, docInfo, currentPage, notebook, onWriteNoteb
         : activeSession.title;
 
       // Update session with user message
-      if (!retry) setSessions((prev) =>
-        prev.map((s) => {
-          if (s.id !== activeSession.id) return s;
-          return {
-            ...s,
-            title: autoTitle,
-            updatedAt: Date.now(),
-            messages: [...s.messages, userMessage],
-          };
-        })
-      );
+      if (!retry)
+        setSessions((prev) =>
+          prev.map((s) => {
+            if (s.id !== activeSession.id) return s;
+            return {
+              ...s,
+              title: autoTitle,
+              updatedAt: Date.now(),
+              messages: [...s.messages, userMessage],
+            };
+          }),
+        );
 
       setIsLoading(true);
       setRetryingMessageId(options?.retryMessageId ?? null);
@@ -236,7 +278,10 @@ export function useAiChat({ pdfDoc, docInfo, currentPage, notebook, onWriteNoteb
         // Quoted text attachments
         const quoteAttachments = attachments.filter((a) => a.type === 'text' && a.text);
         const quoteContext = quoteAttachments
-          .map((q) => `--- Referenced Highlight / Text (Page ${q.pageNumber ?? targetPage}) ---\n"${q.text}"`)
+          .map(
+            (q) =>
+              `--- Referenced Highlight / Text (Page ${q.pageNumber ?? targetPage}) ---\n"${q.text}"`,
+          )
           .join('\n\n');
 
         // Image attachment (e.g. from snip capture)
@@ -266,12 +311,16 @@ export function useAiChat({ pdfDoc, docInfo, currentPage, notebook, onWriteNoteb
           requestNotebook ? notebookInstructions(requestNotebook, availableImages) : null,
           options?.includePageContext ? `Active Page: ${targetPage}` : null,
           quoteContext || null,
-          imageAttachment ? `Attached image ID: ${imageAttachment.id}${imageAttachment.pageNumber !== undefined ? ` (source PDF page ${imageAttachment.pageNumber})` : ''}. Use this attachment ID when the user asks to insert this image.` : null,
+          imageAttachment
+            ? `Attached image ID: ${imageAttachment.id}${imageAttachment.pageNumber !== undefined ? ` (source PDF page ${imageAttachment.pageNumber})` : ''}. Use this attachment ID when the user asks to insert this image.`
+            : null,
           pageTextContext || null,
           historyText ? `\nRecent Conversation:\n${historyText}` : null,
           `\nUser: ${trimmed || 'Please analyze this attached snippet.'}`,
           `\nAssistant: Respond clearly with structured Markdown and concise explanations. Separate paragraphs, headings, and lists with blank lines. Use bullets or tables for descriptive comparisons. Reserve LaTeX for mathematical expressions: use $...$ inline, and put each $$ display delimiter on its own line with the formula between them.`,
-          requestNotebook ? 'Final response format: the notebook JSON schema with message, notebookText, and notebookImage. Return this object directly. Do not wrap it in explanation or a Markdown fence.' : null,
+          requestNotebook
+            ? 'Final response format: the notebook JSON schema with message, notebookText, and notebookImage. Return this object directly. Do not wrap it in explanation or a Markdown fence.'
+            : null,
         ]
           .filter(Boolean)
           .join('\n');
@@ -294,17 +343,32 @@ export function useAiChat({ pdfDoc, docInfo, currentPage, notebook, onWriteNoteb
             assistantContent = reply.message;
             if (reply.notebookText !== null || reply.notebookImage) {
               const current = notebookRef.current;
-              if (current.isDocumentLoading || current.notebook?.docKey !== requestNotebook.docKey || !current.onWriteNotebook) {
+              if (
+                current.isDocumentLoading ||
+                current.notebook?.docKey !== requestNotebook.docKey ||
+                !current.onWriteNotebook
+              ) {
                 throw new Error('The document changed. No notes were added.');
               }
               let write: AiNotebookWrite;
               if (reply.notebookImage) {
-                const image = availableImages.find((attachment) => attachment.id === reply.notebookImage?.attachmentId);
-                if (!image) throw new Error('The referenced image is unavailable. Attach it again and retry.');
+                const image = availableImages.find(
+                  (attachment) => attachment.id === reply.notebookImage?.attachmentId,
+                );
+                if (!image)
+                  throw new Error(
+                    'The referenced image is unavailable. Attach it again and retry.',
+                  );
                 write = { type: 'image', image, action: reply.notebookImage };
               } else write = { type: 'text', text: reply.notebookText! };
-              const receipt = await current.onWriteNotebook(requestNotebook.docKey, write,
-                () => activeRequestIdRef.current === requestId && !notebookRef.current.isDocumentLoading && notebookRef.current.notebook?.docKey === requestNotebook.docKey);
+              const receipt = await current.onWriteNotebook(
+                requestNotebook.docKey,
+                write,
+                () =>
+                  activeRequestIdRef.current === requestId &&
+                  !notebookRef.current.isDocumentLoading &&
+                  notebookRef.current.notebook?.docKey === requestNotebook.docKey,
+              );
               if (activeRequestIdRef.current !== requestId) return;
               assistantContent += `\n\n*${receipt}*`;
             }
@@ -312,7 +376,8 @@ export function useAiChat({ pdfDoc, docInfo, currentPage, notebook, onWriteNoteb
         } else {
           assistantError = result.message || 'Failed to get AI response.';
           assistantContent = `⚠️ **Error**: ${assistantError}`;
-          if (['missing_cli', 'unauthenticated', 'incompatible_cli'].includes(result.code)) assistantContent += '\n\n*Check the selected CLI in Settings > AI Assistant.*';
+          if (['missing_cli', 'unauthenticated', 'incompatible_cli'].includes(result.code))
+            assistantContent += '\n\n*Check the selected CLI in Settings > AI Assistant.*';
         }
 
         if (activeRequestIdRef.current !== requestId) return;
@@ -333,9 +398,13 @@ export function useAiChat({ pdfDoc, docInfo, currentPage, notebook, onWriteNoteb
             return {
               ...s,
               updatedAt: Date.now(),
-              messages: retry ? s.messages.map((message) => message.id === assistantMessage.id ? assistantMessage : message) : [...s.messages, assistantMessage],
+              messages: retry
+                ? s.messages.map((message) =>
+                    message.id === assistantMessage.id ? assistantMessage : message,
+                  )
+                : [...s.messages, assistantMessage],
             };
-          })
+          }),
         );
       } catch (err) {
         if (activeRequestIdRef.current !== requestId) return;
@@ -356,9 +425,13 @@ export function useAiChat({ pdfDoc, docInfo, currentPage, notebook, onWriteNoteb
             return {
               ...s,
               updatedAt: Date.now(),
-              messages: retry ? s.messages.map((message) => message.id === errorMessage.id ? errorMessage : message) : [...s.messages, errorMessage],
+              messages: retry
+                ? s.messages.map((message) =>
+                    message.id === errorMessage.id ? errorMessage : message,
+                  )
+                : [...s.messages, errorMessage],
             };
-          })
+          }),
         );
       } finally {
         if (activeRequestIdRef.current === requestId) {
@@ -368,20 +441,26 @@ export function useAiChat({ pdfDoc, docInfo, currentPage, notebook, onWriteNoteb
         }
       }
     },
-    [activeSession, currentPage, docInfo?.fileName, isLoading, pdfDoc, documentIdentity]
+    [activeSession, currentPage, docInfo?.fileName, isLoading, pdfDoc, documentIdentity],
   );
 
-  const retryMessage = useCallback((messageId: string) => {
-    if (!activeSession) return;
-    const retry = getChatRetry(activeSession.messages, messageId, documentIdentity);
-    if (!retry) return;
-    return sendMessage(retry.user.content === '(Attached snippet/reference)' ? '' : retry.user.content, {
-      includePageContext: retry.user.pageNumber !== undefined,
-      pageNumber: retry.user.pageNumber,
-      attachments: retry.user.attachments,
-      retryMessageId: messageId,
-    });
-  }, [activeSession, documentIdentity, sendMessage]);
+  const retryMessage = useCallback(
+    (messageId: string) => {
+      if (!activeSession) return;
+      const retry = getChatRetry(activeSession.messages, messageId, documentIdentity);
+      if (!retry) return;
+      return sendMessage(
+        retry.user.content === '(Attached snippet/reference)' ? '' : retry.user.content,
+        {
+          includePageContext: retry.user.pageNumber !== undefined,
+          pageNumber: retry.user.pageNumber,
+          attachments: retry.user.attachments,
+          retryMessageId: messageId,
+        },
+      );
+    },
+    [activeSession, documentIdentity, sendMessage],
+  );
 
   return {
     sessions,
@@ -396,7 +475,12 @@ export function useAiChat({ pdfDoc, docInfo, currentPage, notebook, onWriteNoteb
     clearCurrentSession,
     sendMessage,
     retryMessage,
-    canRetryMessage: (messageId: string) => Boolean(activeSession && !isDocumentLoading && getChatRetry(activeSession.messages, messageId, documentIdentity)),
+    canRetryMessage: (messageId: string) =>
+      Boolean(
+        activeSession &&
+        !isDocumentLoading &&
+        getChatRetry(activeSession.messages, messageId, documentIdentity),
+      ),
     cancelActiveRequest,
   };
 }

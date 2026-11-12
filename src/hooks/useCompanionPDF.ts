@@ -70,7 +70,7 @@ export function useCompanionPDF({
         return false;
       }
     },
-    [primaryFileName, onOpenCompanion, showToast]
+    [primaryFileName, onOpenCompanion, showToast],
   );
 
   return {

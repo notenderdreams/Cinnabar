@@ -27,7 +27,9 @@ Professionals shuttle information.`;
 
   test('normalizes inline and display LaTeX delimiters', () => {
     const source = String.raw`Mean \(\mu_X\) and density \[f_X(x)=e^{-x}\].`;
-    expect(normalizeAiResponseMarkdown(source)).toBe('Mean $\\mu_X$ and density \n$$\nf_X(x)=e^{-x}\n$$\n.');
+    expect(normalizeAiResponseMarkdown(source)).toBe(
+      'Mean $\\mu_X$ and density \n$$\nf_X(x)=e^{-x}\n$$\n.',
+    );
   });
 
   test('separates same-line display math from following Markdown', () => {
@@ -72,7 +74,9 @@ $$
     expect(normalized).toContain('$$\n\\boxed{117\\text{ cars}}\n$$');
     expect(normalized).not.toContain('\\boxed{\\boxed');
 
-    const html = renderToStaticMarkup(React.createElement(AiResponseRenderer, { response: source }));
+    const html = renderToStaticMarkup(
+      React.createElement(AiResponseRenderer, { response: source }),
+    );
     expect(html).toContain('class="katex-display"');
     expect(html).toContain('117');
     expect(html).toContain('cars');

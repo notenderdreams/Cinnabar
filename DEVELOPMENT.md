@@ -92,14 +92,17 @@ git diff --check
 ## Building Binaries
 
 ### Frontend Assets for Tauri
+
 ```bash
 bun run build:frontend
 ```
 
 ### Native Desktop Application
+
 ```bash
 bun run build
 ```
+
 The compiled platform-native installer/executable will be placed in `src-tauri/target/release/bundle/`.
 
 ---
@@ -141,6 +144,7 @@ The compiled platform-native installer/executable will be placed in `src-tauri/t
 ```
 
 ### Native Tauri Bridge
+
 All desktop-specific operations (file dialogs, folder scanning, file reading/writing, clipboard access, external URL opening) must route through [`src/utils/tauriBridge.ts`](src/utils/tauriBridge.ts). Cinnabar runs only inside Tauri; use native file dialogs, clipboard access, window operations, and URL opening.
 
 The bridge re-exports capability modules in `src/utils/tauri/`. UI and domain callers use the public bridge; capability modules share native result handling without importing the public bridge back into themselves. Domain types live in `src/lib/types/`; avoid adding compatibility re-exports in unrelated folders.

@@ -11,7 +11,10 @@ import type { usePDFDocument } from './usePDFDocument';
 import type { useAnnotations } from './useAnnotations';
 import type { useSnippets } from './useSnippets';
 
-type PageMutationOptions = Pick<ReturnType<typeof usePDFDocument>, 'pdfDoc' | 'rawPdfBytes' | 'docInfo' | 'docKey' | 'loadPdf'> &
+type PageMutationOptions = Pick<
+  ReturnType<typeof usePDFDocument>,
+  'pdfDoc' | 'rawPdfBytes' | 'docInfo' | 'docKey' | 'loadPdf'
+> &
   Pick<ReturnType<typeof useAnnotations>, 'annotations' | 'replaceAnnotations'> &
   Pick<ReturnType<typeof useSnippets>, 'snippets' | 'replaceSnippets'> & {
     onPageChanged: (page: number) => void;
@@ -44,85 +47,82 @@ export function usePdfPageMutations({
       }
       setPagePendingDeletion(pageNumber);
     },
-    [docInfo, pdfDoc, rawPdfBytes, showToast]
+    [docInfo, pdfDoc, rawPdfBytes, showToast],
   );
 
-  const handleDeletePage = useCallback(
-    async () => {
-      const pageNumber = pagePendingDeletion;
-      if (pageNumber === null) return;
-      if (!pdfDoc || !rawPdfBytes || !docInfo) return;
-      if (pdfDoc.numPages <= 1) {
-        showToast('A PDF must keep at least one page.', true);
-        setPagePendingDeletion(null);
+  const handleDeletePage = useCallback(async () => {
+    const pageNumber = pagePendingDeletion;
+    if (pageNumber === null) return;
+    if (!pdfDoc || !rawPdfBytes || !docInfo) return;
+    if (pdfDoc.numPages <= 1) {
+      showToast('A PDF must keep at least one page.', true);
+      setPagePendingDeletion(null);
+      return;
+    }
+
+    // Close the confirmation dialog immediately so the user can continue uninterrupted
+    setPagePendingDeletion(null);
+    setIsDeletingPage(true);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    try {
+      const updatedBytes = await deletePageFromPdf(rawPdfBytes, pageNumber);
+      const updatedAnnotations = reindexAfterPageDeletion(annotations, pageNumber);
+      const updatedSnippets = reindexAfterPageDeletion(snippets, pageNumber);
+      const nextPage = Math.min(pageNumber, pdfDoc.numPages - 1);
+
+      if (docInfo.filePath) {
+        const persisted = await tauriWritePdf(updatedBytes, docInfo.filePath);
+        if (!persisted) {
+          showToast('Could not save the page deletion to the PDF.', true);
+          return;
+        }
+      } else {
+        void idbSaveActivePdf(updatedBytes, docInfo.fileName);
+      }
+
+      const reloaded = await loadPdf(
+        updatedBytes,
+        docInfo.fileName,
+        docInfo.filePath,
+        nextPage,
+        docKey,
+        docInfo.fingerprint,
+        true,
+      );
+      if (!reloaded) {
+        showToast('Could not reload the PDF after deleting the page.', true);
         return;
       }
 
-      // Close the confirmation dialog immediately so the user can continue uninterrupted
-      setPagePendingDeletion(null);
-      setIsDeletingPage(true);
-      await new Promise((resolve) => setTimeout(resolve, 0));
-
-      try {
-        const updatedBytes = await deletePageFromPdf(rawPdfBytes, pageNumber);
-        const updatedAnnotations = reindexAfterPageDeletion(annotations, pageNumber);
-        const updatedSnippets = reindexAfterPageDeletion(snippets, pageNumber);
-        const nextPage = Math.min(pageNumber, pdfDoc.numPages - 1);
-
-        if (docInfo.filePath) {
-          const persisted = await tauriWritePdf(updatedBytes, docInfo.filePath);
-          if (!persisted) {
-            showToast('Could not save the page deletion to the PDF.', true);
-            return;
-          }
-        } else {
-          void idbSaveActivePdf(updatedBytes, docInfo.fileName);
-        }
-
-        const reloaded = await loadPdf(
-          updatedBytes,
-          docInfo.fileName,
-          docInfo.filePath,
-          nextPage,
-          docKey,
-          docInfo.fingerprint,
-          true
-        );
-        if (!reloaded) {
-          showToast('Could not reload the PDF after deleting the page.', true);
-          return;
-        }
-
-        replaceAnnotations(updatedAnnotations);
-        replaceSnippets(updatedSnippets);
-        onPageChanged(nextPage);
-        showToast(
-          docInfo.filePath
-            ? `Page ${pageNumber} deleted and changes saved`
-            : `Page ${pageNumber} deleted`
-        );
-      } catch (error) {
-        console.error('Failed to delete PDF page:', error);
-        showToast('Could not delete the page.', true);
-      } finally {
-        setIsDeletingPage(false);
-      }
-    },
-    [
-      onPageChanged,
-      annotations,
-      docInfo,
-      docKey,
-      loadPdf,
-      pagePendingDeletion,
-      pdfDoc,
-      rawPdfBytes,
-      replaceAnnotations,
-      replaceSnippets,
-      showToast,
-      snippets,
-    ]
-  );
+      replaceAnnotations(updatedAnnotations);
+      replaceSnippets(updatedSnippets);
+      onPageChanged(nextPage);
+      showToast(
+        docInfo.filePath
+          ? `Page ${pageNumber} deleted and changes saved`
+          : `Page ${pageNumber} deleted`,
+      );
+    } catch (error) {
+      console.error('Failed to delete PDF page:', error);
+      showToast('Could not delete the page.', true);
+    } finally {
+      setIsDeletingPage(false);
+    }
+  }, [
+    onPageChanged,
+    annotations,
+    docInfo,
+    docKey,
+    loadPdf,
+    pagePendingDeletion,
+    pdfDoc,
+    rawPdfBytes,
+    replaceAnnotations,
+    replaceSnippets,
+    showToast,
+    snippets,
+  ]);
 
   const handleAddPageBelow = useCallback(
     async (pageNumber: number) => {
@@ -152,7 +152,7 @@ export function usePdfPageMutations({
           newPageNumber,
           docKey,
           docInfo.fingerprint,
-          true
+          true,
         );
         if (!reloaded) {
           showToast('Could not reload the PDF after adding page.', true);
@@ -165,7 +165,7 @@ export function usePdfPageMutations({
         showToast(
           docInfo.filePath
             ? `Page ${newPageNumber} added and changes saved`
-            : `Page ${newPageNumber} added`
+            : `Page ${newPageNumber} added`,
         );
       } catch (error) {
         console.error('Failed to add PDF page:', error);
@@ -184,9 +184,8 @@ export function usePdfPageMutations({
       replaceSnippets,
       showToast,
       snippets,
-    ]
+    ],
   );
-
 
   return {
     pagePendingDeletion,

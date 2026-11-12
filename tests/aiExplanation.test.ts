@@ -16,17 +16,46 @@ describe('AI explanation state and persistence', () => {
 
   test('round-trips AI and legacy annotations through annotation JSON', () => {
     const ai: AiExplanationAnnotation = {
-      id: 'ai_1', pageNumber: 2, type: 'ai-explanation', x: 0.1, y: 0.2, width: 0.3, height: 0.1,
-      prompt: 'Explain', response: 'Answer', provider: 'codex', createdAt: 1, updatedAt: 2,
+      id: 'ai_1',
+      pageNumber: 2,
+      type: 'ai-explanation',
+      x: 0.1,
+      y: 0.2,
+      width: 0.3,
+      height: 0.1,
+      prompt: 'Explain',
+      response: 'Answer',
+      provider: 'codex',
+      createdAt: 1,
+      updatedAt: 2,
     };
     const legacy: Annotation = {
-      id: 'rect_1', pageNumber: 1, type: 'highlight-rect', x: 0, y: 0, width: 0.1, height: 0.1,
-      color: '#ffff00', opacity: 0.4, createdAt: 1,
+      id: 'rect_1',
+      pageNumber: 1,
+      type: 'highlight-rect',
+      x: 0,
+      y: 0,
+      width: 0.1,
+      height: 0.1,
+      color: '#ffff00',
+      opacity: 0.4,
+      createdAt: 1,
     };
     const rasterized: Annotation = {
-      id: 'img_1', pageNumber: 2, type: 'image', x: 0.1, y: 0.2, width: 0.3, height: 0.1,
-      rotation: 0, opacity: 1, aspectRatio: 3, name: 'Rasterized Region P2',
-      dataUrl: 'data:image/png;base64,AAAA', createdAt: 1, extractedText: 'Sample raw text from document',
+      id: 'img_1',
+      pageNumber: 2,
+      type: 'image',
+      x: 0.1,
+      y: 0.2,
+      width: 0.3,
+      height: 0.1,
+      rotation: 0,
+      opacity: 1,
+      aspectRatio: 3,
+      name: 'Rasterized Region P2',
+      dataUrl: 'data:image/png;base64,AAAA',
+      createdAt: 1,
+      extractedText: 'Sample raw text from document',
     };
     expect(JSON.parse(JSON.stringify([legacy, ai, rasterized]))).toEqual([legacy, ai, rasterized]);
   });
@@ -39,16 +68,44 @@ describe('AI explanation state and persistence', () => {
   test('persists every annotation, including unanswered and answered AI boxes', async () => {
     const { filterPersistableAnnotations } = await import('../src/lib/storage/storage');
     const unansweredAi: AiExplanationAnnotation = {
-      id: 'ai_empty', pageNumber: 1, type: 'ai-explanation', x: 0.1, y: 0.2, width: 0.3, height: 0.1,
-      prompt: 'Explain this', response: '', provider: 'codex', createdAt: 1, updatedAt: 2,
+      id: 'ai_empty',
+      pageNumber: 1,
+      type: 'ai-explanation',
+      x: 0.1,
+      y: 0.2,
+      width: 0.3,
+      height: 0.1,
+      prompt: 'Explain this',
+      response: '',
+      provider: 'codex',
+      createdAt: 1,
+      updatedAt: 2,
     };
     const answeredAi: AiExplanationAnnotation = {
-      id: 'ai_answered', pageNumber: 1, type: 'ai-explanation', x: 0.1, y: 0.2, width: 0.3, height: 0.1,
-      prompt: 'Explain this', response: 'Here is the detailed answer', provider: 'codex', createdAt: 1, updatedAt: 2,
+      id: 'ai_answered',
+      pageNumber: 1,
+      type: 'ai-explanation',
+      x: 0.1,
+      y: 0.2,
+      width: 0.3,
+      height: 0.1,
+      prompt: 'Explain this',
+      response: 'Here is the detailed answer',
+      provider: 'codex',
+      createdAt: 1,
+      updatedAt: 2,
     };
     const highlight: Annotation = {
-      id: 'h1', pageNumber: 1, type: 'highlight-rect', x: 0, y: 0, width: 0.1, height: 0.1,
-      color: '#ffff00', opacity: 0.4, createdAt: 1,
+      id: 'h1',
+      pageNumber: 1,
+      type: 'highlight-rect',
+      x: 0,
+      y: 0,
+      width: 0.1,
+      height: 0.1,
+      color: '#ffff00',
+      opacity: 0.4,
+      createdAt: 1,
     };
 
     const persistable = filterPersistableAnnotations([unansweredAi, answeredAi, highlight]);
@@ -56,14 +113,33 @@ describe('AI explanation state and persistence', () => {
   });
 
   test('loads legacy annotation arrays and selects the newest versioned record', async () => {
-    const { parseStoredAnnotationRecord, selectNewestAnnotationRecord } = await import('../src/lib/storage/storage');
+    const { parseStoredAnnotationRecord, selectNewestAnnotationRecord } =
+      await import('../src/lib/storage/storage');
     const older: Annotation = {
-      id: 'old', pageNumber: 1, type: 'highlight-rect', x: 0, y: 0, width: 0.1, height: 0.1,
-      color: '#ffff00', opacity: 0.4, createdAt: 1,
+      id: 'old',
+      pageNumber: 1,
+      type: 'highlight-rect',
+      x: 0,
+      y: 0,
+      width: 0.1,
+      height: 0.1,
+      color: '#ffff00',
+      opacity: 0.4,
+      createdAt: 1,
     };
     const newer: AiExplanationAnnotation = {
-      id: 'new', pageNumber: 2, type: 'ai-explanation', x: 0.1, y: 0.2, width: 0.3, height: 0.1,
-      prompt: 'Explain', response: 'Persisted AI response', provider: 'codex', createdAt: 2, updatedAt: 3,
+      id: 'new',
+      pageNumber: 2,
+      type: 'ai-explanation',
+      x: 0.1,
+      y: 0.2,
+      width: 0.3,
+      height: 0.1,
+      prompt: 'Explain',
+      response: 'Persisted AI response',
+      provider: 'codex',
+      createdAt: 2,
+      updatedAt: 3,
     };
 
     expect(parseStoredAnnotationRecord(JSON.stringify([older]))).toEqual({
@@ -74,12 +150,13 @@ describe('AI explanation state and persistence', () => {
       selectNewestAnnotationRecord([
         { annotations: [older], updatedAt: 10 },
         { annotations: [newer], updatedAt: 20 },
-      ])
+      ]),
     ).toEqual({ annotations: [newer], updatedAt: 20 });
   });
 
   test('builds an AI response preview for the Highlights sidebar', async () => {
-    const { getAnnotationListPresentation } = await import('../src/lib/annotations/annotationPresentation');
+    const { getAnnotationListPresentation } =
+      await import('../src/lib/annotations/annotationPresentation');
     const ai: AiExplanationAnnotation = {
       id: 'ai_sidebar',
       pageNumber: 4,
@@ -104,7 +181,8 @@ describe('AI explanation state and persistence', () => {
   });
 
   test('builds text highlight and note snippet previews for the Highlights sidebar', async () => {
-    const { getAnnotationListPresentation } = await import('../src/lib/annotations/annotationPresentation');
+    const { getAnnotationListPresentation } =
+      await import('../src/lib/annotations/annotationPresentation');
 
     const textHighlight: Annotation = {
       id: 'hl_1',
@@ -200,7 +278,7 @@ describe('AI explanation state and persistence', () => {
       annotationId: string,
       isOpen: boolean,
       hoveredId: string | null,
-      activeDragId: string | null
+      activeDragId: string | null,
     ) => {
       return !isOpen || hoveredId === annotationId || activeDragId === annotationId;
     };
@@ -312,7 +390,10 @@ describe('AI explanation state and persistence', () => {
       }
       return {
         left: Math.max(8, Math.min(ann.x * pageWidth, pageWidth - badgeSize - 8)),
-        top: Math.max(8, Math.min(pageHeight - badgeSize - 8, (ann.y + ann.height) * pageHeight + 10)),
+        top: Math.max(
+          8,
+          Math.min(pageHeight - badgeSize - 8, (ann.y + ann.height) * pageHeight + 10),
+        ),
       };
     };
 

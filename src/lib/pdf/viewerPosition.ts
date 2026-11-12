@@ -1,7 +1,7 @@
 export const shouldRestoreViewerPosition = (
   hasDocument: boolean,
   isNewDocument: boolean,
-  isNewViewMode: boolean
+  isNewViewMode: boolean,
 ) => hasDocument && (isNewDocument || isNewViewMode);
 
 export interface PageViewportBounds {
@@ -19,7 +19,7 @@ export const findFocalPageNumber = (
   containerTop: number,
   containerHeight: number,
   pages: readonly PageViewportBounds[],
-  fallbackPage: number
+  fallbackPage: number,
 ) => {
   const focalLine = containerTop + Math.min(containerHeight * 0.35, 240);
   let visiblePage = fallbackPage;
@@ -34,7 +34,7 @@ export const findFocalPageNumber = (
 
     const overlap = Math.max(
       0,
-      Math.min(page.bottom, containerTop + containerHeight) - Math.max(page.top, containerTop)
+      Math.min(page.bottom, containerTop + containerHeight) - Math.max(page.top, containerTop),
     );
     if (overlap > maxOverlap) {
       maxOverlap = overlap;
@@ -58,7 +58,7 @@ const scheduleViewerPositionRestore: RestoreScheduler = (restore) => {
 export const keepViewerPositionAfter = (
   element: HTMLElement,
   action: () => void,
-  schedule: RestoreScheduler = scheduleViewerPositionRestore
+  schedule: RestoreScheduler = scheduleViewerPositionRestore,
 ) => {
   const viewer = element.closest<HTMLElement>('.pdf-viewer-viewport');
   if (!viewer) {

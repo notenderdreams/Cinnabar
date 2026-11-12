@@ -20,12 +20,10 @@ export async function copyTextToClipboard(text: string): Promise<boolean> {
  */
 export async function extractPageText(
   pdfDoc: PDFDocumentProxy,
-  pageNumber: number | unknown
+  pageNumber: number | unknown,
 ): Promise<string> {
   const safePageNum =
-    typeof pageNumber === 'number' && !isNaN(pageNumber)
-      ? Math.max(1, Math.floor(pageNumber))
-      : 1;
+    typeof pageNumber === 'number' && !isNaN(pageNumber) ? Math.max(1, Math.floor(pageNumber)) : 1;
 
   let page: Awaited<ReturnType<typeof pdfDoc.getPage>> | null = null;
   try {
@@ -86,12 +84,10 @@ export async function extractPageText(
 export async function capturePageCompositeCanvas(
   pageNumber: number | unknown,
   pdfDoc?: PDFDocumentProxy | null,
-  pageIdPrefix: string = 'pdf-page'
+  pageIdPrefix: string = 'pdf-page',
 ): Promise<HTMLCanvasElement | null> {
   const safePageNum =
-    typeof pageNumber === 'number' && !isNaN(pageNumber)
-      ? Math.max(1, Math.floor(pageNumber))
-      : 1;
+    typeof pageNumber === 'number' && !isNaN(pageNumber) ? Math.max(1, Math.floor(pageNumber)) : 1;
 
   const pageContainer = document.getElementById(`${pageIdPrefix}-${safePageNum}`);
   const pdfCanvas = pageContainer?.querySelector('canvas') as HTMLCanvasElement | null;
@@ -163,7 +159,9 @@ export async function capturePageCompositeCanvas(
  * Uses the native OS pasteboard
  */
 export async function copyPageImageToClipboard(
-  pageNumber: number | unknown, pdfDoc?: PDFDocumentProxy | null, pageIdPrefix = 'pdf-page'
+  pageNumber: number | unknown,
+  pdfDoc?: PDFDocumentProxy | null,
+  pageIdPrefix = 'pdf-page',
 ): Promise<boolean> {
   const canvas = await capturePageCompositeCanvas(pageNumber, pdfDoc, pageIdPrefix);
   return canvas ? tauriCopyImageToClipboard(canvas.toDataURL('image/png')) : false;
@@ -176,12 +174,10 @@ export async function copyRegionImageToClipboard(
   pageNumber: number | unknown,
   rect: { x: number; y: number; width: number; height: number },
   pdfDoc?: PDFDocumentProxy | null,
-  pageIdPrefix: string = 'pdf-page'
+  pageIdPrefix: string = 'pdf-page',
 ): Promise<boolean> {
   const safePageNum =
-    typeof pageNumber === 'number' && !isNaN(pageNumber)
-      ? Math.max(1, Math.floor(pageNumber))
-      : 1;
+    typeof pageNumber === 'number' && !isNaN(pageNumber) ? Math.max(1, Math.floor(pageNumber)) : 1;
 
   const pageContainer =
     document.getElementById(`${pageIdPrefix}-${safePageNum}`) ||
@@ -294,7 +290,7 @@ export async function copyRegionImageToClipboard(
 /** Remove one page from a PDF and return the updated document bytes. */
 export async function deletePageFromPdf(
   pdfBytes: Uint8Array,
-  pageNumber: number
+  pageNumber: number,
 ): Promise<Uint8Array> {
   try {
     const nativeBytes = await tauriDeletePdfPage(pdfBytes, pageNumber);
@@ -317,7 +313,7 @@ export async function deletePageFromPdf(
 /** Insert a new blank page below (after) the specified page with identical dimensions and rotation. */
 export async function addBlankPageBelow(
   pdfBytes: Uint8Array,
-  pageNumber: number
+  pageNumber: number,
 ): Promise<Uint8Array> {
   try {
     const nativeBytes = await tauriAddBlankPageBelow(pdfBytes, pageNumber);
@@ -346,10 +342,7 @@ export async function addBlankPageBelow(
 }
 
 /** Shift entries on pages after the newly inserted page, preserving unpaged entries. */
-export function reindexAfterPageInsertion<T>(
-  entries: T[],
-  insertedAfterPageNumber: number
-): T[] {
+export function reindexAfterPageInsertion<T>(entries: T[], insertedAfterPageNumber: number): T[] {
   return entries.map((entry) => {
     const pageNumber = (entry as { pageNumber?: unknown }).pageNumber;
     if (typeof pageNumber !== 'number') return entry;
@@ -359,10 +352,7 @@ export function reindexAfterPageInsertion<T>(
 }
 
 /** Remove entries attached to a deleted page and shift later ones, preserving unpaged entries. */
-export function reindexAfterPageDeletion<T>(
-  entries: T[],
-  deletedPageNumber: number
-): T[] {
+export function reindexAfterPageDeletion<T>(entries: T[], deletedPageNumber: number): T[] {
   return entries.flatMap((entry) => {
     const pageNumber = (entry as { pageNumber?: unknown }).pageNumber;
     if (typeof pageNumber !== 'number') return [entry];
@@ -376,10 +366,18 @@ export function reindexAfterPageDeletion<T>(
  * Save composite page image through the native dialog
  */
 export async function downloadPageAsJpg(
-  pageNumber: number | unknown, pdfDoc?: PDFDocumentProxy | null, baseFileName = 'document'
+  pageNumber: number | unknown,
+  pdfDoc?: PDFDocumentProxy | null,
+  baseFileName = 'document',
 ): Promise<boolean> {
   const canvas = await capturePageCompositeCanvas(pageNumber, pdfDoc);
   if (!canvas) return false;
-  const page = typeof pageNumber === 'number' && Number.isFinite(pageNumber) ? Math.max(1, Math.floor(pageNumber)) : 1;
-  return saveImageFile(canvas.toDataURL('image/jpeg', 0.95), `${baseFileName.replace(/\.pdf$/i, '')}_page_${page}.jpg`);
+  const page =
+    typeof pageNumber === 'number' && Number.isFinite(pageNumber)
+      ? Math.max(1, Math.floor(pageNumber))
+      : 1;
+  return saveImageFile(
+    canvas.toDataURL('image/jpeg', 0.95),
+    `${baseFileName.replace(/\.pdf$/i, '')}_page_${page}.jpg`,
+  );
 }

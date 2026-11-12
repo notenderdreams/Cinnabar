@@ -17,7 +17,12 @@ import {
 } from 'lucide-react';
 import { SparkleIcon } from '../icons/SparkleIcon';
 import type { AiJobState } from '../../hooks/useAiExplanations';
-import type { AiExplanationAnnotation, Annotation, AttachedImageAnnotation, ToolType } from '../../lib/types/index';
+import type {
+  AiExplanationAnnotation,
+  Annotation,
+  AttachedImageAnnotation,
+  ToolType,
+} from '../../lib/types/index';
 import { rasterizeResponseCard } from '../../lib/annotations/cardRasterizer';
 import { AiResponseRenderer } from './AiResponseRenderer';
 
@@ -68,7 +73,7 @@ interface CardItemProps {
     e: React.PointerEvent,
     annotation: AiExplanationAnnotation,
     currentLeft: number,
-    currentTop: number
+    currentTop: number,
   ) => void;
   onDragMove: (e: React.PointerEvent, annotation: AiExplanationAnnotation) => void;
   onDragEnd: (e: React.PointerEvent, annotation: AiExplanationAnnotation) => void;
@@ -117,7 +122,7 @@ const AiExplanationCard: React.FC<CardItemProps> = React.memo(
     const [copied, setCopied] = useState(false);
     const [clipboardNotice, setClipboardNotice] = useState<string | null>(null);
     const [isJustAppeared, setIsJustAppeared] = useState(
-      () => !isPromptComposer && Date.now() - (annotation.createdAt || 0) < 2200
+      () => !isPromptComposer && Date.now() - (annotation.createdAt || 0) < 2200,
     );
 
     useEffect(() => {
@@ -226,14 +231,14 @@ const AiExplanationCard: React.FC<CardItemProps> = React.memo(
         promptTextareaRef.current.style.height = 'auto';
         promptTextareaRef.current.style.height = `${Math.min(
           Math.max(promptTextareaRef.current.scrollHeight, 48),
-          120
+          120,
         )}px`;
       }
     };
 
     const handleCopyText = async (text: string) => {
       try {
-        if (!await tauriCopyTextToClipboard(text)) return;
+        if (!(await tauriCopyTextToClipboard(text))) return;
         setCopied(true);
         setTimeout(() => setCopied(false), 1500);
       } catch (err) {
@@ -251,8 +256,8 @@ const AiExplanationCard: React.FC<CardItemProps> = React.memo(
             response: text.trim(),
             provider: 'external',
             isOpen: true,
-            cardX: annotation.cardX ?? (cardLeft / pageWidth),
-            cardY: annotation.cardY ?? (cardTop / pageHeight),
+            cardX: annotation.cardX ?? cardLeft / pageWidth,
+            cardY: annotation.cardY ?? cardTop / pageHeight,
             updatedAt: Date.now(),
           });
           setClipboardNotice(null);
@@ -260,7 +265,7 @@ const AiExplanationCard: React.FC<CardItemProps> = React.memo(
           onCloseJob(annotation.id);
         } else {
           setClipboardNotice(
-            'No text found in clipboard. If you copied an image or screenshot, please copy text to paste.'
+            'No text found in clipboard. If you copied an image or screenshot, please copy text to paste.',
           );
           setTimeout(() => setClipboardNotice(null), 4000);
         }
@@ -281,8 +286,8 @@ const AiExplanationCard: React.FC<CardItemProps> = React.memo(
         response: respText,
         provider,
         isOpen: true,
-        cardX: annotation.cardX ?? (cardLeft / pageWidth),
-        cardY: annotation.cardY ?? (cardTop / pageHeight),
+        cardX: annotation.cardX ?? cardLeft / pageWidth,
+        cardY: annotation.cardY ?? cardTop / pageHeight,
         updatedAt: Date.now(),
       });
       setIsPasting(false);
@@ -298,7 +303,7 @@ const AiExplanationCard: React.FC<CardItemProps> = React.memo(
           cardRef.current,
           annotation.prompt || 'Explain this section',
           rawResponse,
-          isDark
+          isDark,
         );
 
         const imgAspect = raster.width / raster.height;
@@ -358,12 +363,12 @@ const AiExplanationCard: React.FC<CardItemProps> = React.memo(
         }}
         role="dialog"
         aria-label="AI explanation note"
-        className={`absolute pointer-events-auto flex flex-col overscroll-contain z-30 ${
+        className={`pointer-events-auto absolute z-30 flex flex-col overscroll-contain ${
           isPromptComposer
             ? 'ai-prompt-composer-stack'
             : `macos-ai-popover max-h-[min(78vh,600px)] overflow-hidden ${
                 isDropAnimating ? 'ai-response-card-drop-appear' : ''
-              } ${isSelected ? 'ring-1 ring-blue-500/40 shadow-2xl' : ''}`
+              } ${isSelected ? 'shadow-2xl ring-1 ring-blue-500/40' : ''}`
         }`}
         onPointerDown={(event) => {
           event.stopPropagation();
@@ -382,58 +387,64 @@ const AiExplanationCard: React.FC<CardItemProps> = React.memo(
             onPointerCancel={(e) => onDragEnd(e, annotation)}
             onMouseEnter={() => onHover?.(annotation.id)}
             onMouseLeave={() => onHover?.(null)}
-            className="flex items-center justify-between gap-2 px-3.5 py-2 border-b border-[var(--border)] shrink-0 select-none bg-[var(--popover)]/60 backdrop-blur-xs cursor-grab active:cursor-grabbing"
+            className="flex shrink-0 cursor-grab items-center justify-between gap-2 border-b border-[var(--border)] bg-[var(--popover)]/60 px-3.5 py-2 backdrop-blur-xs select-none active:cursor-grabbing"
             title="Drag to move sticky note"
           >
             <div className="flex items-center gap-1.5 text-xs font-semibold">
-              <GripHorizontal className="w-3.5 h-3.5 text-[var(--muted-foreground)] opacity-70 hover:opacity-100 shrink-0" />
-              <span className="text-[var(--foreground)] font-medium tracking-tight">AI Assistant</span>
+              <GripHorizontal className="h-3.5 w-3.5 shrink-0 text-[var(--muted-foreground)] opacity-70 hover:opacity-100" />
+              <span className="font-medium tracking-tight text-[var(--foreground)]">
+                AI Assistant
+              </span>
               {providerName && (
-                <span className="text-[9.5px] font-medium font-mono text-purple-400 bg-purple-500/15 border border-purple-500/30 px-1.5 py-0.2 rounded-md">
+                <span className="py-0.2 rounded-md border border-purple-500/30 bg-purple-500/15 px-1.5 font-mono text-[9.5px] font-medium text-purple-400">
                   {providerName}
                 </span>
               )}
               {isDropAnimating && !isRunning && (
-                <span className="text-[9.5px] font-semibold text-blue-400 bg-blue-500/15 border border-blue-500/30 px-1.5 py-0.2 rounded-md flex items-center gap-1 animate-fade-in">
-                  <SparkleIcon className="w-2.5 h-2.5 text-blue-400" />
+                <span className="py-0.2 animate-fade-in flex items-center gap-1 rounded-md border border-blue-500/30 bg-blue-500/15 px-1.5 text-[9.5px] font-semibold text-blue-400">
+                  <SparkleIcon className="h-2.5 w-2.5 text-blue-400" />
                   Placed
                 </span>
               )}
               {isRunning && (
-                <span className="text-[10px] font-medium text-blue-400 bg-blue-500/15 border border-blue-500/30 px-2 py-0.5 rounded-full flex items-center gap-1.5 shrink-0">
-                  <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-ping" />
+                <span className="flex shrink-0 items-center gap-1.5 rounded-full border border-blue-500/30 bg-blue-500/15 px-2 py-0.5 text-[10px] font-medium text-blue-400">
+                  <span className="h-1.5 w-1.5 animate-ping rounded-full bg-blue-400" />
                   Thinking…
                 </span>
               )}
             </div>
 
             <div
-              className="flex items-center gap-1 shrink-0"
+              className="flex shrink-0 items-center gap-1"
               onPointerDown={(e) => e.stopPropagation()}
             >
               {annotation.response && !isRunning && (
                 <>
                   <button
                     type="button"
-                    className="macos-ai-action-btn w-6 h-6 rounded-md"
+                    className="macos-ai-action-btn h-6 w-6 rounded-md"
                     title="Rasterize explanation into adjustable image on page"
                     onClick={() => void handleRasterizeResponse()}
                     aria-label="Rasterize as Image"
                   >
-                    <ImageIcon className="w-3.5 h-3.5" />
+                    <ImageIcon className="h-3.5 w-3.5" />
                   </button>
                   <button
                     type="button"
-                    className="macos-ai-action-btn w-6 h-6 rounded-md"
+                    className="macos-ai-action-btn h-6 w-6 rounded-md"
                     title={copied ? 'Copied to clipboard' : 'Copy response'}
                     onClick={() => void handleCopyText(annotation.response)}
                     aria-label="Copy Response"
                   >
-                    {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                    {copied ? (
+                      <Check className="h-3.5 w-3.5 text-emerald-400" />
+                    ) : (
+                      <Copy className="h-3.5 w-3.5" />
+                    )}
                   </button>
                   <button
                     type="button"
-                    className="macos-ai-action-btn w-6 h-6 rounded-md"
+                    className="macos-ai-action-btn h-6 w-6 rounded-md"
                     title="Regenerate"
                     onClick={() => {
                       onCloseJob(annotation.id);
@@ -441,11 +452,11 @@ const AiExplanationCard: React.FC<CardItemProps> = React.memo(
                     }}
                     aria-label="Regenerate"
                   >
-                    <RotateCcw className="w-3.5 h-3.5" />
+                    <RotateCcw className="h-3.5 w-3.5" />
                   </button>
                   <button
                     type="button"
-                    className="macos-ai-action-btn macos-ai-action-btn-danger w-6 h-6 rounded-md"
+                    className="macos-ai-action-btn macos-ai-action-btn-danger h-6 w-6 rounded-md"
                     title="Delete"
                     onClick={() => {
                       onDelete(annotation.id);
@@ -453,18 +464,18 @@ const AiExplanationCard: React.FC<CardItemProps> = React.memo(
                     }}
                     aria-label="Delete"
                   >
-                    <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                    <Trash2 className="h-3.5 w-3.5 text-red-400" />
                   </button>
                 </>
               )}
               <button
                 type="button"
-                className="macos-ai-action-btn w-6 h-6 rounded-md"
+                className="macos-ai-action-btn h-6 w-6 rounded-md"
                 onClick={handleClose}
                 aria-label="Close"
                 title="Close sticky note"
               >
-                <X className="w-3.5 h-3.5" />
+                <X className="h-3.5 w-3.5" />
               </button>
             </div>
           </div>
@@ -472,8 +483,8 @@ const AiExplanationCard: React.FC<CardItemProps> = React.memo(
 
         {/* Scrollable Body */}
         <div
-          className={`flex-1 min-h-0 flex flex-col gap-3 select-text overscroll-contain ${
-            isPromptComposer ? '' : 'p-3.5 overflow-y-auto overflow-x-hidden macos-thin-scrollbar'
+          className={`flex min-h-0 flex-1 flex-col gap-3 overscroll-contain select-text ${
+            isPromptComposer ? '' : 'macos-thin-scrollbar overflow-x-hidden overflow-y-auto p-3.5'
           }`}
           onWheel={(event) => event.stopPropagation()}
         >
@@ -483,21 +494,25 @@ const AiExplanationCard: React.FC<CardItemProps> = React.memo(
               {isRunning ? (
                 <div className="flex flex-col gap-3">
                   <div className="flex flex-col gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--secondary)]/60 p-3">
-                    <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)]">
+                    <div className="text-[10px] font-semibold tracking-wider text-[var(--muted-foreground)] uppercase">
                       Question
                     </div>
-                    <div className="text-xs font-medium text-[var(--foreground)] leading-relaxed">
+                    <div className="text-xs leading-relaxed font-medium text-[var(--foreground)]">
                       {promptText || annotation.prompt || DEFAULT_PROMPT}
                     </div>
                   </div>
 
                   {/* Clean Text-Driven Shimmer Thinking Box */}
-                  <div className="macos-ai-thinking-box p-3.5 flex flex-col gap-2.5">
+                  <div className="macos-ai-thinking-box flex flex-col gap-2.5 p-3.5">
                     <div className="macos-ai-thinking-shimmer" />
-                    <div className="flex flex-col gap-2 relative z-10">
+                    <div className="relative z-10 flex flex-col gap-2">
                       <div className="flex items-center justify-between">
-                        <span className="ai-text-shimmer text-xs">Thinking & generating explanation…</span>
-                        <span className="text-[10px] text-zinc-500 font-mono">Analyzing context</span>
+                        <span className="ai-text-shimmer text-xs">
+                          Thinking & generating explanation…
+                        </span>
+                        <span className="font-mono text-[10px] text-zinc-500">
+                          Analyzing context
+                        </span>
                       </div>
 
                       <div className="flex flex-col gap-1.5 pt-0.5">
@@ -520,10 +535,10 @@ const AiExplanationCard: React.FC<CardItemProps> = React.memo(
                 </div>
               ) : isPasting ? (
                 /* External AI Response Paste Form */
-                <div className="flex flex-col gap-2.5 p-3 rounded-xl bg-[var(--popover)] border border-[var(--border)] shadow-2xl animate-fade-in">
-                  <div className="flex items-center justify-between pb-1 border-b border-[var(--border)]">
+                <div className="animate-fade-in flex flex-col gap-2.5 rounded-xl border border-[var(--border)] bg-[var(--popover)] p-3 shadow-2xl">
+                  <div className="flex items-center justify-between border-b border-[var(--border)] pb-1">
                     <div className="flex items-center gap-1.5 text-xs font-semibold text-[var(--foreground)]">
-                      <ClipboardPaste className="w-3.5 h-3.5 text-purple-400" />
+                      <ClipboardPaste className="h-3.5 w-3.5 text-purple-400" />
                       <span>Attach External AI Response</span>
                     </div>
                     <button
@@ -539,7 +554,7 @@ const AiExplanationCard: React.FC<CardItemProps> = React.memo(
                   <div className="flex flex-col gap-1">
                     <label
                       htmlFor={`paste-prompt-${annotation.id}`}
-                      className="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)]"
+                      className="text-[10px] font-semibold tracking-wider text-[var(--muted-foreground)] uppercase"
                     >
                       Question / Heading (Optional)
                     </label>
@@ -549,7 +564,7 @@ const AiExplanationCard: React.FC<CardItemProps> = React.memo(
                       value={pastePrompt}
                       onChange={(e) => setPastePrompt(e.target.value)}
                       placeholder="e.g. Explain this section"
-                      className="w-full bg-[var(--input)] border border-[var(--border)] rounded-md px-2.5 py-1.5 text-xs text-[var(--foreground)] focus:outline-none focus:ring-1 focus:ring-blue-500 font-sans"
+                      className="w-full rounded-md border border-[var(--border)] bg-[var(--input)] px-2.5 py-1.5 font-sans text-xs text-[var(--foreground)] focus:ring-1 focus:ring-blue-500 focus:outline-none"
                     />
                   </div>
 
@@ -558,7 +573,7 @@ const AiExplanationCard: React.FC<CardItemProps> = React.memo(
                     <div className="flex items-center justify-between">
                       <label
                         htmlFor={`paste-resp-${annotation.id}`}
-                        className="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)]"
+                        className="text-[10px] font-semibold tracking-wider text-[var(--muted-foreground)] uppercase"
                       >
                         AI Response (Markdown & Math)
                       </label>
@@ -572,10 +587,10 @@ const AiExplanationCard: React.FC<CardItemProps> = React.memo(
                             }
                           } catch {}
                         }}
-                        className="text-[10px] text-blue-400 hover:text-blue-300 flex items-center gap-1 font-medium"
+                        className="flex items-center gap-1 text-[10px] font-medium text-blue-400 hover:text-blue-300"
                         title="Paste from clipboard"
                       >
-                        <Clipboard className="w-3 h-3" /> Paste
+                        <Clipboard className="h-3 w-3" /> Paste
                       </button>
                     </div>
                     <textarea
@@ -586,7 +601,7 @@ const AiExplanationCard: React.FC<CardItemProps> = React.memo(
                       value={pasteResp}
                       onChange={(e) => setPasteResp(e.target.value)}
                       placeholder="Paste response from ChatGPT, Claude, DeepSeek, Gemini, etc..."
-                      className="w-full bg-[var(--input)] border border-[var(--border)] rounded-md p-2 text-xs text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:outline-none focus:ring-1 focus:ring-blue-500 font-sans resize-y leading-relaxed"
+                      className="w-full resize-y rounded-md border border-[var(--border)] bg-[var(--input)] p-2 font-sans text-xs leading-relaxed text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:ring-1 focus:ring-blue-500 focus:outline-none"
                     />
                   </div>
 
@@ -601,10 +616,10 @@ const AiExplanationCard: React.FC<CardItemProps> = React.memo(
                             key={p.id}
                             type="button"
                             onClick={() => setProvider(p.id)}
-                            className={`text-[10px] px-1.5 py-0.5 rounded transition-colors ${
+                            className={`rounded px-1.5 py-0.5 text-[10px] transition-colors ${
                               isCurrent
-                                ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40 font-medium'
-                                : 'bg-[var(--secondary)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] border border-transparent'
+                                ? 'border border-purple-500/40 bg-purple-500/20 font-medium text-purple-300'
+                                : 'border border-transparent bg-[var(--secondary)] text-[var(--muted-foreground)] hover:text-[var(--foreground)]'
                             }`}
                           >
                             {p.label}
@@ -615,7 +630,7 @@ const AiExplanationCard: React.FC<CardItemProps> = React.memo(
                   </div>
 
                   {/* Action Buttons */}
-                  <div className="flex items-center justify-end gap-1.5 pt-1 border-t border-[var(--border)]">
+                  <div className="flex items-center justify-end gap-1.5 border-t border-[var(--border)] pt-1">
                     <button
                       type="button"
                       onClick={() => setIsPasting(false)}
@@ -627,9 +642,9 @@ const AiExplanationCard: React.FC<CardItemProps> = React.memo(
                       type="button"
                       disabled={!pasteResp.trim()}
                       onClick={handleSaveExternalResponse}
-                      className="btn-primary px-3 py-1 text-xs flex items-center gap-1 disabled:opacity-50"
+                      className="btn-primary flex items-center gap-1 px-3 py-1 text-xs disabled:opacity-50"
                     >
-                      <Check className="w-3.5 h-3.5" /> Attach Response
+                      <Check className="h-3.5 w-3.5" /> Attach Response
                     </button>
                   </div>
                 </div>
@@ -661,18 +676,18 @@ const AiExplanationCard: React.FC<CardItemProps> = React.memo(
                       onKeyDown={handlePromptKeyDown}
                       onBlur={handlePromptBlur}
                       placeholder="Ask about this selection…"
-                      className="ai-prompt-composer-input w-full resize-none text-sm leading-6 font-sans"
+                      className="ai-prompt-composer-input w-full resize-none font-sans text-sm leading-6"
                     />
-                    <div className="flex items-center gap-1.5 shrink-0">
+                    <div className="flex shrink-0 items-center gap-1.5">
                       {/* Clipboard Paste Button */}
                       <button
                         type="button"
-                        className="w-7 h-7 rounded-lg flex items-center justify-center text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--secondary)] transition-colors border border-transparent hover:border-[var(--border)]"
+                        className="flex h-7 w-7 items-center justify-center rounded-lg border border-transparent text-[var(--muted-foreground)] transition-colors hover:border-[var(--border)] hover:bg-[var(--secondary)] hover:text-[var(--foreground)]"
                         onClick={() => void handleQuickPasteFromClipboard()}
                         title="Paste AI response from clipboard"
                         aria-label="Paste response from clipboard"
                       >
-                        <ClipboardPaste className="w-3.5 h-3.5" />
+                        <ClipboardPaste className="h-3.5 w-3.5" />
                       </button>
                       {/* Accent Blue Send Button */}
                       <button
@@ -683,7 +698,7 @@ const AiExplanationCard: React.FC<CardItemProps> = React.memo(
                         title="Explain selection (Enter)"
                         aria-label="Send prompt"
                       >
-                        <Send className="w-3.5 h-3.5" />
+                        <Send className="h-3.5 w-3.5" />
                       </button>
                     </div>
                   </div>
@@ -691,17 +706,17 @@ const AiExplanationCard: React.FC<CardItemProps> = React.memo(
                   {/* Clipboard Non-Text / Image Warning Notice */}
                   {clipboardNotice && (
                     <div
-                      className="text-[11px] font-medium text-amber-400 bg-amber-500/10 border border-amber-500/25 p-2 rounded-lg flex items-start gap-1.5 animate-slide-down"
+                      className="animate-slide-down flex items-start gap-1.5 rounded-lg border border-amber-500/25 bg-amber-500/10 p-2 text-[11px] font-medium text-amber-400"
                       role="alert"
                     >
-                      <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                      <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                       <span>{clipboardNotice}</span>
                     </div>
                   )}
 
                   {job?.phase === 'error' && (
                     <div
-                      className="text-[11px] text-amber-400 bg-amber-500/10 border border-amber-500/20 p-2 rounded-lg"
+                      className="rounded-lg border border-amber-500/20 bg-amber-500/10 p-2 text-[11px] text-amber-400"
                       role="alert"
                     >
                       {job.message}
@@ -720,26 +735,24 @@ const AiExplanationCard: React.FC<CardItemProps> = React.memo(
                   data-ai-question="true"
                   className="flex flex-col gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--secondary)]/60 p-3"
                 >
-                  <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)]">
+                  <div className="text-[10px] font-semibold tracking-wider text-[var(--muted-foreground)] uppercase">
                     Question
                   </div>
-                  <div className="text-xs font-medium text-[var(--foreground)] leading-relaxed">
+                  <div className="text-xs leading-relaxed font-medium text-[var(--foreground)]">
                     {annotation.prompt || promptText}
                   </div>
                 </div>
               )}
 
-              <div className="py-0.5 px-0.5">
+              <div className="px-0.5 py-0.5">
                 <AiResponseRenderer response={annotation.response} />
               </div>
             </div>
           )}
         </div>
-
-
       </div>
     );
-  }
+  },
 );
 
 interface BadgeItemProps {
@@ -754,7 +767,7 @@ interface BadgeItemProps {
     e: React.PointerEvent,
     annotation: AiExplanationAnnotation,
     currentLeft: number,
-    currentTop: number
+    currentTop: number,
   ) => void;
   onDragMove: (e: React.PointerEvent, annotation: AiExplanationAnnotation) => void;
   onDragEnd: (e: React.PointerEvent, annotation: AiExplanationAnnotation) => void;
@@ -846,12 +859,14 @@ const AiCollapsedBadge: React.FC<BadgeItemProps> = React.memo(
             ? `AI Explanation: "${annotation.prompt.slice(0, 50)}${annotation.prompt.length > 50 ? '…' : ''}"`
             : 'Open AI explanation'
         }
-        className={`absolute pointer-events-auto z-30 flex items-center justify-center rounded-full cursor-pointer select-none transition-all duration-150 ${
-          isSelected ? 'ring-2 ring-[var(--primary)] ring-offset-2 scale-110 shadow-lg' : 'hover:scale-110 shadow-md'
+        className={`pointer-events-auto absolute z-30 flex cursor-pointer items-center justify-center rounded-full transition-all duration-150 select-none ${
+          isSelected
+            ? 'scale-110 shadow-lg ring-2 ring-[var(--primary)] ring-offset-2'
+            : 'shadow-md hover:scale-110'
         } ${
           isRunning
-            ? 'bg-[var(--primary)] text-white animate-pulse border border-[var(--primary)]'
-            : 'bg-white dark:bg-[var(--card)] text-[var(--primary)] border border-[var(--border)] hover:bg-blue-50/50 dark:hover:bg-[var(--secondary)] hover:border-[var(--primary)]/50 hover:shadow-lg'
+            ? 'animate-pulse border border-[var(--primary)] bg-[var(--primary)] text-white'
+            : 'border border-[var(--border)] bg-white text-[var(--primary)] hover:border-[var(--primary)]/50 hover:bg-blue-50/50 hover:shadow-lg dark:bg-[var(--card)] dark:hover:bg-[var(--secondary)]'
         }`}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
@@ -873,16 +888,16 @@ const AiCollapsedBadge: React.FC<BadgeItemProps> = React.memo(
           }
         }}
       >
-        <MessageCircle className="w-4 h-4 text-[var(--primary)]" />
+        <MessageCircle className="h-4 w-4 text-[var(--primary)]" />
         {isRunning && (
           <span className="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-300 opacity-75" />
-            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-blue-400 border border-white" />
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-300 opacity-75" />
+            <span className="relative inline-flex h-2.5 w-2.5 rounded-full border border-white bg-blue-400" />
           </span>
         )}
       </div>
     );
-  }
+  },
 );
 
 AiCollapsedBadge.displayName = 'AiCollapsedBadge';
@@ -905,7 +920,9 @@ export const AiExplanationOverlay: React.FC<Props> = ({
 }) => {
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const [hoveredAnnotationId, setHoveredAnnotationId] = useState<string | null>(null);
-  const [dragPositions, setDragPositions] = useState<Record<string, { left: number; top: number }>>({});
+  const [dragPositions, setDragPositions] = useState<Record<string, { left: number; top: number }>>(
+    {},
+  );
   const dragStartRef = useRef<{
     clientX: number;
     clientY: number;
@@ -919,7 +936,7 @@ export const AiExplanationOverlay: React.FC<Props> = ({
       e: React.PointerEvent,
       annotation: AiExplanationAnnotation,
       currentLeft: number,
-      currentTop: number
+      currentTop: number,
     ) => {
       const target = e.target as HTMLElement;
       if (
@@ -945,7 +962,7 @@ export const AiExplanationOverlay: React.FC<Props> = ({
         (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
       } catch {}
     },
-    [onSelectAnnotation]
+    [onSelectAnnotation],
   );
 
   const handleDragPointerMove = useCallback(
@@ -968,7 +985,7 @@ export const AiExplanationOverlay: React.FC<Props> = ({
         [annotation.id]: { left: newLeft, top: newTop },
       }));
     },
-    [activeDragId]
+    [activeDragId],
   );
 
   const handleDragPointerUp = useCallback(
@@ -999,11 +1016,11 @@ export const AiExplanationOverlay: React.FC<Props> = ({
         });
       }
     },
-    [activeDragId, dragPositions, onUpdate, pageHeight, pageWidth]
+    [activeDragId, dragPositions, onUpdate, pageHeight, pageWidth],
   );
 
   return (
-    <div className="absolute inset-0 z-20 pointer-events-none">
+    <div className="pointer-events-none absolute inset-0 z-20">
       {/* 1. Interactive Selection Hitboxes & Dynamic AI Region Highlights */}
       {annotations.map((annotation) => {
         // Regionless responses (pinned from chat) anchor on a tiny box; render no region outline
@@ -1012,7 +1029,10 @@ export const AiExplanationOverlay: React.FC<Props> = ({
         const isRunning = job?.phase === 'running';
         const isPromptComposer = !annotation.response && !isRunning;
         const isOpen =
-          annotation.isOpen !== false || isPromptComposer || isRunning || selectedAnnotationId === annotation.id;
+          annotation.isOpen !== false ||
+          isPromptComposer ||
+          isRunning ||
+          selectedAnnotationId === annotation.id;
 
         const isHovered = hoveredAnnotationId === annotation.id;
         const isDragging = activeDragId === annotation.id;
@@ -1058,7 +1078,10 @@ export const AiExplanationOverlay: React.FC<Props> = ({
         const isRunning = job?.phase === 'running';
         const isPromptComposer = !annotation.response && !isRunning;
         const isOpen =
-          annotation.isOpen !== false || isPromptComposer || isRunning || selectedAnnotationId === annotation.id;
+          annotation.isOpen !== false ||
+          isPromptComposer ||
+          isRunning ||
+          selectedAnnotationId === annotation.id;
 
         if (isOpen) {
           return (

@@ -30,7 +30,7 @@ export interface NormalizedRect {
  */
 export function normalizeSelectionRects(
   rawRects: ClientRectLike[],
-  pageRect: ClientRectLike
+  pageRect: ClientRectLike,
 ): TextHighlightAnnotation['rects'] {
   if (pageRect.width <= 0 || pageRect.height <= 0 || rawRects.length === 0) {
     return [];
@@ -102,7 +102,10 @@ export function normalizeSelectionRects(
       const gHeight = gBottom - gTop;
       const overlap = Math.min(lineBottom, gBottom) - Math.max(lineTop, gTop);
       const minH = Math.min(lineHeight, gHeight);
-      return overlap >= minH * 0.35 || Math.abs((lineTop + lineBottom) / 2 - (gTop + gBottom) / 2) <= minH * 0.5;
+      return (
+        overlap >= minH * 0.35 ||
+        Math.abs((lineTop + lineBottom) / 2 - (gTop + gBottom) / 2) <= minH * 0.5
+      );
     });
 
     if (targetGroup) {
@@ -195,16 +198,18 @@ export function createTextHighlightsFromSelection(
   selection: Selection | null,
   color: string,
   opacity: number,
-  style: HighlightStyle = 'box'
+  style: HighlightStyle = 'box',
 ): RectHighlightAnnotation[] {
   if (!selection || selection.isCollapsed || selection.rangeCount === 0) return [];
 
-  const anchorElement = selection.anchorNode instanceof Element
-    ? selection.anchorNode
-    : selection.anchorNode?.parentElement;
-  const focusElement = selection.focusNode instanceof Element
-    ? selection.focusNode
-    : selection.focusNode?.parentElement;
+  const anchorElement =
+    selection.anchorNode instanceof Element
+      ? selection.anchorNode
+      : selection.anchorNode?.parentElement;
+  const focusElement =
+    selection.focusNode instanceof Element
+      ? selection.focusNode
+      : selection.focusNode?.parentElement;
 
   if (
     !anchorElement?.closest('[data-pdf-text-layer]') ||
@@ -217,7 +222,7 @@ export function createTextHighlightsFromSelection(
   if (!text) return [];
 
   const rangeRects = Array.from(selection.getRangeAt(0).getClientRects()).filter(
-    (rect) => rect.width > 0 && rect.height > 0
+    (rect) => rect.width > 0 && rect.height > 0,
   );
   const createdAt = Date.now();
 
@@ -243,7 +248,7 @@ export function createTextHighlightsFromSelection(
         text,
         createdAt,
       }));
-    }
+    },
   );
 }
 
@@ -253,7 +258,7 @@ export function createTextHighlightsFromSelection(
 export function extractTextFromDomPageRegion(
   pageNumber: number,
   normalizedBounds: { x: number; y: number; width: number; height: number },
-  pageIdPrefix?: string
+  pageIdPrefix?: string,
 ): string {
   if (typeof document === 'undefined') return '';
 
@@ -351,12 +356,12 @@ export function getLineSpansAtTarget(
   target: HTMLElement | null,
   textLayerContainer: HTMLElement | null,
   clientX?: number,
-  clientY?: number
+  clientY?: number,
 ): HTMLSpanElement[] {
   if (!textLayerContainer) return [];
 
   const allSpans = Array.from(textLayerContainer.querySelectorAll<HTMLSpanElement>('span')).filter(
-    (s) => (s.textContent?.trim().length ?? 0) > 0
+    (s) => (s.textContent?.trim().length ?? 0) > 0,
   );
   if (allSpans.length === 0) return [];
 
@@ -443,7 +448,8 @@ export function getLineSpansAtTarget(
   segments.push(currentSegment);
 
   // Find the segment containing refSpan
-  const targetSegment = segments.find((seg) => seg.some((item) => item.span === refSpan)) || segments[0];
+  const targetSegment =
+    segments.find((seg) => seg.some((item) => item.span === refSpan)) || segments[0];
 
   return targetSegment.map((item) => item.span);
 }
@@ -456,7 +462,7 @@ export function selectFullLineAtTarget(
   target: HTMLElement | null,
   textLayerContainer: HTMLElement | null,
   clientX?: number,
-  clientY?: number
+  clientY?: number,
 ): boolean {
   const lineSpans = getLineSpansAtTarget(target, textLayerContainer, clientX, clientY);
   if (lineSpans.length === 0) return false;
@@ -517,11 +523,11 @@ export function selectWordAtTarget(
   target: HTMLElement | null,
   textLayerContainer: HTMLElement | null,
   clientX?: number,
-  clientY?: number
+  clientY?: number,
 ): boolean {
   if (!textLayerContainer) return false;
   const allSpans = Array.from(textLayerContainer.querySelectorAll<HTMLSpanElement>('span')).filter(
-    (s) => (s.textContent?.trim().length ?? 0) > 0
+    (s) => (s.textContent?.trim().length ?? 0) > 0,
   );
   if (allSpans.length === 0) return false;
 
@@ -544,8 +550,12 @@ export function selectWordAtTarget(
         targetSpan = span;
         break;
       }
-      const vDist = inY ? 0 : Math.min(Math.abs(clientY - rect.top), Math.abs(clientY - rect.bottom));
-      const hDist = inX ? 0 : Math.min(Math.abs(clientX - rect.left), Math.abs(clientX - rect.right));
+      const vDist = inY
+        ? 0
+        : Math.min(Math.abs(clientY - rect.top), Math.abs(clientY - rect.bottom));
+      const hDist = inX
+        ? 0
+        : Math.min(Math.abs(clientX - rect.left), Math.abs(clientX - rect.right));
       const dist = vDist * 10 + hDist;
       if (dist < minDistance) {
         minDistance = dist;
@@ -581,12 +591,27 @@ export function selectWordAtTarget(
         range.setStart(textNode, word.start);
         range.setEnd(textNode, word.end);
         const rect = range.getBoundingClientRect();
-        if (clientX >= rect.left && clientX <= rect.right && clientY >= rect.top && clientY <= rect.bottom) {
+        if (
+          clientX >= rect.left &&
+          clientX <= rect.right &&
+          clientY >= rect.top &&
+          clientY <= rect.bottom
+        ) {
           bestWord = word;
           break;
         }
-        const hDist = clientX < rect.left ? rect.left - clientX : clientX > rect.right ? clientX - rect.right : 0;
-        const vDist = clientY < rect.top ? rect.top - clientY : clientY > rect.bottom ? clientY - rect.bottom : 0;
+        const hDist =
+          clientX < rect.left
+            ? rect.left - clientX
+            : clientX > rect.right
+              ? clientX - rect.right
+              : 0;
+        const vDist =
+          clientY < rect.top
+            ? rect.top - clientY
+            : clientY > rect.bottom
+              ? clientY - rect.bottom
+              : 0;
         const dist = vDist * 10 + hDist;
         if (dist < minWordDist) {
           minWordDist = dist;
@@ -618,7 +643,7 @@ export function selectWordAtTarget(
 export function getTextLineBoundsAtPoint(
   pageNumber: number,
   normalizedX: number,
-  normalizedY: number
+  normalizedY: number,
 ): TextLineBounds | null {
   if (typeof document === 'undefined') return null;
 
@@ -696,7 +721,7 @@ export function getTextLineBoundsAtPoint(
 export function getWordBoundsAtPoint(
   pageNumber: number,
   normalizedX: number,
-  normalizedY: number
+  normalizedY: number,
 ): TextLineBounds | null {
   if (typeof document === 'undefined') return null;
 
@@ -715,7 +740,7 @@ export function getWordBoundsAtPoint(
   const clientY = pageRect.top + normalizedY * pageRect.height;
 
   const allSpans = Array.from(textLayer.querySelectorAll<HTMLSpanElement>('span')).filter(
-    (s) => (s.textContent?.trim().length ?? 0) > 0
+    (s) => (s.textContent?.trim().length ?? 0) > 0,
   );
   if (allSpans.length === 0) return null;
 
@@ -765,25 +790,60 @@ export function getWordBoundsAtPoint(
   if (words.length === 0) return null;
 
   let bestWord = words[0];
-  let bestRect: { left: number; top: number; right: number; bottom: number; width: number; height: number } | null = null;
+  let bestRect: {
+    left: number;
+    top: number;
+    right: number;
+    bottom: number;
+    width: number;
+    height: number;
+  } | null = null;
   let minWordDist = Infinity;
 
   for (const word of words) {
-    let rect: { left: number; top: number; right: number; bottom: number; width: number; height: number };
+    let rect: {
+      left: number;
+      top: number;
+      right: number;
+      bottom: number;
+      width: number;
+      height: number;
+    };
     if (typeof document !== 'undefined' && document.createRange && textNode.nodeType === 3) {
       try {
         const range = document.createRange();
         range.setStart(textNode, word.start);
         range.setEnd(textNode, word.end);
         const r = range.getBoundingClientRect();
-        rect = { left: r.left, top: r.top, right: r.right, bottom: r.bottom, width: r.width, height: r.height };
+        rect = {
+          left: r.left,
+          top: r.top,
+          right: r.right,
+          bottom: r.bottom,
+          width: r.width,
+          height: r.height,
+        };
       } catch {
         const r = targetSpan.getBoundingClientRect();
-        rect = { left: r.left, top: r.top, right: r.right, bottom: r.bottom, width: r.width, height: r.height };
+        rect = {
+          left: r.left,
+          top: r.top,
+          right: r.right,
+          bottom: r.bottom,
+          width: r.width,
+          height: r.height,
+        };
       }
     } else {
       const r = targetSpan.getBoundingClientRect();
-      rect = { left: r.left, top: r.top, right: r.right, bottom: r.bottom, width: r.width, height: r.height };
+      rect = {
+        left: r.left,
+        top: r.top,
+        right: r.right,
+        bottom: r.bottom,
+        width: r.width,
+        height: r.height,
+      };
     }
 
     if (rect.width <= 0 || rect.height <= 0) continue;
@@ -842,7 +902,7 @@ export function findHighlightAnnotationsCoveringWord(
   pageNumber: number,
   wordBounds: TextLineBounds,
   pageWidth: number,
-  pageHeight: number
+  pageHeight: number,
 ): Annotation[] {
   const pageAnns = annotations.filter((a) => a.pageNumber === pageNumber);
   const wordCenterX = (wordBounds.x + wordBounds.width / 2) * pageWidth;
@@ -869,8 +929,10 @@ export function findHighlightAnnotationsCoveringWord(
     const bTop = b.y - (bHeight - b.height) / 2;
     const bBottom = bTop + bHeight;
 
-    const hOverlap = Math.min(b.x + b.width, wordBounds.x + wordBounds.width) - Math.max(b.x, wordBounds.x);
-    const vOverlap = Math.min(bBottom, wordBounds.y + wordBounds.height) - Math.max(bTop, wordBounds.y);
+    const hOverlap =
+      Math.min(b.x + b.width, wordBounds.x + wordBounds.width) - Math.max(b.x, wordBounds.x);
+    const vOverlap =
+      Math.min(bBottom, wordBounds.y + wordBounds.height) - Math.max(bTop, wordBounds.y);
 
     return (
       hOverlap >= Math.min(b.width, wordBounds.width) * 0.25 &&
@@ -887,7 +949,7 @@ export function findHighlightAnnotationsCoveringLine(
   pageNumber: number,
   lineBounds: TextLineBounds,
   pageWidth: number,
-  pageHeight: number
+  pageHeight: number,
 ): Annotation[] {
   const pageAnns = annotations.filter((a) => a.pageNumber === pageNumber);
   const lineMidY = (lineBounds.y + lineBounds.height / 2) * pageHeight;
@@ -920,14 +982,16 @@ export function findHighlightAnnotationsCoveringLine(
     const bTop = b.y - (bHeight - b.height) / 2;
     const bBottom = bTop + bHeight;
 
-    const vOverlap = Math.min(bBottom, lineBounds.y + lineBounds.height) - Math.max(bTop, lineBounds.y);
+    const vOverlap =
+      Math.min(bBottom, lineBounds.y + lineBounds.height) - Math.max(bTop, lineBounds.y);
     const minH = Math.min(bHeight, lineBounds.height);
-    const vCenterDist = Math.abs((bTop + bHeight / 2) - (lineBounds.y + lineBounds.height / 2));
+    const vCenterDist = Math.abs(bTop + bHeight / 2 - (lineBounds.y + lineBounds.height / 2));
 
     const isSameLine = vOverlap >= minH * 0.25 || vCenterDist <= lineBounds.height * 0.75;
     if (!isSameLine) return false;
 
-    const hOverlap = Math.min(b.x + b.width, lineBounds.x + lineBounds.width) - Math.max(b.x, lineBounds.x);
+    const hOverlap =
+      Math.min(b.x + b.width, lineBounds.x + lineBounds.width) - Math.max(b.x, lineBounds.x);
     return hOverlap > 0.005;
   });
 }
@@ -937,7 +1001,7 @@ export function findHighlightAnnotationsCoveringLine(
  */
 export function computeLineHighlightCoverage(
   lineBounds: TextLineBounds,
-  highlights: Annotation[]
+  highlights: Annotation[],
 ): number {
   if (!highlights || highlights.length === 0 || lineBounds.width <= 0) return 0;
 

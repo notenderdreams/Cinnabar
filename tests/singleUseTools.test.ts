@@ -9,11 +9,11 @@ describe('single-use tools returning to selection mode', () => {
     const canvas = await source('src/components/annotations/AnnotationCanvas.tsx');
     // On pointer up after dragging a rectangle highlight
     expect(canvas).toContain(
-      "onAddAnnotation(newRect);\n        onSelectTool?.('select');\n      }\n      setRectStart(null);"
+      "onAddAnnotation(newRect);\n        onSelectTool?.('select');\n      }\n      setRectStart(null);",
     );
     // On double/triple clicking text with rectangle highlight tool
     expect(canvas).toContain(
-      "if (activeTool === 'highlight-rect') {\n            onSelectTool?.('select');\n          }"
+      "if (activeTool === 'highlight-rect') {\n            onSelectTool?.('select');\n          }",
     );
   });
 
@@ -24,11 +24,11 @@ describe('single-use tools returning to selection mode', () => {
     ]);
     // Canvas triggers onSelectTool('select') after snipping
     expect(canvas).toContain(
-      "onCaptureSnippet?.(pageNumber, captureRect);\n        onSelectTool?.('select');\n      }\n      setSnipStart(null);"
+      "onCaptureSnippet?.(pageNumber, captureRect);\n        onSelectTool?.('select');\n      }\n      setSnipStart(null);",
     );
     // App sets active tool to select for both ai-prompt and snippet list targets
     expect(app).toContain(
-      "addSnippet(entry);\n            setIsSidebarOpen(true);\n            setSidebarTab('snippets');\n            setActiveTool('select');"
+      "addSnippet(entry);\n            setIsSidebarOpen(true);\n            setSidebarTab('snippets');\n            setActiveTool('select');",
     );
   });
 
@@ -36,7 +36,7 @@ describe('single-use tools returning to selection mode', () => {
     const canvas = await source('src/components/annotations/AnnotationCanvas.tsx');
     // On pointer up after creating the AI box
     expect(canvas).toContain(
-      "onAddAnnotation(annotation);\n      onAiBoxCreated?.(annotation.id);\n      setAiStart(null);\n      setAiCurrent(null);\n      onSelectTool?.('select');"
+      "onAddAnnotation(annotation);\n      onAiBoxCreated?.(annotation.id);\n      setAiStart(null);\n      setAiCurrent(null);\n      onSelectTool?.('select');",
     );
   });
 
@@ -47,11 +47,11 @@ describe('single-use tools returning to selection mode', () => {
     ]);
     // Canvas resets to select immediately when note is added
     expect(canvas).toContain(
-      "onAddAnnotation(newNote);\n      onSelectAnnotation?.(newNote.id);\n      onSelectTool?.('select');"
+      "onAddAnnotation(newNote);\n      onSelectAnnotation?.(newNote.id);\n      onSelectTool?.('select');",
     );
     // Viewer margin note creation resets to select immediately when note is added
     expect(viewer).toContain(
-      "onAddAnnotation(newNote);\n          onSelectAnnotation(newNote.id);\n          onSelectTool?.('select');"
+      "onAddAnnotation(newNote);\n          onSelectAnnotation(newNote.id);\n          onSelectTool?.('select');",
     );
   });
 
@@ -64,29 +64,29 @@ describe('single-use tools returning to selection mode', () => {
     ]);
     // Global eraser pointer up resets to select
     expect(viewer).toContain(
-      "const handleGlobalPointerUp = () => {\n      if (isErasingRef.current) {\n        isErasingRef.current = false;\n        onSelectTool?.('select');\n      }\n    };"
+      "const handleGlobalPointerUp = () => {\n      if (isErasingRef.current) {\n        isErasingRef.current = false;\n        onSelectTool?.('select');\n      }\n    };",
     );
     // Text note overlay eraser click / drag-start resets to select
     expect(textOverlay).toContain(
-      "if (activeTool === 'eraser') {\n      onDelete(annotation.id);\n      onSelectTool?.('select');\n      return;\n    }"
+      "if (activeTool === 'eraser') {\n      onDelete(annotation.id);\n      onSelectTool?.('select');\n      return;\n    }",
     );
     // Image overlay eraser click / mouse down resets to select
     expect(imageOverlay).toContain(
-      "if (activeTool === 'eraser') {\n          onDelete(annotation.id);\n          onSelectTool?.('select');\n        } else {"
+      "if (activeTool === 'eraser') {\n          onDelete(annotation.id);\n          onSelectTool?.('select');\n        } else {",
     );
     // AI explanation overlay badge & region eraser click resets to select
     expect(aiOverlay).toContain(
-      "if (activeTool === 'eraser') {\n        onDelete(annotation.id);\n        onSelectTool?.('select');\n        return;\n      }"
+      "if (activeTool === 'eraser') {\n        onDelete(annotation.id);\n        onSelectTool?.('select');\n        return;\n      }",
     );
     expect(aiOverlay).toContain(
-      "if (activeTool === 'eraser') {\n                event.stopPropagation();\n                onDelete(annotation.id);\n                onSelectTool?.('select');\n              }"
+      "if (activeTool === 'eraser') {\n                event.stopPropagation();\n                onDelete(annotation.id);\n                onSelectTool?.('select');\n              }",
     );
   });
 
   test('escape key resets any active non-select tool back to select', async () => {
     const app = await source('src/App.tsx');
     expect(app).toContain(
-      "if (activeTool !== 'select') {\n        setActiveTool('select');\n        return;\n      }"
+      "if (activeTool !== 'select') {\n        setActiveTool('select');\n        return;\n      }",
     );
   });
 });

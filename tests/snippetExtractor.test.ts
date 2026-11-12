@@ -4,7 +4,8 @@ import { computeStitchLayout, stitchSnippetsToCanvas } from '../src/lib/snippets
 
 describe('computeStitchLayout', () => {
   test('calculates correct dimensions for snippets and dividers', () => {
-    const dummyPng = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+    const dummyPng =
+      'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
 
     const mockSnippets: SnippetEntry[] = [
       {

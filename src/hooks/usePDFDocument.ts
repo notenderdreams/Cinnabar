@@ -20,7 +20,7 @@ export function usePDFDocument() {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [docKey, setDocKey] = useState<string>('');
-  
+
   // Search state
   const [searchResults, setSearchResults] = useState<SearchMatch[]>([]);
   const [currentMatchIndex, setCurrentMatchIndex] = useState<number>(-1);
@@ -31,12 +31,15 @@ export function usePDFDocument() {
   const activeDocRef = useRef<PDFDocumentProxy | null>(null);
   const loadingTaskRef = useRef<ReturnType<typeof pdfjsLib.getDocument> | null>(null);
   const loadGenerationRef = useRef(0);
-  useEffect(() => () => {
-    loadGenerationRef.current += 1;
-    searchSequenceRef.current += 1;
-    void loadingTaskRef.current?.destroy();
-    void activeDocRef.current?.destroy();
-  }, []);
+  useEffect(
+    () => () => {
+      loadGenerationRef.current += 1;
+      searchSequenceRef.current += 1;
+      void loadingTaskRef.current?.destroy();
+      void activeDocRef.current?.destroy();
+    },
+    [],
+  );
 
   const loadPdf = useCallback(
     async (
@@ -46,7 +49,7 @@ export function usePDFDocument() {
       initialPageNumber?: number,
       documentKeyOverride?: string,
       documentFingerprintOverride?: string,
-      silent: boolean = false
+      silent: boolean = false,
     ) => {
       const generation = ++loadGenerationRef.current;
       searchSequenceRef.current += 1;
@@ -79,12 +82,18 @@ export function usePDFDocument() {
         loadingTaskRef.current = loadingTask;
 
         const loadedDoc = await withPdfDeadline(loadingTask.promise, 30_000);
-        if (generation !== loadGenerationRef.current) { void loadedDoc.destroy(); return false; }
+        if (generation !== loadGenerationRef.current) {
+          void loadedDoc.destroy();
+          return false;
+        }
 
         const key = documentKeyOverride || `${fileName}_${loadedDoc.numPages}_${bytes.length}`;
 
         const overview = await readPdfOverview(loadedDoc);
-        if (generation !== loadGenerationRef.current) { void loadedDoc.destroy(); return false; }
+        if (generation !== loadGenerationRef.current) {
+          void loadedDoc.destroy();
+          return false;
+        }
         const fingerprint =
           documentFingerprintOverride ||
           (loadedDoc as unknown as { fingerprint?: string }).fingerprint ||
@@ -102,8 +111,7 @@ export function usePDFDocument() {
         };
 
         // Restore last saved page or explicit initialPageNumber
-        const savedPage =
-          initialPageNumber || loadLastPageForDoc(key, filePath || fileName);
+        const savedPage = initialPageNumber || loadLastPageForDoc(key, filePath || fileName);
         const initialPage = savedPage && savedPage <= loadedDoc.numPages ? savedPage : 1;
 
         // Atomically commit all document states in a single batch
@@ -142,7 +150,7 @@ export function usePDFDocument() {
         }
       }
     },
-    []
+    [],
   );
 
   const changePage = useCallback(
@@ -160,54 +168,57 @@ export function usePDFDocument() {
         timestamp: Date.now(),
       });
     },
-    [pdfDoc, docKey, docInfo]
+    [pdfDoc, docKey, docInfo],
   );
 
   // Full-Text Search
-  const searchInDocument = useCallback(async (query: string) => {
-    const currentSearchId = ++searchSequenceRef.current;
+  const searchInDocument = useCallback(
+    async (query: string) => {
+      const currentSearchId = ++searchSequenceRef.current;
 
-    if (!pdfDoc || pdfDoc !== activeDocRef.current || !query.trim()) {
-      setSearchResults([]);
-      setSearchMatch(null);
-      setCurrentMatchIndex(-1);
-      setIsSearching(false);
-      return;
-    }
-
-    setIsSearching(true);
-    setSearchMatch(null);
-    setSearchResults([]);
-    setCurrentMatchIndex(-1);
-    const results: SearchMatch[] = [];
-
-    for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
-      if (searchSequenceRef.current !== currentSearchId) {
+      if (!pdfDoc || pdfDoc !== activeDocRef.current || !query.trim()) {
+        setSearchResults([]);
+        setSearchMatch(null);
+        setCurrentMatchIndex(-1);
+        setIsSearching(false);
         return;
       }
 
-      try {
-        const page = await pdfDoc.getPage(pageNum);
+      setIsSearching(true);
+      setSearchMatch(null);
+      setSearchResults([]);
+      setCurrentMatchIndex(-1);
+      const results: SearchMatch[] = [];
+
+      for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
         if (searchSequenceRef.current !== currentSearchId) {
           return;
         }
 
-        const textContent = await page.getTextContent();
-        if (searchSequenceRef.current !== currentSearchId) return;
-        results.push(...findPageMatches(textContent.items, query, pageNum));
-      } catch (err) {
-        console.warn(`Search failed on page ${pageNum}:`, err);
-      }
-    }
+        try {
+          const page = await pdfDoc.getPage(pageNum);
+          if (searchSequenceRef.current !== currentSearchId) {
+            return;
+          }
 
-    if (searchSequenceRef.current === currentSearchId) {
-      setSearchResults(results);
-      setCurrentMatchIndex(results.length > 0 ? 0 : -1);
-      setSearchMatch(results[0] ?? null);
-      setIsSearching(false);
-      if (results.length) changePage(results[0].pageNumber);
-    }
-  }, [pdfDoc, changePage]);
+          const textContent = await page.getTextContent();
+          if (searchSequenceRef.current !== currentSearchId) return;
+          results.push(...findPageMatches(textContent.items, query, pageNum));
+        } catch (err) {
+          console.warn(`Search failed on page ${pageNum}:`, err);
+        }
+      }
+
+      if (searchSequenceRef.current === currentSearchId) {
+        setSearchResults(results);
+        setCurrentMatchIndex(results.length > 0 ? 0 : -1);
+        setSearchMatch(results[0] ?? null);
+        setIsSearching(false);
+        if (results.length) changePage(results[0].pageNumber);
+      }
+    },
+    [pdfDoc, changePage],
+  );
 
   const nextSearchResult = useCallback(() => {
     if (searchResults.length === 0) return;

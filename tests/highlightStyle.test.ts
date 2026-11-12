@@ -25,15 +25,19 @@ describe('session highlight style', () => {
   test('does not offer or apply underline mode to rectangle highlights', async () => {
     const [toolbarSource, canvasSource] = await Promise.all([
       Bun.file(new URL('../src/components/layout/Toolbar.tsx', import.meta.url)).text(),
-      Bun.file(new URL('../src/components/annotations/AnnotationCanvas.tsx', import.meta.url)).text(),
+      Bun.file(
+        new URL('../src/components/annotations/AnnotationCanvas.tsx', import.meta.url),
+      ).text(),
     ]);
 
     expect(toolbarSource).toContain("activeTool !== 'highlight-rect'");
     expect(canvasSource).toContain(
-      "const rectHighlightStyle = highlightStyle === 'stroke' ? 'stroke' : 'box'"
+      "const rectHighlightStyle = highlightStyle === 'stroke' ? 'stroke' : 'box'",
     );
     expect(canvasSource).not.toContain("highlightStyle === 'underline' && rectStart");
-    expect(canvasSource).not.toContain("selectedHighlight.type === 'highlight-rect' ||\n            selectedHighlight.type === 'highlight-text'");
+    expect(canvasSource).not.toContain(
+      "selectedHighlight.type === 'highlight-rect' ||\n            selectedHighlight.type === 'highlight-text'",
+    );
   });
 
   test('maps number shortcuts to the shared palette only for highlight tools', () => {
@@ -58,7 +62,7 @@ describe('session highlight style', () => {
 
   test('shares the session palette with the selected-highlight toolbar', async () => {
     const canvasSource = await Bun.file(
-      new URL('../src/components/annotations/AnnotationCanvas.tsx', import.meta.url)
+      new URL('../src/components/annotations/AnnotationCanvas.tsx', import.meta.url),
     ).text();
 
     expect(canvasSource).toContain('highlightColors.map((c) =>');

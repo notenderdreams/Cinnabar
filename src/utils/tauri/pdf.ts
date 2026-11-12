@@ -2,7 +2,7 @@ import { commands } from '../../lib/bindings';
 
 export async function tauriDeletePdfPage(
   pdfBytes: Uint8Array,
-  pageNumber: number
+  pageNumber: number,
 ): Promise<Uint8Array | null> {
   try {
     const res = await commands.deletePdfPageNative(Array.from(pdfBytes), pageNumber);
@@ -19,7 +19,7 @@ export async function tauriDeletePdfPage(
 
 export async function tauriAddBlankPageBelow(
   pdfBytes: Uint8Array,
-  pageNumber: number
+  pageNumber: number,
 ): Promise<Uint8Array | null> {
   try {
     const res = await commands.addBlankPageBelowNative(Array.from(pdfBytes), pageNumber);
@@ -34,9 +34,7 @@ export async function tauriAddBlankPageBelow(
   }
 }
 
-export async function tauriComputePdfFingerprint(
-  pdfBytes: Uint8Array
-): Promise<string | null> {
+export async function tauriComputePdfFingerprint(pdfBytes: Uint8Array): Promise<string | null> {
   try {
     const res = await commands.computePdfFingerprint(Array.from(pdfBytes));
     if (res.status === 'ok') {
@@ -52,7 +50,7 @@ export async function tauriComputePdfFingerprint(
 export async function tauriCompressImage(
   dataUrl: string,
   maxWidth = 1920,
-  quality = 85
+  quality = 85,
 ): Promise<string | null> {
   try {
     const res = await commands.compressImageNative(dataUrl, maxWidth, quality);

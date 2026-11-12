@@ -10,7 +10,10 @@ import type { AiJobState } from '../../hooks/useAiExplanations';
 import { usesInvertedColorSpace } from '../../lib/theme/readingTheme';
 import { copyTextToClipboard, copyRegionImageToClipboard } from '../../lib/pdf/pageExtractor';
 import { isAnnotationHitByEraser } from '../../lib/annotations/eraserUtils';
-import { getAnnotationBoundingBox, getAnnotationCoveredText } from '../../lib/annotations/annotationPresentation';
+import {
+  getAnnotationBoundingBox,
+  getAnnotationCoveredText,
+} from '../../lib/annotations/annotationPresentation';
 import { selectFullLineAtTarget } from '../../lib/annotations/textHighlight';
 import { bindTextLayerSelection } from '../../lib/pdf/pdfTextLayerManager';
 import {
@@ -53,9 +56,18 @@ interface PDFPageProps {
   onChangeLineHighlightStyle: (style: LineHighlightStyle) => void;
   onDeleteAnnotation: (id: string) => void;
   onImageDrop: (pageNumber: number, file: File) => void;
-  onAiResponseDrop?: (pageNumber: number, x: number, y: number, prompt: string, response: string) => void;
+  onAiResponseDrop?: (
+    pageNumber: number,
+    x: number,
+    y: number,
+    prompt: string,
+    response: string,
+  ) => void;
   onCursorMove?: (pageNumber: number, normalizedX: number, normalizedY: number) => void;
-  onCaptureSnippet?: (pageNumber: number, rect: { x: number; y: number; width: number; height: number }) => void;
+  onCaptureSnippet?: (
+    pageNumber: number,
+    rect: { x: number; y: number; width: number; height: number },
+  ) => void;
   aiJobs: Record<string, AiJobState>;
   onAiBoxCreated: (annotationId: string) => void;
   onSubmitAi: (annotation: AiExplanationAnnotation, prompt: string) => void;
@@ -130,21 +142,29 @@ export const PDFPageComponent: React.FC<PDFPageProps> = ({
   const containerRef = useRef<HTMLDivElement | null>(null);
 
   const [baseDimensions, setBaseDimensions] = useState({ width: 595, height: 842 });
-  const pageDimensions = { width: Math.floor(baseDimensions.width * scale), height: Math.floor(baseDimensions.height * scale) };
+  const pageDimensions = {
+    width: Math.floor(baseDimensions.width * scale),
+    height: Math.floor(baseDimensions.height * scale),
+  };
   const [, setIsRendered] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
-  const [contextMenuPosition, setContextMenuPosition] = useState<{ x: number; y: number } | null>(null);
+  const [contextMenuPosition, setContextMenuPosition] = useState<{ x: number; y: number } | null>(
+    null,
+  );
   const renderTaskRef = useRef<unknown>(null);
   const unbindSelectionRef = useRef<(() => void) | null>(null);
 
-  const [isVisible, setIsVisible] = useState(
-    typeof IntersectionObserver === 'undefined'
-  );
+  const [isVisible, setIsVisible] = useState(typeof IntersectionObserver === 'undefined');
   const pageProxyRef = useRef<PDFPageProxy | null>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    return () => { if (canvas) { canvas.width = 0; canvas.height = 0; } };
+    return () => {
+      if (canvas) {
+        canvas.width = 0;
+        canvas.height = 0;
+      }
+    };
   }, [pdfDoc, pageNumber]);
 
   // Measure page dimensions quickly without full rasterization
@@ -180,7 +200,7 @@ export const PDFPageComponent: React.FC<PDFPageProps> = ({
           setIsVisible(entry.isIntersecting);
         }
       },
-      { rootMargin: '1000px 0px' }
+      { rootMargin: '1000px 0px' },
     );
 
     observer.observe(el);
@@ -238,7 +258,10 @@ export const PDFPageComponent: React.FC<PDFPageProps> = ({
         const maxDimension = 4096;
         const unscaledWidth = baseViewport.width / scale;
         const unscaledHeight = baseViewport.height / scale;
-        if (unscaledWidth * renderScale > maxDimension || unscaledHeight * renderScale > maxDimension) {
+        if (
+          unscaledWidth * renderScale > maxDimension ||
+          unscaledHeight * renderScale > maxDimension
+        ) {
           const capScale = Math.min(maxDimension / unscaledWidth, maxDimension / unscaledHeight);
           renderScale = Math.min(renderScale, capScale);
         }
@@ -293,11 +316,20 @@ export const PDFPageComponent: React.FC<PDFPageProps> = ({
           unbindSelectionRef.current = bindTextLayerSelection(textLayerDiv);
         }
       } catch (err: unknown) {
-        if (!isCancelled && err && typeof err === 'object' && 'name' in err && (err as { name: string }).name !== 'RenderingCancelledException') {
+        if (
+          !isCancelled &&
+          err &&
+          typeof err === 'object' &&
+          'name' in err &&
+          (err as { name: string }).name !== 'RenderingCancelledException'
+        ) {
           console.error(`Page ${pageNumber} render error:`, err);
         }
       } finally {
-        if (buffer) { buffer.width = 0; buffer.height = 0; }
+        if (buffer) {
+          buffer.width = 0;
+          buffer.height = 0;
+        }
       }
     };
 
@@ -396,12 +428,7 @@ export const PDFPageComponent: React.FC<PDFPageProps> = ({
 
     if (e.detail >= 3) {
       e.preventDefault();
-      selectFullLineAtTarget(
-        e.target as HTMLElement,
-        textLayerRef.current,
-        e.clientX,
-        e.clientY
-      );
+      selectFullLineAtTarget(e.target as HTMLElement, textLayerRef.current, e.clientX, e.clientY);
     }
   };
 
@@ -409,12 +436,7 @@ export const PDFPageComponent: React.FC<PDFPageProps> = ({
     if (e.button !== 0 || activeTool !== 'select') return;
     if (e.detail >= 3) {
       e.preventDefault();
-      selectFullLineAtTarget(
-        e.target as HTMLElement,
-        textLayerRef.current,
-        e.clientX,
-        e.clientY
-      );
+      selectFullLineAtTarget(e.target as HTMLElement, textLayerRef.current, e.clientX, e.clientY);
       return;
     }
 
@@ -426,9 +448,19 @@ export const PDFPageComponent: React.FC<PDFPageProps> = ({
         const px = e.clientX - rect.left;
         const py = e.clientY - rect.top;
         const thisPageAnns = annotations.filter((a) => a.pageNumber === pageNumber);
-        const hitAnn = [...thisPageAnns].reverse().find((a) =>
-          isAnnotationHitByEraser(a, px, py, pageDimensions.width, pageDimensions.height, 8, scale)
-        );
+        const hitAnn = [...thisPageAnns]
+          .reverse()
+          .find((a) =>
+            isAnnotationHitByEraser(
+              a,
+              px,
+              py,
+              pageDimensions.width,
+              pageDimensions.height,
+              8,
+              scale,
+            ),
+          );
         if (hitAnn) {
           e.stopPropagation();
           onSelectAnnotation(hitAnn.id);
@@ -439,15 +471,15 @@ export const PDFPageComponent: React.FC<PDFPageProps> = ({
   };
 
   const pageImages = annotations.filter(
-    (a) => a.pageNumber === pageNumber && a.type === 'image'
+    (a) => a.pageNumber === pageNumber && a.type === 'image',
   ) as AttachedImageAnnotation[];
 
   const pageTextNotes = annotations.filter(
-    (a) => a.pageNumber === pageNumber && a.type === 'text-note'
+    (a) => a.pageNumber === pageNumber && a.type === 'text-note',
   ) as TextNoteAnnotation[];
 
   const pageAiExplanations = annotations.filter(
-    (a) => a.pageNumber === pageNumber && a.type === 'ai-explanation'
+    (a) => a.pageNumber === pageNumber && a.type === 'ai-explanation',
   ) as AiExplanationAnnotation[];
 
   const [contextMenuSelectedText, setContextMenuSelectedText] = useState<string>('');
@@ -474,9 +506,19 @@ export const PDFPageComponent: React.FC<PDFPageProps> = ({
       // Check annotations on this page (topmost first)
       const thisPageAnns = annotations.filter((a) => a.pageNumber === pageNumber);
       hitAnn =
-        [...thisPageAnns].reverse().find((a) =>
-          isAnnotationHitByEraser(a, px, py, pageDimensions.width, pageDimensions.height, 8, scale)
-        ) || null;
+        [...thisPageAnns]
+          .reverse()
+          .find((a) =>
+            isAnnotationHitByEraser(
+              a,
+              px,
+              py,
+              pageDimensions.width,
+              pageDimensions.height,
+              8,
+              scale,
+            ),
+          ) || null;
     }
 
     setContextMenuHitAnnotation(hitAnn);
@@ -492,29 +534,35 @@ export const PDFPageComponent: React.FC<PDFPageProps> = ({
     });
   };
 
-  const handleCopyAnnotationText = useCallback(async (ann: Annotation) => {
-    const text = getAnnotationCoveredText(ann);
-    if (!text) {
-      showToast?.('No text detected under highlight', true);
-      return;
-    }
-    const ok = await copyTextToClipboard(text);
-    if (ok) {
-      showToast?.('Copied highlight text to clipboard');
-    } else {
-      showToast?.('Failed to copy text', true);
-    }
-  }, [showToast]);
+  const handleCopyAnnotationText = useCallback(
+    async (ann: Annotation) => {
+      const text = getAnnotationCoveredText(ann);
+      if (!text) {
+        showToast?.('No text detected under highlight', true);
+        return;
+      }
+      const ok = await copyTextToClipboard(text);
+      if (ok) {
+        showToast?.('Copied highlight text to clipboard');
+      } else {
+        showToast?.('Failed to copy text', true);
+      }
+    },
+    [showToast],
+  );
 
-  const handleCopyAnnotationImage = useCallback(async (ann: Annotation) => {
-    const bounds = getAnnotationBoundingBox(ann);
-    const ok = await copyRegionImageToClipboard(pageNumber, bounds, pdfDoc, pageIdPrefix);
-    if (ok) {
-      showToast?.('Copied highlight region as image');
-    } else {
-      showToast?.('Failed to copy region image', true);
-    }
-  }, [pageNumber, pdfDoc, pageIdPrefix, showToast]);
+  const handleCopyAnnotationImage = useCallback(
+    async (ann: Annotation) => {
+      const bounds = getAnnotationBoundingBox(ann);
+      const ok = await copyRegionImageToClipboard(pageNumber, bounds, pdfDoc, pageIdPrefix);
+      if (ok) {
+        showToast?.('Copied highlight region as image');
+      } else {
+        showToast?.('Failed to copy region image', true);
+      }
+    },
+    [pageNumber, pdfDoc, pageIdPrefix, showToast],
+  );
 
   const handleCopySelectedText = useCallback(async () => {
     const textToCopy = contextMenuSelectedText || window.getSelection()?.toString().trim() || '';
@@ -541,15 +589,17 @@ export const PDFPageComponent: React.FC<PDFPageProps> = ({
         width: `${pageDimensions.width}px`,
         height: `${pageDimensions.height}px`,
       }}
-      className={`relative mx-auto ${isFlush ? 'my-1' : 'my-4'} bg-white shadow-[0_1px_8px_rgba(0,0,0,0.22),0_1px_2px_rgba(0,0,0,0.14)] rounded-xs transition-shadow duration-150 group ${
-        isDragOver ? 'ring-2 ring-[#0080f0] scale-[1.01]' : ''
+      className={`relative mx-auto ${isFlush ? 'my-1' : 'my-4'} group rounded-xs bg-white shadow-[0_1px_8px_rgba(0,0,0,0.22),0_1px_2px_rgba(0,0,0,0.14)] transition-shadow duration-150 ${
+        isDragOver ? 'scale-[1.01] ring-2 ring-[#0080f0]' : ''
       }`}
     >
       {!isReadOnly && enablePageContextMenu && contextMenuPosition && (
         <PageContextMenu
           pageActionsOnly={pageActionsOnly}
           position={contextMenuPosition}
-          hasSelectedText={Boolean(contextMenuSelectedText || window.getSelection()?.toString().trim())}
+          hasSelectedText={Boolean(
+            contextMenuSelectedText || window.getSelection()?.toString().trim(),
+          )}
           hitAnnotation={contextMenuHitAnnotation}
           onCopyAnnotationText={handleCopyAnnotationText}
           onCopyAnnotationImage={handleCopyAnnotationImage}
@@ -561,14 +611,20 @@ export const PDFPageComponent: React.FC<PDFPageProps> = ({
           onCopyPageText={() => onCopyPageText(pageNumber)}
           onCopyPageImage={() => onCopyPageImage(pageNumber)}
           onAskAi={() => onAskAiAboutPage(pageNumber)}
-          onAttachTextToAi={onAttachTextToAi ? (text) => onAttachTextToAi(text, pageNumber) : undefined}
-          onHighlightSelectedText={onHighlightSelection ? () => onHighlightSelection('box') : undefined}
-          onUnderlineSelectedText={onHighlightSelection ? () => onHighlightSelection('underline') : undefined}
+          onAttachTextToAi={
+            onAttachTextToAi ? (text) => onAttachTextToAi(text, pageNumber) : undefined
+          }
+          onHighlightSelectedText={
+            onHighlightSelection ? () => onHighlightSelection('box') : undefined
+          }
+          onUnderlineSelectedText={
+            onHighlightSelection ? () => onHighlightSelection('underline') : undefined
+          }
         />
       )}
       {/* Visual Page Number Badge in Margin */}
       {!isFlush && (
-        <div className="absolute -top-5 left-1 text-[10px] font-mono text-zinc-500 font-medium select-none tracking-wider">
+        <div className="absolute -top-5 left-1 font-mono text-[10px] font-medium tracking-wider text-zinc-500 select-none">
           PAGE {pageNumber}
         </div>
       )}
@@ -576,11 +632,11 @@ export const PDFPageComponent: React.FC<PDFPageProps> = ({
       {/* Filtered Container for PDF Canvas & Color Inversion */}
       <div
         data-pdf-canvas-layer
-        className={`w-full h-full relative overflow-hidden ${filterClass}`}
+        className={`relative h-full w-full overflow-hidden ${filterClass}`}
         style={customFilterStyle}
       >
         {/* Rendered PDF Raster Canvas */}
-        <canvas ref={canvasRef} className="block w-full h-full" />
+        <canvas ref={canvasRef} className="block h-full w-full" />
       </div>
 
       {/* Keep selection feedback outside page filters so it stays visibly blue in every reading theme. */}
@@ -589,10 +645,10 @@ export const PDFPageComponent: React.FC<PDFPageProps> = ({
         data-pdf-text-layer
         onMouseDown={handleTextLayerMouseDown}
         onClick={handleTextLayerClick}
-        className={`textLayer absolute inset-0 overflow-hidden leading-none z-10 ${
+        className={`textLayer absolute inset-0 z-10 overflow-hidden leading-none ${
           activeTool === 'select'
-            ? 'select-text pointer-events-auto cursor-text'
-            : 'select-none pointer-events-none'
+            ? 'pointer-events-auto cursor-text select-text'
+            : 'pointer-events-none select-none'
         }`}
         style={{
           width: `${pageDimensions.width}px`,
@@ -601,93 +657,98 @@ export const PDFPageComponent: React.FC<PDFPageProps> = ({
       />
 
       {/* Keep rich overlays as lazy as the PDF canvas, retaining any active edit/drag. */}
-      {(isVisible || annotations.some((annotation) => annotation.id === selectedAnnotationId)) && <>
-      {/* Annotation Canvas (SVG / Freehand / Highlights / Note Creator) */}
-      {!isReadOnly && <AnnotationCanvas
-        pageIdPrefix={pageIdPrefix}
-        pageNumber={pageNumber}
-        pageWidth={pageDimensions.width}
-        pageHeight={pageDimensions.height}
-        scale={scale}
-        activeTool={activeTool}
-        selectedColor={selectedColor}
-        highlightColors={highlightColors}
-        isInvertedColorMode={usesInvertedColorSpace(currentTheme)}
-        strokeWidth={strokeWidth}
-        opacity={opacity}
-        highlightStyle={highlightStyle}
-        lineHighlightStyle={lineHighlightStyle}
-        annotations={annotations}
-        selectedAnnotationId={selectedAnnotationId}
-        onSelectAnnotation={onSelectAnnotation}
-        onUpdateAnnotation={onUpdateAnnotation}
-        onChangeHighlightStyle={onChangeHighlightStyle}
-        onChangeLineHighlightStyle={onChangeLineHighlightStyle}
-        onAddAnnotation={onAddAnnotation}
-        onDeleteAnnotation={onDeleteAnnotation}
-        onCaptureSnippet={onCaptureSnippet}
-        onAiBoxCreated={onAiBoxCreated}
-        onSelectTool={onSelectTool}
-      />}
+      {(isVisible || annotations.some((annotation) => annotation.id === selectedAnnotationId)) && (
+        <>
+          {/* Annotation Canvas (SVG / Freehand / Highlights / Note Creator) */}
+          {!isReadOnly && (
+            <AnnotationCanvas
+              pageIdPrefix={pageIdPrefix}
+              pageNumber={pageNumber}
+              pageWidth={pageDimensions.width}
+              pageHeight={pageDimensions.height}
+              scale={scale}
+              activeTool={activeTool}
+              selectedColor={selectedColor}
+              highlightColors={highlightColors}
+              isInvertedColorMode={usesInvertedColorSpace(currentTheme)}
+              strokeWidth={strokeWidth}
+              opacity={opacity}
+              highlightStyle={highlightStyle}
+              lineHighlightStyle={lineHighlightStyle}
+              annotations={annotations}
+              selectedAnnotationId={selectedAnnotationId}
+              onSelectAnnotation={onSelectAnnotation}
+              onUpdateAnnotation={onUpdateAnnotation}
+              onChangeHighlightStyle={onChangeHighlightStyle}
+              onChangeLineHighlightStyle={onChangeLineHighlightStyle}
+              onAddAnnotation={onAddAnnotation}
+              onDeleteAnnotation={onDeleteAnnotation}
+              onCaptureSnippet={onCaptureSnippet}
+              onAiBoxCreated={onAiBoxCreated}
+              onSelectTool={onSelectTool}
+            />
+          )}
 
-      {!isReadOnly && <AiExplanationOverlay
-        pdfDoc={pdfDoc}
-        pageWidth={pageDimensions.width}
-        pageHeight={pageDimensions.height}
-        activeTool={activeTool}
-        annotations={pageAiExplanations}
-        jobs={aiJobs}
-        onSubmit={onSubmitAi}
-        onCancel={onCancelAi}
-        onCloseJob={onCloseAi}
-        onUpdate={onUpdateAnnotation}
-        onDelete={onDeleteAnnotation}
-        onAddAnnotation={onAddAnnotation}
-        selectedAnnotationId={selectedAnnotationId}
-        onSelectAnnotation={onSelectAnnotation}
-        onSelectTool={onSelectTool}
-      />}
+          {!isReadOnly && (
+            <AiExplanationOverlay
+              pdfDoc={pdfDoc}
+              pageWidth={pageDimensions.width}
+              pageHeight={pageDimensions.height}
+              activeTool={activeTool}
+              annotations={pageAiExplanations}
+              jobs={aiJobs}
+              onSubmit={onSubmitAi}
+              onCancel={onCancelAi}
+              onCloseJob={onCloseAi}
+              onUpdate={onUpdateAnnotation}
+              onDelete={onDeleteAnnotation}
+              onAddAnnotation={onAddAnnotation}
+              selectedAnnotationId={selectedAnnotationId}
+              onSelectAnnotation={onSelectAnnotation}
+              onSelectTool={onSelectTool}
+            />
+          )}
 
-      {/* Attached Images Layer */}
-      {pageImages.map((imgAnn) => (
-        <ImageOverlay
-          key={imgAnn.id}
-          annotation={imgAnn}
-          isSelected={selectedAnnotationId === imgAnn.id}
-          pageWidth={pageDimensions.width}
-          pageHeight={pageDimensions.height}
-          currentTheme={currentTheme}
-          activeTool={activeTool}
-          onSelect={onSelectAnnotation}
-          onUpdate={onUpdateAnnotation}
-          onDelete={onDeleteAnnotation}
-          onSelectTool={onSelectTool}
-        />
-      ))}
+          {/* Attached Images Layer */}
+          {pageImages.map((imgAnn) => (
+            <ImageOverlay
+              key={imgAnn.id}
+              annotation={imgAnn}
+              isSelected={selectedAnnotationId === imgAnn.id}
+              pageWidth={pageDimensions.width}
+              pageHeight={pageDimensions.height}
+              currentTheme={currentTheme}
+              activeTool={activeTool}
+              onSelect={onSelectAnnotation}
+              onUpdate={onUpdateAnnotation}
+              onDelete={onDeleteAnnotation}
+              onSelectTool={onSelectTool}
+            />
+          ))}
 
-      {/* Interactive Text Notes Layer */}
-      {pageTextNotes.map((noteAnn) => (
-        <TextNoteOverlay
-          key={noteAnn.id}
-          annotation={noteAnn}
-          isSelected={selectedAnnotationId === noteAnn.id}
-          pageWidth={pageDimensions.width}
-          pageHeight={pageDimensions.height}
-          scale={scale}
-          currentTheme={currentTheme}
-          activeTool={activeTool}
-          highlightColors={highlightColors}
-          onSelect={onSelectAnnotation}
-          onUpdate={onUpdateAnnotation}
-          onDelete={onDeleteAnnotation}
-          onSelectTool={onSelectTool}
-        />
-      ))}
-
-      </>}
+          {/* Interactive Text Notes Layer */}
+          {pageTextNotes.map((noteAnn) => (
+            <TextNoteOverlay
+              key={noteAnn.id}
+              annotation={noteAnn}
+              isSelected={selectedAnnotationId === noteAnn.id}
+              pageWidth={pageDimensions.width}
+              pageHeight={pageDimensions.height}
+              scale={scale}
+              currentTheme={currentTheme}
+              activeTool={activeTool}
+              highlightColors={highlightColors}
+              onSelect={onSelectAnnotation}
+              onUpdate={onUpdateAnnotation}
+              onDelete={onDeleteAnnotation}
+              onSelectTool={onSelectTool}
+            />
+          ))}
+        </>
+      )}
       {/* Drop Image Overlay Visual Cue */}
       {!isReadOnly && isDragOver && (
-        <div className="absolute inset-0 bg-[#0080f0]/20 backdrop-blur-xs border-2 border-dashed border-[#0080f0] flex flex-col items-center justify-center text-blue-200 z-50 rounded animate-fade-in pointer-events-none">
+        <div className="animate-fade-in pointer-events-none absolute inset-0 z-50 flex flex-col items-center justify-center rounded border-2 border-dashed border-[#0080f0] bg-[#0080f0]/20 text-blue-200 backdrop-blur-xs">
           <span className="text-sm font-semibold text-white">Drop Image to Attach</span>
           <span className="text-xs text-blue-200">Will be placed on Page {pageNumber}</span>
         </div>

@@ -28,7 +28,7 @@ describe('PDF viewer position restoration', () => {
         viewer.scrollLeft = 900;
         viewer.scrollTop = 13200;
       },
-      (restore) => scheduled.push(restore)
+      (restore) => scheduled.push(restore),
     );
     scheduled.forEach((restore) => restore());
 
@@ -44,7 +44,7 @@ describe('PDF viewer position restoration', () => {
         { pageNumber: 18, top: 72, bottom: 672 },
         { pageNumber: 19, top: 694, bottom: 1294 },
       ],
-      17
+      17,
     );
 
     expect(page).toBe(18);

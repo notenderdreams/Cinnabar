@@ -1,10 +1,21 @@
 import { describe, expect, test } from 'bun:test';
-import { createNotebook, editNotebook, openNotebookSession, parseNotebookFile, serializeNotebook,
-  undoNotebook, redoNotebook, type NotebookDocument } from '@cinnabar/notebook';
+import {
+  createNotebook,
+  editNotebook,
+  openNotebookSession,
+  parseNotebookFile,
+  serializeNotebook,
+  undoNotebook,
+  redoNotebook,
+  type NotebookDocument,
+} from '@cinnabar/notebook';
 
 function writing(text: string): NotebookDocument {
   const document = createNotebook().document;
-  document.content = { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text }] }] };
+  document.content = {
+    type: 'doc',
+    content: [{ type: 'paragraph', content: [{ type: 'text', text }] }],
+  };
   return document;
 }
 
@@ -13,7 +24,9 @@ describe('independent notebook sessions', () => {
     const first = createNotebook('Handnotes');
     const second = createNotebook('Other');
     expect(first.id).not.toBe(second.id);
-    const session = editNotebook(openNotebookSession(first), { document: writing('First paragraph') });
+    const session = editNotebook(openNotebookSession(first), {
+      document: writing('First paragraph'),
+    });
     const reopened = parseNotebookFile(serializeNotebook(session.present));
     expect(reopened).toEqual(session.present);
     expect(second.document.content.content?.[0].content).toBeUndefined();
@@ -28,7 +41,12 @@ describe('independent notebook sessions', () => {
     session = editNotebook(session, { document: next }, 'typing');
     expect(session.past).toHaveLength(1);
     expect(session.present.document.content.content![0].attrs!.id).toBe(id);
-    session = editNotebook(session, { document: { ...session.present.document, styles: { ...session.present.document.styles, fontSize: 18 } } });
+    session = editNotebook(session, {
+      document: {
+        ...session.present.document,
+        styles: { ...session.present.document.styles, fontSize: 18 },
+      },
+    });
     const undone = undoNotebook(session);
     expect(undone.present.document.styles.fontSize).toBe(13);
     expect(undone.present.document.content.content![0].content![0].text).toBe('Hello world');
@@ -44,8 +62,20 @@ describe('independent notebook sessions', () => {
     const invalid = { ...session.present.document, content: { type: 'unknown' } };
     expect(() => editNotebook(session, { document: invalid })).toThrow();
     expect(serializeNotebook(session.present)).toBe(before);
-    expect(() => parseNotebookFile(JSON.stringify({ ...session.present, version: 2 }))).toThrow('supported');
-    expect(() => parseNotebookFile(JSON.stringify({ ...session.present, document: { ...session.present.document, styles: { ...session.present.document.styles, fontSize: Infinity } } }))).toThrow();
+    expect(() => parseNotebookFile(JSON.stringify({ ...session.present, version: 2 }))).toThrow(
+      'supported',
+    );
+    expect(() =>
+      parseNotebookFile(
+        JSON.stringify({
+          ...session.present,
+          document: {
+            ...session.present.document,
+            styles: { ...session.present.document.styles, fontSize: Infinity },
+          },
+        }),
+      ),
+    ).toThrow();
   });
 
   test('an accepted edit after undo discards redo without modifying another session', () => {

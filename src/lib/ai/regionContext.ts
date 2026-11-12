@@ -40,7 +40,8 @@ export function joinRegionText(items: RegionTextItem[], limit = MAX_TEXT_LENGTH)
   let output = '';
   let previous: RegionTextItem | undefined;
   for (const item of sorted) {
-    const lineBreak = previous && Math.abs(item.y - previous.y) > Math.max(item.height, previous.height) * 0.55;
+    const lineBreak =
+      previous && Math.abs(item.y - previous.y) > Math.max(item.height, previous.height) * 0.55;
     const addition = `${output ? (lineBreak ? '\n' : ' ') : ''}${item.text.trim()}`;
     if (output.length + addition.length > limit) {
       return `${output.slice(0, Math.max(0, limit - 1)).trimEnd()}…`;
@@ -51,7 +52,10 @@ export function joinRegionText(items: RegionTextItem[], limit = MAX_TEXT_LENGTH)
   return output.trim();
 }
 
-export function calculateCropSize(width: number, height: number): { width: number; height: number; scale: number } {
+export function calculateCropSize(
+  width: number,
+  height: number,
+): { width: number; height: number; scale: number } {
   const edgeScale = Math.min(1, MAX_CROP_EDGE / Math.max(width, height));
   const pixelScale = Math.min(1, Math.sqrt(MAX_CROP_PIXELS / Math.max(1, width * height)));
   const scale = Math.min(edgeScale, pixelScale);
@@ -62,7 +66,10 @@ export function calculateCropSize(width: number, height: number): { width: numbe
   };
 }
 
-export function buildAiPrompt(question: string, context: Omit<RegionContext, 'pngDataUrl' | 'width' | 'height'>): string {
+export function buildAiPrompt(
+  question: string,
+  context: Omit<RegionContext, 'pngDataUrl' | 'width' | 'height'>,
+): string {
   const sourceText = context.text || '(No selectable PDF text was found in this region.)';
   return [
     'Explain the selected PDF region in response to the user question.',
@@ -77,7 +84,10 @@ export function buildAiPrompt(question: string, context: Omit<RegionContext, 'pn
   ].join('\n\n');
 }
 
-function cropCanvas(source: HTMLCanvasElement, rect: NormalizedRect): { pngDataUrl: string; width: number; height: number } | null {
+function cropCanvas(
+  source: HTMLCanvasElement,
+  rect: NormalizedRect,
+): { pngDataUrl: string; width: number; height: number } | null {
   const sx = Math.max(0, Math.floor(rect.x * source.width));
   const sy = Math.max(0, Math.floor(rect.y * source.height));
   const sw = Math.min(source.width - sx, Math.max(1, Math.ceil(rect.width * source.width)));
@@ -101,7 +111,7 @@ export async function getRegionContext(
   pageNumber: number,
   rect: NormalizedRect,
   documentName: string,
-  pageIdPrefix = 'pdf-page'
+  pageIdPrefix = 'pdf-page',
 ): Promise<RegionContext> {
   const safePage = Math.max(1, Math.floor(pageNumber));
   const page = await pdfDoc.getPage(safePage);
@@ -125,7 +135,9 @@ export async function getRegionContext(
     }
 
     let crop: ReturnType<typeof cropCanvas> = null;
-    const mountedCanvas = document.querySelector(`#${pageIdPrefix}-${safePage} canvas`) as HTMLCanvasElement | null;
+    const mountedCanvas = document.querySelector(
+      `#${pageIdPrefix}-${safePage} canvas`,
+    ) as HTMLCanvasElement | null;
     if (mountedCanvas?.width && mountedCanvas.height) crop = cropCanvas(mountedCanvas, rect);
 
     if (!crop) {

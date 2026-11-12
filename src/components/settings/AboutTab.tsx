@@ -1,12 +1,5 @@
 import { useState } from 'react';
-import {
-  Code2,
-  Bug,
-  CircleUserRound,
-  ArrowUpRight,
-  RefreshCw,
-  CheckCircle2,
-} from 'lucide-react';
+import { Code2, Bug, CircleUserRound, ArrowUpRight, RefreshCw, CheckCircle2 } from 'lucide-react';
 import { openExternalUrl } from '../../utils/tauriBridge';
 
 export function AboutTab() {
@@ -24,49 +17,49 @@ export function AboutTab() {
   };
 
   return (
-    <div className="flex-1 flex flex-col justify-between gap-2.5 h-full min-h-0">
+    <div className="flex h-full min-h-0 flex-1 flex-col justify-between gap-2.5">
       {/* Hero Card Rectangle with Rounded Borders */}
-      <div className="flex-1 rounded-2xl bg-[var(--workspace)] border border-[var(--border)] p-6 shadow-2xs flex items-center justify-between gap-4 min-h-0">
+      <div className="flex min-h-0 flex-1 items-center justify-between gap-4 rounded-2xl border border-[var(--border)] bg-[var(--workspace)] p-6 shadow-2xs">
         <div className="flex flex-col justify-center">
-          <h1 className="text-4xl sm:text-5xl font-black tracking-tight text-[var(--foreground)] leading-none">
+          <h1 className="text-4xl leading-none font-black tracking-tight text-[var(--foreground)] sm:text-5xl">
             Cinnabar
           </h1>
           <div className="mt-2.5">
-            <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-[var(--secondary)] text-[var(--muted-foreground)] font-mono text-[10px] border border-[var(--border)] font-medium">
+            <span className="inline-flex items-center rounded-md border border-[var(--border)] bg-[var(--secondary)] px-2 py-0.5 font-mono text-[10px] font-medium text-[var(--muted-foreground)]">
               Version 0.1.0
             </span>
           </div>
         </div>
 
-        <div className="flex flex-col items-end justify-center gap-1.5 shrink-0">
+        <div className="flex shrink-0 flex-col items-end justify-center gap-1.5">
           <button
             type="button"
             onClick={handleCheckForUpdates}
             disabled={updateStatus === 'checking'}
-            className="btn-secondary h-8 px-3 rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-2xs hover:bg-[var(--secondary)] transition-all cursor-pointer"
+            className="btn-secondary flex h-8 cursor-pointer items-center gap-1.5 rounded-lg px-3 text-xs font-semibold shadow-2xs transition-all hover:bg-[var(--secondary)]"
           >
             {updateStatus === 'checking' ? (
               <>
-                <RefreshCw className="w-3.5 h-3.5 animate-spin text-blue-500" />
+                <RefreshCw className="h-3.5 w-3.5 animate-spin text-blue-500" />
                 <span>Checking…</span>
               </>
             ) : updateStatus === 'latest' ? (
               <>
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
                 <span className="text-emerald-500">Up to date</span>
               </>
             ) : (
               <span>Check for Updates</span>
             )}
           </button>
-          <span className="text-[10px] text-[var(--muted-foreground)] font-medium">
+          <span className="text-[10px] font-medium text-[var(--muted-foreground)]">
             Last checked: {lastUpdateDate}
           </span>
         </div>
       </div>
 
       {/* Row of 3 Centered Small Boxes */}
-      <div className="grid grid-cols-3 gap-2.5 shrink-0">
+      <div className="grid shrink-0 grid-cols-3 gap-2.5">
         <a
           href="https://github.com/notenderdreams/PDFuck"
           target="_blank"
@@ -75,17 +68,17 @@ export function AboutTab() {
             e.preventDefault();
             void openExternalUrl('https://github.com/notenderdreams/PDFuck');
           }}
-          className="relative p-3.5 rounded-xl bg-[var(--workspace)] border border-[var(--border)] hover:bg-[var(--secondary)] hover:border-[var(--muted-foreground)]/30 transition-all flex flex-col items-center justify-center text-center gap-1.5 group shadow-2xs hover:-translate-y-0.5 cursor-pointer"
+          className="group relative flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-xl border border-[var(--border)] bg-[var(--workspace)] p-3.5 text-center shadow-2xs transition-all hover:-translate-y-0.5 hover:border-[var(--muted-foreground)]/30 hover:bg-[var(--secondary)]"
         >
-          <ArrowUpRight className="absolute top-2.5 right-2.5 w-3.5 h-3.5 text-[var(--subtle-foreground)] group-hover:text-[var(--foreground)] transition-colors" />
-          <div className="w-9 h-9 rounded-lg bg-[var(--secondary)] border border-[var(--border)] text-[var(--foreground)] flex items-center justify-center group-hover:text-[var(--primary)] group-hover:border-[var(--primary)]/30 transition-all">
-            <Code2 className="w-4 h-4" />
+          <ArrowUpRight className="absolute top-2.5 right-2.5 h-3.5 w-3.5 text-[var(--subtle-foreground)] transition-colors group-hover:text-[var(--foreground)]" />
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--secondary)] text-[var(--foreground)] transition-all group-hover:border-[var(--primary)]/30 group-hover:text-[var(--primary)]">
+            <Code2 className="h-4 w-4" />
           </div>
           <div>
-            <span className="font-semibold text-xs text-[var(--foreground)] group-hover:text-[var(--primary)] transition-colors block">
+            <span className="block text-xs font-semibold text-[var(--foreground)] transition-colors group-hover:text-[var(--primary)]">
               Repository
             </span>
-            <span className="text-[11px] text-[var(--muted-foreground)] block truncate">
+            <span className="block truncate text-[11px] text-[var(--muted-foreground)]">
               GitHub source
             </span>
           </div>
@@ -99,17 +92,17 @@ export function AboutTab() {
             e.preventDefault();
             void openExternalUrl('https://github.com/notenderdreams/PDFuck/issues');
           }}
-          className="relative p-3.5 rounded-xl bg-[var(--workspace)] border border-[var(--border)] hover:bg-[var(--secondary)] hover:border-[var(--muted-foreground)]/30 transition-all flex flex-col items-center justify-center text-center gap-1.5 group shadow-2xs hover:-translate-y-0.5 cursor-pointer"
+          className="group relative flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-xl border border-[var(--border)] bg-[var(--workspace)] p-3.5 text-center shadow-2xs transition-all hover:-translate-y-0.5 hover:border-[var(--muted-foreground)]/30 hover:bg-[var(--secondary)]"
         >
-          <ArrowUpRight className="absolute top-2.5 right-2.5 w-3.5 h-3.5 text-[var(--subtle-foreground)] group-hover:text-[var(--foreground)] transition-colors" />
-          <div className="w-9 h-9 rounded-lg bg-[var(--secondary)] border border-[var(--border)] text-[var(--foreground)] flex items-center justify-center group-hover:text-[var(--primary)] group-hover:border-[var(--primary)]/30 transition-all">
-            <Bug className="w-4 h-4" />
+          <ArrowUpRight className="absolute top-2.5 right-2.5 h-3.5 w-3.5 text-[var(--subtle-foreground)] transition-colors group-hover:text-[var(--foreground)]" />
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--secondary)] text-[var(--foreground)] transition-all group-hover:border-[var(--primary)]/30 group-hover:text-[var(--primary)]">
+            <Bug className="h-4 w-4" />
           </div>
           <div>
-            <span className="font-semibold text-xs text-[var(--foreground)] group-hover:text-[var(--primary)] transition-colors block">
+            <span className="block text-xs font-semibold text-[var(--foreground)] transition-colors group-hover:text-[var(--primary)]">
               Feedback
             </span>
-            <span className="text-[11px] text-[var(--muted-foreground)] block truncate">
+            <span className="block truncate text-[11px] text-[var(--muted-foreground)]">
               Issues & requests
             </span>
           </div>
@@ -123,17 +116,17 @@ export function AboutTab() {
             e.preventDefault();
             void openExternalUrl('https://github.com/notenderdreams');
           }}
-          className="relative p-3.5 rounded-xl bg-[var(--workspace)] border border-[var(--border)] hover:bg-[var(--secondary)] hover:border-[var(--muted-foreground)]/30 transition-all flex flex-col items-center justify-center text-center gap-1.5 group shadow-2xs hover:-translate-y-0.5 cursor-pointer"
+          className="group relative flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-xl border border-[var(--border)] bg-[var(--workspace)] p-3.5 text-center shadow-2xs transition-all hover:-translate-y-0.5 hover:border-[var(--muted-foreground)]/30 hover:bg-[var(--secondary)]"
         >
-          <ArrowUpRight className="absolute top-2.5 right-2.5 w-3.5 h-3.5 text-[var(--subtle-foreground)] group-hover:text-[var(--foreground)] transition-colors" />
-          <div className="w-9 h-9 rounded-lg bg-[var(--secondary)] border border-[var(--border)] text-[var(--foreground)] flex items-center justify-center group-hover:text-[var(--primary)] group-hover:border-[var(--primary)]/30 transition-all">
-            <CircleUserRound className="w-4 h-4" />
+          <ArrowUpRight className="absolute top-2.5 right-2.5 h-3.5 w-3.5 text-[var(--subtle-foreground)] transition-colors group-hover:text-[var(--foreground)]" />
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--secondary)] text-[var(--foreground)] transition-all group-hover:border-[var(--primary)]/30 group-hover:text-[var(--primary)]">
+            <CircleUserRound className="h-4 w-4" />
           </div>
           <div>
-            <span className="font-semibold text-xs text-[var(--foreground)] group-hover:text-[var(--primary)] transition-colors block">
+            <span className="block text-xs font-semibold text-[var(--foreground)] transition-colors group-hover:text-[var(--primary)]">
               Creator
             </span>
-            <span className="text-[11px] text-[var(--muted-foreground)] block truncate">
+            <span className="block truncate text-[11px] text-[var(--muted-foreground)]">
               @notenderdreams
             </span>
           </div>

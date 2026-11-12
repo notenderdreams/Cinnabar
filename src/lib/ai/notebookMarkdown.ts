@@ -4,14 +4,25 @@ import remarkStringify from 'remark-stringify';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 
-const processor = unified().use(remarkParse).use(remarkGfm).use(remarkMath).use(remarkStringify, { bullet: '-', fences: true });
+const processor = unified()
+  .use(remarkParse)
+  .use(remarkGfm)
+  .use(remarkMath)
+  .use(remarkStringify, { bullet: '-', fences: true });
 type Root = ReturnType<typeof processor.parse>;
 type RootContent = Root['children'][number];
 type PhrasingContent = Extract<RootContent, { type: 'paragraph' }>['children'][number];
 
-export function insertNotebookImageMarkdown(text: string, imageId: string, placement: 'after_title' | 'end'): string {
+export function insertNotebookImageMarkdown(
+  text: string,
+  imageId: string,
+  placement: 'after_title' | 'end',
+): string {
   const tree = processor.parse(text);
-  const image: RootContent = { type: 'paragraph', children: [{ type: 'image', url: `notebook-image/${imageId}`, alt: '', title: null }] };
+  const image: RootContent = {
+    type: 'paragraph',
+    children: [{ type: 'image', url: `notebook-image/${imageId}`, alt: '', title: null }],
+  };
   const title = tree.children.findIndex((node) => node.type === 'heading' && node.depth === 1);
   const index = placement === 'after_title' && title >= 0 ? title + 1 : tree.children.length;
   tree.children.splice(index, 0, image);
@@ -30,62 +41,113 @@ function splitInline(node: PhrasingContent): [PhrasingContent, PhrasingContent] 
   if ('children' in node && node.children.length) {
     if (node.children.length > 1) {
       const at = Math.ceil(node.children.length / 2);
-      return [{ ...node, children: node.children.slice(0, at) }, { ...node, children: node.children.slice(at) }] as [PhrasingContent, PhrasingContent];
+      return [
+        { ...node, children: node.children.slice(0, at) },
+        { ...node, children: node.children.slice(at) },
+      ] as [PhrasingContent, PhrasingContent];
     }
     const parts = splitInline(node.children[0]);
-    return parts ? [{ ...node, children: [parts[0]] }, { ...node, children: [parts[1]] }] as [PhrasingContent, PhrasingContent] : null;
+    return parts
+      ? ([
+          { ...node, children: [parts[0]] },
+          { ...node, children: [parts[1]] },
+        ] as [PhrasingContent, PhrasingContent])
+      : null;
   }
   if (node.type !== 'text') return null;
   const parts = splitText(node.value);
-  return parts ? [{ ...node, value: parts[0] }, { ...node, value: parts[1] }] : null;
+  return parts
+    ? [
+        { ...node, value: parts[0] },
+        { ...node, value: parts[1] },
+      ]
+    : null;
 }
 
 function splitBlock(node: RootContent): [RootContent, RootContent] | null {
   if (node.type === 'list' && node.children.length > 1) {
     const at = Math.ceil(node.children.length / 2);
-    return [{ ...node, children: node.children.slice(0, at) },
-      { ...node, start: node.ordered ? (node.start ?? 1) + at : node.start, children: node.children.slice(at) }];
+    return [
+      { ...node, children: node.children.slice(0, at) },
+      {
+        ...node,
+        start: node.ordered ? (node.start ?? 1) + at : node.start,
+        children: node.children.slice(at),
+      },
+    ];
   }
   if (node.type === 'table' && node.children.length > 2) {
     const at = 1 + Math.ceil((node.children.length - 1) / 2);
-    return [{ ...node, children: node.children.slice(0, at) }, { ...node, children: [node.children[0], ...node.children.slice(at)] }];
+    return [
+      { ...node, children: node.children.slice(0, at) },
+      { ...node, children: [node.children[0], ...node.children.slice(at)] },
+    ];
   }
   if (node.type === 'blockquote' || node.type === 'list') {
     if (node.children.length > 1) {
       const at = Math.ceil(node.children.length / 2);
-      return [{ ...node, children: node.children.slice(0, at) }, { ...node, children: node.children.slice(at) }] as [RootContent, RootContent];
+      return [
+        { ...node, children: node.children.slice(0, at) },
+        { ...node, children: node.children.slice(at) },
+      ] as [RootContent, RootContent];
     }
     const child = node.children[0];
     if (!child) return null;
     if (child.type === 'listItem') {
       if (child.children.length > 1) {
         const at = Math.ceil(child.children.length / 2);
-        return [{ ...node, children: [{ ...child, children: child.children.slice(0, at) }] },
-          { ...node, children: [{ ...child, children: child.children.slice(at) }] }] as [RootContent, RootContent];
+        return [
+          { ...node, children: [{ ...child, children: child.children.slice(0, at) }] },
+          { ...node, children: [{ ...child, children: child.children.slice(at) }] },
+        ] as [RootContent, RootContent];
       }
       const parts = splitBlock(child.children[0]);
-      return parts ? parts.map((part) => ({ ...node, children: [{ ...child, children: [part] }] })) as [RootContent, RootContent] : null;
+      return parts
+        ? (parts.map((part) => ({ ...node, children: [{ ...child, children: [part] }] })) as [
+            RootContent,
+            RootContent,
+          ])
+        : null;
     }
     const parts = splitBlock(child);
-    return parts ? parts.map((part) => ({ ...node, children: [part] })) as [RootContent, RootContent] : null;
+    return parts
+      ? (parts.map((part) => ({ ...node, children: [part] })) as [RootContent, RootContent])
+      : null;
   }
   if (node.type === 'paragraph' || node.type === 'heading') {
     if (node.children.length > 1) {
       const at = Math.ceil(node.children.length / 2);
-      return [{ ...node, children: node.children.slice(0, at) }, { ...node, children: node.children.slice(at) }];
+      return [
+        { ...node, children: node.children.slice(0, at) },
+        { ...node, children: node.children.slice(at) },
+      ];
     }
     const parts = node.children[0] && splitInline(node.children[0]);
-    return parts ? [{ ...node, children: [parts[0]] }, { ...node, children: [parts[1]] }] : null;
+    return parts
+      ? [
+          { ...node, children: [parts[0]] },
+          { ...node, children: [parts[1]] },
+        ]
+      : null;
   }
   if (node.type === 'code') {
     const parts = splitText(node.value);
-    return parts ? [{ ...node, value: parts[0] }, { ...node, value: parts[1] }] : null;
+    return parts
+      ? [
+          { ...node, value: parts[0] },
+          { ...node, value: parts[1] },
+        ]
+      : null;
   }
   return null;
 }
 
 /** Measure complete Markdown blocks, keeping headings with the following content. */
-export function paginateNotebookMarkdown(text: string, measure: (markdown: string) => number, height = 700): string[] {
+export function paginateNotebookMarkdown(
+  text: string,
+  measure: (markdown: string) => number,
+  height = 700,
+): string[] {
   const tree = processor.parse(text);
   const definitions = tree.children.filter((node) => node.type === 'definition');
   const blocks = tree.children.filter((node) => node.type !== 'definition');
@@ -93,33 +155,68 @@ export function paginateNotebookMarkdown(text: string, measure: (markdown: strin
     const merged: RootContent[] = [];
     for (const node of nodes) {
       const previous = merged.at(-1);
-      if (previous?.position && previous.position === node.position && previous.type === 'list' && node.type === 'list') {
-        merged[merged.length - 1] = { ...previous, children: [...previous.children, ...node.children] };
-      } else if (previous?.position && previous.position === node.position && previous.type === 'table' && node.type === 'table') {
-        merged[merged.length - 1] = { ...previous, children: [...previous.children, ...node.children.slice(1)] };
+      if (
+        previous?.position &&
+        previous.position === node.position &&
+        previous.type === 'list' &&
+        node.type === 'list'
+      ) {
+        merged[merged.length - 1] = {
+          ...previous,
+          children: [...previous.children, ...node.children],
+        };
+      } else if (
+        previous?.position &&
+        previous.position === node.position &&
+        previous.type === 'table' &&
+        node.type === 'table'
+      ) {
+        merged[merged.length - 1] = {
+          ...previous,
+          children: [...previous.children, ...node.children.slice(1)],
+        };
       } else merged.push(node);
     }
-    return processor.stringify({ type: 'root', children: [...merged, ...definitions] } satisfies Root).trim();
+    return processor
+      .stringify({ type: 'root', children: [...merged, ...definitions] } satisfies Root)
+      .trim();
   };
   const pages: string[] = [];
   let current: RootContent[] = [];
   const add = (node: RootContent, depth = 0) => {
     if (depth > 24) throw new Error('This note contains a block that cannot fit on a page.');
-    if (measure(render([...current, node])) <= height) { current.push(node); return; }
+    if (measure(render([...current, node])) <= height) {
+      current.push(node);
+      return;
+    }
     // Fill the space below an inserted image with part of a long list/table,
     // rather than moving an entire section to the next sheet.
-    if (current.length && ((node.type === 'list' && node.children.length > 1) || (node.type === 'table' && node.children.length > 2))) {
+    if (
+      current.length &&
+      ((node.type === 'list' && node.children.length > 1) ||
+        (node.type === 'table' && node.children.length > 2))
+    ) {
       const parts = splitBlock(node);
-      if (parts) { add(parts[0], depth + 1); add(parts[1], depth + 1); return; }
+      if (parts) {
+        add(parts[0], depth + 1);
+        add(parts[1], depth + 1);
+        return;
+      }
     }
     if (current.length) {
       const heading = current.at(-1)?.type === 'heading' ? current.pop() : undefined;
       if (current.length) pages.push(render(current));
       current = heading ? [heading] : [];
-      if (measure(render([...current, node])) <= height) { current.push(node); return; }
+      if (measure(render([...current, node])) <= height) {
+        current.push(node);
+        return;
+      }
     }
     const parts = splitBlock(node);
-    if (!parts) throw new Error('A formula or table is too tall for one note page. Shorten that block and try again.');
+    if (!parts)
+      throw new Error(
+        'A formula or table is too tall for one note page. Shorten that block and try again.',
+      );
     add(parts[0], depth + 1);
     add(parts[1], depth + 1);
   };

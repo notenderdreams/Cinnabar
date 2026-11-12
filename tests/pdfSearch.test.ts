@@ -3,7 +3,7 @@ import { findPageMatches } from '../src/lib/pdf/search';
 
 describe('PDF search destinations', () => {
   test('finds words stored as individual letters without inserting spaces', () => {
-    const items = Array.from('software engineering', str => ({ str }));
+    const items = Array.from('software engineering', (str) => ({ str }));
     const [match] = findPageMatches(items, 'software', 2);
     expect(match).toBeDefined();
     expect(match.start).toEqual({ itemIndex: 0, offset: 0 });
@@ -19,30 +19,38 @@ describe('PDF search destinations', () => {
   });
 
   test('retains line endings on empty text items', () => {
-    const [match] = findPageMatches([
-      { str: 'software' }, { str: '', hasEOL: true }, { str: 'engineering' },
-    ], 'software engineering', 1);
+    const [match] = findPageMatches(
+      [{ str: 'software' }, { str: '', hasEOL: true }, { str: 'engineering' }],
+      'software engineering',
+      1,
+    );
     expect(match.start).toEqual({ itemIndex: 0, offset: 0 });
     expect(match.end).toEqual({ itemIndex: 2, offset: 11 });
   });
 
   test('distinguishes repeated occurrences on the same page', () => {
     const matches = findPageMatches([{ str: 'needle then needle' }], 'needle', 3);
-    expect(matches.map(match => ({ page: match.pageNumber, start: match.start, end: match.end }))).toEqual([
+    expect(
+      matches.map((match) => ({ page: match.pageNumber, start: match.start, end: match.end })),
+    ).toEqual([
       { page: 3, start: { itemIndex: 0, offset: 0 }, end: { itemIndex: 0, offset: 6 } },
       { page: 3, start: { itemIndex: 0, offset: 12 }, end: { itemIndex: 0, offset: 18 } },
     ]);
   });
 
   test('preserves text-layer indices across empty items and marked content', () => {
-    const matches = findPageMatches([
-      { type: 'beginMarkedContent' },
-      { str: '' },
-      { str: 'Before target', hasEOL: true },
-      { type: 'endMarkedContent' },
-      { str: '' },
-      { str: 'phrase after' },
-    ], 'target phrase', 2);
+    const matches = findPageMatches(
+      [
+        { type: 'beginMarkedContent' },
+        { str: '' },
+        { str: 'Before target', hasEOL: true },
+        { type: 'endMarkedContent' },
+        { str: '' },
+        { str: 'phrase after' },
+      ],
+      'target phrase',
+      2,
+    );
     expect(matches).toHaveLength(1);
     expect(matches[0].start).toEqual({ itemIndex: 1, offset: 7 });
     expect(matches[0].end).toEqual({ itemIndex: 3, offset: 6 });

@@ -9,7 +9,10 @@
     "./extensions": "./src/extensions.ts",
     "./layout": "./src/layout.ts"
   },
-  "peerDependencies": { "react": "^19.2.8", "react-dom": "^19.2.8" },
+  "peerDependencies": {
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  },
   "dependencies": {
     "@tiptap/core": "3.33.1",
     "@tiptap/pm": "3.33.1",

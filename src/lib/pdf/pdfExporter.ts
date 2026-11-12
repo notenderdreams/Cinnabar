@@ -22,7 +22,10 @@ export function parseColorToRgb(colorStr: string | undefined): { r: number; g: n
   if (str.startsWith('#')) {
     let hex = str.slice(1);
     if (hex.length === 3 || hex.length === 4) {
-      hex = hex.split('').map((c) => c + c).join('');
+      hex = hex
+        .split('')
+        .map((c) => c + c)
+        .join('');
     }
     if (hex.length >= 6) {
       const num = parseInt(hex.slice(0, 6), 16);
@@ -83,7 +86,10 @@ export function sanitizeWinAnsi(text: string): string {
 }
 
 // Convert any DataURL (PNG, JPG, SVG, WebP) to PNG Uint8Array via an offscreen HTMLCanvas with optional pixel color inversion
-async function dataUrlToPngBytes(dataUrl: string, invertColors: boolean = false): Promise<Uint8Array> {
+async function dataUrlToPngBytes(
+  dataUrl: string,
+  invertColors: boolean = false,
+): Promise<Uint8Array> {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.crossOrigin = 'anonymous';
@@ -104,7 +110,7 @@ async function dataUrlToPngBytes(dataUrl: string, invertColors: boolean = false)
           const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
           const d = imgData.data;
           for (let i = 0; i < d.length; i += 4) {
-            d[i] = 255 - d[i];         // R
+            d[i] = 255 - d[i]; // R
             d[i + 1] = 255 - d[i + 1]; // G
             d[i + 2] = 255 - d[i + 2]; // B
             // Alpha channel d[i+3] remains untouched
@@ -147,7 +153,7 @@ export interface ExportPdfOptions {
 export async function exportAnnotatedPDF(
   originalPdfBytes: Uint8Array,
   annotations: Annotation[],
-  options?: ExportPdfOptions
+  options?: ExportPdfOptions,
 ): Promise<Uint8Array> {
   const pdfDoc = await PDFDocument.load(originalPdfBytes, { ignoreEncryption: true });
   const totalPages = pdfDoc.getPageCount();
@@ -259,8 +265,8 @@ export async function exportAnnotatedPDF(
         const endY = pageHeight - lineAnn.endY * pageHeight;
 
         const isUnderline = lineAnn.style === 'underline';
-        const thickness = isUnderline ? 1.5 : (lineAnn.strokeWidth || 12);
-        const opacity = isUnderline ? 1 : (lineAnn.opacity || 0.45);
+        const thickness = isUnderline ? 1.5 : lineAnn.strokeWidth || 12;
+        const opacity = isUnderline ? 1 : lineAnn.opacity || 0.45;
 
         page.drawLine({
           start: { x: startX, y: startY },
@@ -279,9 +285,7 @@ export async function exportAnnotatedPDF(
         const isHighlight = drawAnn.type === 'highlight-pen';
         const color = parseColorToRgb(drawAnn.color);
         const pts = drawAnn.points;
-        const thickness = isHighlight
-          ? (drawAnn.strokeWidth || 3) * 2.5
-          : (drawAnn.strokeWidth || 2);
+        const thickness = isHighlight ? (drawAnn.strokeWidth || 3) * 2.5 : drawAnn.strokeWidth || 2;
         const opacity = drawAnn.opacity ?? (isHighlight ? 0.45 : 1);
         const blendMode = isHighlight ? BlendMode.Multiply : undefined;
 
@@ -320,7 +324,9 @@ export async function exportAnnotatedPDF(
       else if (ann.type === 'image') {
         const imgAnn = ann as AttachedImageAnnotation;
         try {
-          const shouldInvertPixels = Boolean(imgAnn.invertInLightMode ?? imgAnn.attachedInInvertedMode);
+          const shouldInvertPixels = Boolean(
+            imgAnn.invertInLightMode ?? imgAnn.attachedInInvertedMode,
+          );
           const pngBytes = await dataUrlToPngBytes(imgAnn.dataUrl, shouldInvertPixels);
           const embeddedImage = await pdfDoc.embedPng(pngBytes);
 
@@ -398,7 +404,10 @@ export async function exportAnnotatedPDF(
 
         // Vector / standard text fallback for headless/test environments
         const relScale = pageWidth / 612;
-        const fontSize = Math.max(6, Math.round((textAnn.fontSize || (isPlainText ? 14 : 11)) * relScale));
+        const fontSize = Math.max(
+          6,
+          Math.round((textAnn.fontSize || (isPlainText ? 14 : 11)) * relScale),
+        );
         const lines = textAnn.text.split('\n');
         const lineHeight = fontSize * 1.35;
         const boxPadding = isPlainText ? 0 : Math.max(3, Math.round(6 * relScale));
@@ -432,13 +441,13 @@ export async function exportAnnotatedPDF(
             borderColor: rgb(
               Math.max(0, noteColor.r - 0.12),
               Math.max(0, noteColor.g - 0.12),
-              Math.max(0, noteColor.b - 0.12)
+              Math.max(0, noteColor.b - 0.12),
             ),
             borderWidth: Math.max(0.5, 1 * relScale),
           });
         }
 
-        const textColor = parseColorToRgb(isPlainText ? (textAnn.color || '#000000') : '#18181b');
+        const textColor = parseColorToRgb(isPlainText ? textAnn.color || '#000000' : '#18181b');
 
         // Draw text lines with WinAnsi sanitization
         for (let l = 0; l < lines.length; l++) {
@@ -466,13 +475,19 @@ export async function exportAnnotatedPDF(
 /**
  * Saves generated PDF bytes through the native dialog
  */
-export async function savePdfFile(pdfBytes: Uint8Array, fileName = 'document_annotated.pdf'): Promise<{ success: boolean; path?: string }> {
+export async function savePdfFile(
+  pdfBytes: Uint8Array,
+  fileName = 'document_annotated.pdf',
+): Promise<{ success: boolean; path?: string }> {
   return tauriSavePdf(pdfBytes, fileName);
 }
 
 /**
  * Saves the annotation session through the native JSON dialog
  */
-export async function saveAnnotationsJson(annotations: Annotation[], fileName = 'annotations.json'): Promise<{ success: boolean; path?: string }> {
+export async function saveAnnotationsJson(
+  annotations: Annotation[],
+  fileName = 'annotations.json',
+): Promise<{ success: boolean; path?: string }> {
   return tauriSaveJson(JSON.stringify(annotations, null, 2), fileName);
 }
