@@ -150,7 +150,7 @@ export function NotePanel({ notes, docKey, page, pageCount, zoom, onZoomChange,
   };
 
   return (
-    <section className="note-panel" aria-label="PDF notebook" onPointerEnter={onActivate} onFocusCapture={onActivate}>
+    <section className="note-panel" aria-label="PDF notebook" onPointerDownCapture={onActivate} onFocusCapture={onActivate}>
       {notes.saveStatus === 'error' && <p role="alert">Could not save notes. Your edits are still open.</p>}
       <div className="note-panel-paper pdf-viewer-viewport" ref={container} tabIndex={0} aria-label="Note pages"
         onWheel={onActivate}

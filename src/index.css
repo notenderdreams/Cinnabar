@@ -2196,8 +2196,10 @@
 
 /* Independent notebook chrome stays quiet; paper owns its saved appearance. */
 .standalone-notebook { display: flex; flex: 1; min-height: 0; flex-direction: column; color: var(--foreground); background: var(--workspace); }
-.notebook-paper-viewport { flex: 1; min-height: 0; overflow: auto; padding: 32px; }
+.notebook-paper-viewport { position: relative; flex: 1; min-height: 0; overflow: auto; padding: 32px; }
 .independent-paper-stack { position: relative; margin: 0 auto; }
+.notebook-paper-viewport[data-panning="true"] { cursor: grabbing; user-select: none; }
+.notebook-pan-canvas { width: max-content; min-width: 100%; min-height: 100%; padding: 120px; box-sizing: border-box; }
 .independent-paper-sheet { position: absolute; left: 0; box-shadow: 0 2px 12px rgb(0 0 0 / 12%); pointer-events: none; }
 .notebook-editor-position { position: absolute; transform-origin: top left; user-select: text; }
 .notebook-editor-position > div { min-height: inherit; }

@@ -312,7 +312,8 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
         e.code === 'Space' &&
         !e.repeat &&
         document.activeElement?.tagName !== 'INPUT' &&
-        document.activeElement?.tagName !== 'TEXTAREA'
+        document.activeElement?.tagName !== 'TEXTAREA' &&
+        !(document.activeElement instanceof HTMLElement && document.activeElement.isContentEditable)
       ) {
         setIsSpacePressed(true);
       }
@@ -1379,7 +1380,8 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
         {viewMode === 'continuous' && companionPdfDoc && (
           <div className="flex h-full min-h-0 w-full" data-read-together-split>
             <section
-              onMouseDown={() => onActivePaneChange?.('primary')}
+              onPointerDownCapture={() => onActivePaneChange?.('primary')}
+              onFocusCapture={() => onActivePaneChange?.('primary')}
               className={`flex h-full w-1/2 min-w-0 flex-none flex-col overflow-hidden bg-[var(--workspace)] transition-shadow duration-150 ${
                 activePane === 'primary' ? 'shadow-[inset_0_0_0_1px_var(--primary)]' : ''
               }`}
@@ -1459,7 +1461,8 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
             />
 
             <section
-              onMouseDown={() => onActivePaneChange?.('companion')}
+              onPointerDownCapture={() => onActivePaneChange?.('companion')}
+              onFocusCapture={() => onActivePaneChange?.('companion')}
               className={`flex h-full w-1/2 min-w-0 flex-none flex-col overflow-hidden bg-[var(--workspace)] transition-shadow duration-150 ${
                 activePane === 'companion' ? 'shadow-[inset_0_0_0_1px_var(--primary)]' : ''
               }`}
