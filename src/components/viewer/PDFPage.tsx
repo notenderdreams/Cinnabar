@@ -129,10 +129,8 @@ export const PDFPageComponent: React.FC<PDFPageProps> = ({
   const textLayerRef = useRef<HTMLDivElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
-  const [pageDimensions, setPageDimensions] = useState<{ width: number; height: number }>({
-    width: Math.floor(595 * scale),
-    height: Math.floor(842 * scale),
-  });
+  const [baseDimensions, setBaseDimensions] = useState({ width: 595, height: 842 });
+  const pageDimensions = { width: Math.floor(baseDimensions.width * scale), height: Math.floor(baseDimensions.height * scale) };
   const [, setIsRendered] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const [contextMenuPosition, setContextMenuPosition] = useState<{ x: number; y: number } | null>(null);
@@ -144,6 +142,11 @@ export const PDFPageComponent: React.FC<PDFPageProps> = ({
   );
   const pageProxyRef = useRef<PDFPageProxy | null>(null);
 
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    return () => { if (canvas) { canvas.width = 0; canvas.height = 0; } };
+  }, [pdfDoc, pageNumber]);
+
   // Measure page dimensions quickly without full rasterization
   useEffect(() => {
     let cancelled = false;
@@ -151,17 +154,17 @@ export const PDFPageComponent: React.FC<PDFPageProps> = ({
       .getPage(pageNumber)
       .then((page) => {
         if (cancelled) return;
-        const baseViewport = page.getViewport({ scale });
-        setPageDimensions({
-          width: Math.floor(baseViewport.width),
-          height: Math.floor(baseViewport.height),
+        const baseViewport = page.getViewport({ scale: 1 });
+        setBaseDimensions({
+          width: baseViewport.width,
+          height: baseViewport.height,
         });
       })
       .catch(() => {});
     return () => {
       cancelled = true;
     };
-  }, [pdfDoc, pageNumber, scale]);
+  }, [pdfDoc, pageNumber]);
 
   // Two-way IntersectionObserver to mount/render near viewport and teardown offscreen pages
   useEffect(() => {
@@ -213,23 +216,21 @@ export const PDFPageComponent: React.FC<PDFPageProps> = ({
     }
 
     let isCancelled = false;
+    let textLayer: TextLayer | null = null;
 
     const renderPage = async () => {
+      let buffer: HTMLCanvasElement | null = null;
       try {
         const page: PDFPageProxy = await pdfDoc.getPage(pageNumber);
         if (isCancelled) return;
         pageProxyRef.current = page;
 
         const baseViewport = page.getViewport({ scale });
-        setPageDimensions({
-          width: Math.floor(baseViewport.width),
-          height: Math.floor(baseViewport.height),
-        });
-
         const canvas = canvasRef.current;
         if (!canvas) return;
 
-        const ctx = canvas.getContext('2d', { alpha: false });
+        buffer = document.createElement('canvas');
+        const ctx = buffer.getContext('2d', { alpha: false });
         if (!ctx) return;
 
         const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
@@ -243,10 +244,8 @@ export const PDFPageComponent: React.FC<PDFPageProps> = ({
         }
         const scaledViewport = page.getViewport({ scale: renderScale });
 
-        canvas.width = Math.floor(scaledViewport.width);
-        canvas.height = Math.floor(scaledViewport.height);
-        canvas.style.width = `${Math.floor(baseViewport.width)}px`;
-        canvas.style.height = `${Math.floor(baseViewport.height)}px`;
+        buffer.width = Math.floor(scaledViewport.width);
+        buffer.height = Math.floor(scaledViewport.height);
 
         if (renderTaskRef.current) {
           try {
@@ -262,6 +261,11 @@ export const PDFPageComponent: React.FC<PDFPageProps> = ({
 
         await renderTask.promise;
         if (isCancelled) return;
+        canvas.width = buffer.width;
+        canvas.height = buffer.height;
+        canvas.getContext('2d', { alpha: false })?.drawImage(buffer, 0, 0);
+        buffer.width = 0;
+        buffer.height = 0;
         setIsRendered(true);
 
         // Render Selectable Text Layer
@@ -273,7 +277,7 @@ export const PDFPageComponent: React.FC<PDFPageProps> = ({
           textLayerDiv.innerHTML = '';
           textLayerDiv.style.setProperty('--scale-factor', `${scale}`);
 
-          const textLayer = new TextLayer({
+          textLayer = new TextLayer({
             textContentSource: textContent,
             container: textLayerDiv,
             viewport: baseViewport,
@@ -289,16 +293,21 @@ export const PDFPageComponent: React.FC<PDFPageProps> = ({
           unbindSelectionRef.current = bindTextLayerSelection(textLayerDiv);
         }
       } catch (err: unknown) {
-        if (err && typeof err === 'object' && 'name' in err && (err as { name: string }).name !== 'RenderingCancelledException') {
+        if (!isCancelled && err && typeof err === 'object' && 'name' in err && (err as { name: string }).name !== 'RenderingCancelledException') {
           console.error(`Page ${pageNumber} render error:`, err);
         }
+      } finally {
+        if (buffer) { buffer.width = 0; buffer.height = 0; }
       }
     };
 
-    renderPage();
+    // Scale the retained canvas immediately; rasterize after the gesture settles.
+    const renderTimer = window.setTimeout(renderPage, 100);
 
     return () => {
       isCancelled = true;
+      window.clearTimeout(renderTimer);
+      textLayer?.cancel();
       unbindSelectionRef.current?.();
       unbindSelectionRef.current = null;
       if (renderTaskRef.current) {
@@ -306,11 +315,6 @@ export const PDFPageComponent: React.FC<PDFPageProps> = ({
           (renderTaskRef.current as { cancel: () => void }).cancel();
         } catch {}
         renderTaskRef.current = null;
-      }
-      const canvas = canvasRef.current;
-      if (canvas) {
-        canvas.width = 0;
-        canvas.height = 0;
       }
       const textLayerDiv = textLayerRef.current;
       if (textLayerDiv) {
@@ -537,7 +541,7 @@ export const PDFPageComponent: React.FC<PDFPageProps> = ({
         width: `${pageDimensions.width}px`,
         height: `${pageDimensions.height}px`,
       }}
-      className={`relative mx-auto ${isFlush ? 'my-1' : 'my-4'} bg-white shadow-[0_1px_8px_rgba(0,0,0,0.22),0_1px_2px_rgba(0,0,0,0.14)] rounded-xs transition-all duration-150 group ${
+      className={`relative mx-auto ${isFlush ? 'my-1' : 'my-4'} bg-white shadow-[0_1px_8px_rgba(0,0,0,0.22),0_1px_2px_rgba(0,0,0,0.14)] rounded-xs transition-shadow duration-150 group ${
         isDragOver ? 'ring-2 ring-[#0080f0] scale-[1.01]' : ''
       }`}
     >

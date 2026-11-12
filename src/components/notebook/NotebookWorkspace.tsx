@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { NotebookEditor } from '@cinnabar/notebook/editor';
 import { PAPER, type NotebookLayout } from '@cinnabar/notebook/layout';
 import { serializeNotebook } from '@cinnabar/notebook';
+import { useViewportZoom } from '../../hooks/useViewportZoom';
 import { useNotebookSession } from '../../hooks/useNotebookSession';
 import type { NotebookTarget } from '../../lib/notebook/navigation';
 import { saveNotebookFile, tauriOpenImage } from '../../utils/tauriBridge';
@@ -21,7 +22,6 @@ export function NotebookWorkspace({ onBack, initialTarget, embedded = false, zoo
   const changeZoom = onZoomChange ?? setLocalZoom;
   const viewport = useRef<HTMLElement | null>(null);
   const pan = useRef<{ id: number; x: number; y: number; left: number; top: number } | null>(null);
-  const previousZoom = useRef(zoom);
   const latest = useRef(notebook); latest.current = notebook;
   const saving = useRef(false);
   const file = notebook.session?.present;
@@ -93,16 +93,6 @@ export function NotebookWorkspace({ onBack, initialTarget, embedded = false, zoo
     if (element && file) element.scrollLeft = Math.max(0, (element.scrollWidth - element.clientWidth) / 2);
   }, [file?.id]);
   useEffect(() => {
-    const element = viewport.current;
-    const oldZoom = previousZoom.current;
-    previousZoom.current = zoom;
-    const stack = element?.querySelector<HTMLElement>('.independent-paper-stack');
-    if (!element || !stack || oldZoom === zoom) return;
-    element.scrollLeft = stack.offsetLeft + (element.scrollLeft + element.clientWidth / 2 - stack.offsetLeft) * zoom / oldZoom - element.clientWidth / 2;
-    element.scrollTop = stack.offsetTop + (element.scrollTop + element.clientHeight / 2 - stack.offsetTop) * zoom / oldZoom - element.clientHeight / 2;
-  }, [zoom]);
-
-  useEffect(() => {
     if (!pageRequest || !viewport.current) return;
     const element = viewport.current;
     const stack = element.querySelector<HTMLElement>('.independent-paper-stack');
@@ -113,18 +103,7 @@ export function NotebookWorkspace({ onBack, initialTarget, embedded = false, zoo
     changeZoom(Math.min(3, Math.max(.4, (viewport.current.clientWidth - 64) / PAPER.width)));
   }, [fitRequest]);
 
-  useEffect(() => {
-    const element = viewport.current;
-    if (!element) return;
-    const wheel = (event: WheelEvent) => {
-      if (!event.ctrlKey && !event.metaKey) return;
-      event.preventDefault();
-      onActivate?.();
-      changeZoom(Math.min(3, Math.max(.4, zoom - event.deltaY * .004)));
-    };
-    element.addEventListener('wheel', wheel, { passive: false });
-    return () => element.removeEventListener('wheel', wheel);
-  }, [zoom, changeZoom, onActivate]);
+  useViewportZoom(viewport, zoom, changeZoom, file?.id, embedded, '.independent-paper-stack', onActivate);
 
   return <section className={`standalone-notebook ${embedded ? 'embedded-notebook' : ''}`} aria-label="Notebook workspace"
     onPointerDownCapture={onActivate} onFocusCapture={onActivate}

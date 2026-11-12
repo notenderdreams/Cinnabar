@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import type { PDFDocumentProxy } from 'pdfjs-dist';
+import { useViewportZoom } from '../../hooks/useViewportZoom';
 import { PDFPage } from './PDFPage';
 import { SplitDivider } from '../ui/SplitDivider';
 import { UploadCloud } from 'lucide-react';
@@ -650,22 +651,6 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
     };
   }, [centerFittedPage, fitPageRequest, onChangeZoom, pdfDoc, zoom]);
 
-  // Preserve zoom focal position during zoom transitions
-  const prevZoomRef = useRef(zoom);
-  useEffect(() => {
-    const container = viewerContainerRef.current;
-    if (!container || prevZoomRef.current === zoom) return;
-
-    const zoomRatio = zoom / prevZoomRef.current;
-    prevZoomRef.current = zoom;
-
-    const currentCenterDocX = container.scrollLeft + container.clientWidth / 2;
-    const currentCenterDocY = container.scrollTop + container.clientHeight / 2;
-
-    container.scrollLeft = currentCenterDocX * zoomRatio - container.clientWidth / 2;
-    container.scrollTop = currentCenterDocY * zoomRatio - container.clientHeight / 2;
-  }, [zoom]);
-
   // A fit action must scroll after the zoom effect has finished preserving the focal point.
   useEffect(() => {
     const pageNumber = pendingFitScrollPageRef.current;
@@ -820,18 +805,6 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
     }, 600);
   }, [companionCurrentPage, companionPdfDoc]);
 
-  const previousCompanionZoomRef = useRef(companionZoom);
-  useEffect(() => {
-    const container = companionContainerRef.current;
-    if (!container || previousCompanionZoomRef.current === companionZoom) return;
-    const ratio = companionZoom / previousCompanionZoomRef.current;
-    previousCompanionZoomRef.current = companionZoom;
-    const centerX = container.scrollLeft + container.clientWidth / 2;
-    const centerY = container.scrollTop + container.clientHeight / 2;
-    container.scrollLeft = centerX * ratio - container.clientWidth / 2;
-    container.scrollTop = centerY * ratio - container.clientHeight / 2;
-  }, [companionZoom]);
-
   // Initial horizontal centering for both panes in Read Together mode
   useEffect(() => {
     if (!companionPdfDoc) return;
@@ -863,19 +836,8 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
     };
   }, [companionPdfDoc, pdfDoc]);
 
-  useEffect(() => {
-    const container = companionContainerRef.current;
-    if (!container || !companionPdfDoc || !onCompanionZoomChange) return;
-    const handleWheel = (event: WheelEvent) => {
-      if (!event.ctrlKey && !event.metaKey) return;
-      event.preventDefault();
-      onActivePaneChange?.('companion');
-      const nextZoom = Math.min(3.5, Math.max(0.3, companionZoom - event.deltaY * 0.004));
-      onCompanionZoomChange(Number(nextZoom.toFixed(2)));
-    };
-    container.addEventListener('wheel', handleWheel, { passive: false });
-    return () => container.removeEventListener('wheel', handleWheel);
-  }, [companionPdfDoc, companionZoom, onActivePaneChange, onCompanionZoomChange]);
+  useViewportZoom(viewerContainerRef, zoom, onChangeZoom, pdfDoc, `${viewMode}-${Boolean(companionPdfDoc)}`, '[data-pdf-page-number]', () => onActivePaneChange?.('primary'));
+  useViewportZoom(companionContainerRef, companionZoom, onCompanionZoomChange, companionPdfDoc, viewMode, '[data-pdf-page-number]', () => onActivePaneChange?.('companion'));
 
   // Mouse Wheel: Pinch-to-zoom and intuitive single-page turn on boundary scroll
   useEffect(() => {
@@ -885,15 +847,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
     let lastWheelPageTurnTime = 0;
 
     const handleWheel = (e: WheelEvent) => {
-      // Pinch on trackpad (ctrlKey) or Cmd/Ctrl + Mouse Wheel
-      if (e.ctrlKey || e.metaKey) {
-        e.preventDefault();
-        onActivePaneChange?.('primary');
-        const zoomDelta = -e.deltaY * 0.004;
-        const newZoom = Math.min(3.5, Math.max(0.3, zoom + zoomDelta));
-        onChangeZoom(Number(newZoom.toFixed(2)));
-        return;
-      }
+      if (e.ctrlKey || e.metaKey) return;
 
       // In Single Page Mode, wheel scroll at boundaries turns the page smoothly
       if (viewMode === 'single' && pdfDoc) {
