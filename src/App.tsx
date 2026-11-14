@@ -1384,6 +1384,7 @@ export function App() {
         <React.Suspense fallback={<div role="status">Opening notebook…</div>}>
           <NotebookWorkspace
             initialTarget={notebookTarget}
+            onOpenPdfReference={openPdfInReader}
             onBack={() => setCurrentScreen('dashboard')}
           />
         </React.Suspense>
@@ -1759,6 +1760,7 @@ export function App() {
               {hasOpenedNotebookPanel && (
                 <React.Suspense fallback={null}>
                   <NotebookPanel
+                    onOpenPdfReference={openPdfInReader}
                     zoom={notebookZoom}
                     onZoomChange={setNotebookZoom}
                     onActivate={activateNotebookPane}

@@ -4,6 +4,15 @@ import { createPortal } from 'react-dom';
 import { NodeSelection } from '@tiptap/pm/state';
 import type { Editor, JSONContent } from '@tiptap/core';
 import { notebookExtensions } from './extensions';
+import { BlockDragging } from './blockDragging';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { GripVertical } from 'lucide-react';
+import { BlockCommands, type BlockChoiceKind, type BlockChoice } from './BlockCommands';
+import { blockCommands } from './blockCommandItems';
+import type { NotebookReference } from './widgets';
+export type { BlockChoice, BlockChoiceKind } from './BlockCommands';
+export type { NotebookReference } from './widgets';
 import { PaperLayout, PAPER, requestNotebookReflow, type NotebookLayout } from './layout';
 import {
   identifyBlocks,
@@ -26,6 +35,8 @@ interface Props {
   controlsHost: HTMLElement | null;
   onRequestControls?: () => void;
   onPickImage?: () => Promise<File | null>;
+  loadBlockChoices?: (kind: BlockChoiceKind) => Promise<BlockChoice[]>;
+  onOpenReference?: (reference: NotebookReference) => void;
 }
 function selectedBlock(editor: Editor) {
   const { $from } = editor.state.selection;
@@ -38,15 +49,23 @@ export function NotebookEditor(props: Props) {
   current.current = props;
   const applyingExternal = useRef(false);
   const typing = useRef({ time: 0, end: -1, group: '' });
-  const [slash, setSlash] = useState<number | null>(null);
-  const slashRef = useRef<number | null>(null);
   const [formula, setFormula] = useState('');
   const [link, setLink] = useState('');
   const [caption, setCaption] = useState('');
-  const [dragged, setDragged] = useState<number | null>(null);
   const editor = useEditor({
     extensions: [
       ...notebookExtensions(),
+      BlockDragging.configure({
+        renderHandle: () => {
+          const handle = document.createElement('button');
+          handle.type = 'button';
+          handle.className = 'notebook-drag-handle';
+          handle.setAttribute('aria-label', 'Drag block to reorder');
+          handle.title = 'Drag to reorder · Alt+Shift+↑/↓ to move selected block';
+          handle.innerHTML = renderToStaticMarkup(createElement(GripVertical, { size: 14 }));
+          return handle;
+        },
+      }),
       PaperLayout.configure({ onLayout: (layout) => current.current.onLayout(layout) }),
     ],
     content: props.document.content,
@@ -67,18 +86,6 @@ export function NotebookEditor(props: Props) {
           event.preventDefault();
           current.current.redo();
           return true;
-        }
-        if (slashRef.current !== null && ['ArrowDown', 'Enter'].includes(event.key)) {
-          event.preventDefault();
-          current.current.controlsHost
-            ?.querySelector<HTMLButtonElement>('[role="menuitem"]')
-            ?.focus();
-          return true;
-        }
-        if (event.key === 'Escape') {
-          setSlash(null);
-          slashRef.current = null;
-          return false;
         }
         if (event.altKey && event.shiftKey && ['ArrowUp', 'ArrowDown'].includes(event.key)) {
           event.preventDefault();
@@ -118,13 +125,15 @@ export function NotebookEditor(props: Props) {
         group: group ?? '',
       };
       current.current.onChange({ ...current.current.document, content: instance.getJSON() }, group);
-      const { $from } = instance.state.selection;
-      slashRef.current =
-        current.current.controlsHost && $from.parent.textContent === '/' ? $from.start() : null;
-      setSlash(slashRef.current);
-      if (slashRef.current !== null) current.current.onRequestControls?.();
     },
   });
+  useEffect(() => {
+    if (!editor) return;
+    const open = (event: Event) =>
+      current.current.onOpenReference?.((event as CustomEvent<NotebookReference>).detail);
+    editor.view.dom.addEventListener('notebook-reference', open);
+    return () => editor.view.dom.removeEventListener('notebook-reference', open);
+  }, [editor]);
   const state = useEditorState({
     editor,
     selector: ({ editor: instance }) =>
@@ -218,13 +227,40 @@ export function NotebookEditor(props: Props) {
   };
   const documentStyle = <K extends keyof NotebookStyles>(attribute: K, value: NotebookStyles[K]) =>
     props.onChange({ ...props.document, styles: { ...props.document.styles, [attribute]: value } });
-  const insert = (type: string) => {
+  const insert = (type: string, range?: { from: number; to: number }) => {
     if (!editor) return;
-    if (slash !== null) editor.commands.deleteRange({ from: slash, to: slash + 1 });
-    setSlash(null);
-    slashRef.current = null;
     const chain = editor.chain().focus();
+    if (range) chain.deleteRange(range);
     switch (type) {
+      case 'callout':
+        chain.insertContent({ type: 'callout', content: [{ type: 'paragraph' }] }).run();
+        break;
+      case 'toggle':
+        chain
+          .insertContent({
+            type: 'toggle',
+            content: [
+              { type: 'toggleTitle', content: [{ type: 'text', text: 'Toggle' }] },
+              { type: 'toggleBody', content: [{ type: 'paragraph' }] },
+            ],
+          })
+          .run();
+        break;
+      case 'columns2':
+      case 'columns3':
+        chain
+          .insertContent({
+            type: 'columns',
+            content: Array.from({ length: type === 'columns2' ? 2 : 3 }, () => ({
+              type: 'column',
+              content: [{ type: 'paragraph' }],
+            })),
+          })
+          .run();
+        break;
+      case 'contents':
+        chain.insertContent({ type: 'contents' }).run();
+        break;
       case 'paragraph':
         chain.setParagraph().run();
         break;
@@ -262,9 +298,15 @@ export function NotebookEditor(props: Props) {
         chain.insertBlockMath({ latex: formula || 'x^2' }).run();
         break;
       case 'image':
-        void props.onPickImage?.().then((file) => {
-          if (file) insertImageFile(file);
-        });
+        {
+          const capturedDocument = current.current.document;
+          void props.onPickImage?.().then((file) => {
+            if (file && !editor.isDestroyed && current.current.document === capturedDocument) {
+              chain.run();
+              insertImageFile(file);
+            }
+          });
+        }
         break;
       case 'sheetBreak':
         chain.insertContent({ type: 'sheetBreak' }).run();
@@ -310,22 +352,6 @@ export function NotebookEditor(props: Props) {
     };
     reader.readAsDataURL(file);
   };
-  const blockTypes = [
-    ['paragraph', 'Paragraph'],
-    ['title', 'Title'],
-    ['heading', 'Heading'],
-    ['subheading', 'Subheading'],
-    ['bulletList', 'Bullet list'],
-    ['orderedList', 'Numbered list'],
-    ['taskList', 'Checklist'],
-    ['blockquote', 'Quote'],
-    ['codeBlock', 'Code'],
-    ['blockMath', 'Formula'],
-    ['horizontalRule', 'Divider'],
-    ['image', 'Image'],
-    ['table', 'Table'],
-    ['sheetBreak', 'Page break'],
-  ];
   return (
     <>
       {props.controlsHost &&
@@ -402,7 +428,7 @@ export function NotebookEditor(props: Props) {
                   Remove link
                 </button>
               </details>
-              <details open={slash !== null || undefined}>
+              <details>
                 <summary>Insert / convert</summary>
                 <div
                   className="notebook-insert-menu"
@@ -420,38 +446,23 @@ export function NotebookEditor(props: Props) {
                       ]?.focus();
                     }
                     if (event.key === 'Escape') {
-                      setSlash(null);
-                      slashRef.current = null;
                       editor?.commands.focus();
                     }
                   }}
                 >
-                  {blockTypes.map(([type, label]) => (
-                    <button type="button" role="menuitem" key={type} onClick={() => insert(type)}>
-                      {label}
-                    </button>
-                  ))}
+                  {blockCommands
+                    .filter((item) => !['pdf', 'snippet', 'notebook'].includes(item.type))
+                    .map(({ type, label, icon: Icon }) => (
+                      <button type="button" role="menuitem" key={type} onClick={() => insert(type)}>
+                        <Icon size={16} aria-hidden="true" /> {label}
+                      </button>
+                    ))}
                 </div>
               </details>
             </div>
             <details>
               <summary>Block appearance and actions</summary>
               <div className="notebook-control-row">
-                <button
-                  type="button"
-                  draggable
-                  aria-label="Drag selected block"
-                  title="Drag onto another block; Alt+Shift+arrows also reorder"
-                  onDragStart={(event) => {
-                    const pos = editor && selectedBlock(editor)?.pos;
-                    if (pos !== null && pos !== undefined) {
-                      setDragged(pos);
-                      event.dataTransfer.setData('application/x-cinnabar-block', String(pos));
-                    }
-                  }}
-                >
-                  ⠿ Drag block
-                </button>
                 <button type="button" onClick={() => moveBlock(-1)}>
                   Move up
                 </button>
@@ -844,31 +855,10 @@ export function NotebookEditor(props: Props) {
           transform: `scale(${props.zoom})`,
           pointerEvents: props.editable ? 'auto' : 'none',
         }}
-        onDragOver={(event) => {
-          if (dragged !== null || event.dataTransfer.types.includes('application/x-cinnabar-block'))
-            event.preventDefault();
-        }}
-        onDrop={(event) => {
-          const data = event.dataTransfer.getData('application/x-cinnabar-block');
-          const source = dragged ?? (data ? Number(data) : null);
-          if (source === null || !Number.isSafeInteger(source) || !editor) return;
-          event.preventDefault();
-          const target = editor.view.posAtCoords({ left: event.clientX, top: event.clientY });
-          if (target) {
-            const resolved = editor.state.doc.resolve(target.pos);
-            const to = resolved.depth ? resolved.before(1) : target.pos;
-            const node = editor.state.doc.nodeAt(source);
-            if (node && to !== source) {
-              const tr = editor.state.tr.delete(source, source + node.nodeSize);
-              tr.insert(tr.mapping.map(to), node);
-              editor.view.dispatch(tr);
-            }
-          }
-          setDragged(null);
-        }}
       >
-        <EditorContent editor={editor} />
+        <EditorContent editor={editor} className="notebook-editor-content" />
       </div>
+      <BlockCommands editor={editor} onInsert={insert} loadChoices={props.loadBlockChoices} />
     </>
   );
 }

@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { NotebookEditor } from '@cinnabar/notebook/editor';
+import { NotebookEditor, type NotebookReference } from '@cinnabar/notebook/editor';
+import { loadNotebookBlockChoices } from '../../lib/notebook/blockSources';
 import { PAPER, type NotebookLayout } from '@cinnabar/notebook/layout';
 import { serializeNotebook } from '@cinnabar/notebook';
 import { useViewportZoom } from '../../hooks/useViewportZoom';
 import { centerPageInViewport, fitPageZoom } from '../../lib/pdf/fitViewport';
 import { useNotebookSession } from '../../hooks/useNotebookSession';
 import type { NotebookTarget } from '../../lib/notebook/navigation';
-import { saveNotebookFile, tauriOpenImage } from '../../utils/tauriBridge';
+import { saveNotebookFile, tauriOpenImage, tauriReadFile } from '../../utils/tauriBridge';
 
 export function NotebookWorkspace({
   onBack,
@@ -18,6 +19,7 @@ export function NotebookWorkspace({
   onDocumentChange,
   pageRequest,
   fitRequest,
+  onOpenPdfReference,
 }: {
   onBack: () => void;
   initialTarget?: NotebookTarget;
@@ -28,6 +30,12 @@ export function NotebookWorkspace({
   onDocumentChange?: (document: { title: string; pages: number; page: number } | null) => void;
   pageRequest?: { page: number; id: number } | null;
   fitRequest?: number;
+  onOpenPdfReference?: (
+    data: Uint8Array,
+    name: string,
+    path: string,
+    page: number,
+  ) => Promise<boolean>;
 }) {
   const notebook = useNotebookSession(initialTarget);
   const [layout, setLayout] = useState<NotebookLayout>({ pages: [], height: PAPER.height });
@@ -43,6 +51,21 @@ export function NotebookWorkspace({
   latest.current = notebook;
   const saving = useRef(false);
   const file = notebook.session?.present;
+  async function openReference(reference: NotebookReference) {
+    try {
+      await notebook.flush();
+      if (reference.kind === 'notebook') {
+        await notebook.open(reference.target);
+      } else {
+        const source = await tauriReadFile(reference.target);
+        if (!source) throw new Error('The source PDF is no longer available.');
+        if (!onOpenPdfReference) throw new Error('PDF navigation is unavailable.');
+        await onOpenPdfReference(source.data, source.fileName, source.filePath, reference.page);
+      }
+    } catch (error) {
+      notebook.setError(String(error));
+    }
+  }
   const exportedRevision = useRef('');
 
   useEffect(() => {
@@ -183,6 +206,7 @@ export function NotebookWorkspace({
       onPointerDownCapture={onActivate}
       onFocusCapture={onActivate}
       onKeyDown={(event) => {
+        if (event.defaultPrevented) return;
         if (event.key === 'Escape') {
           event.preventDefault();
           event.stopPropagation();
@@ -300,6 +324,8 @@ export function NotebookWorkspace({
                 onChange={notebook.change}
                 onLayout={setLayout}
                 controlsHost={null}
+                loadBlockChoices={loadNotebookBlockChoices}
+                onOpenReference={(reference) => void openReference(reference)}
                 onPickImage={async () => {
                   const image = await tauriOpenImage();
                   if (!image) return null;

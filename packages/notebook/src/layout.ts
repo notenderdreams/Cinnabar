@@ -1,5 +1,5 @@
 import { Extension } from '@tiptap/core';
-import { NodeSelection, Plugin, PluginKey } from '@tiptap/pm/state';
+import { Plugin, PluginKey } from '@tiptap/pm/state';
 import { Decoration, DecorationSet, type EditorView } from '@tiptap/pm/view';
 import type { Node as ProseMirrorNode } from '@tiptap/pm/model';
 
@@ -155,37 +155,6 @@ export const PaperLayout = Extension.create<{ onLayout: (layout: NotebookLayout)
                   { side: -1, key: `paper-${index}-${nextSignature}`, ignoreSelection: true },
                 ),
               );
-              if (view.editable)
-                view.state.doc.forEach((node, pos) => {
-                  if (node.type.name === 'sheetBreak') return;
-                  decorations.push(
-                    Decoration.widget(
-                      pos,
-                      () => {
-                        const handle = document.createElement('button');
-                        handle.type = 'button';
-                        handle.draggable = true;
-                        handle.contentEditable = 'false';
-                        handle.className = 'notebook-block-handle';
-                        handle.textContent = '⠿';
-                        handle.setAttribute('aria-label', `Select or drag ${node.type.name} block`);
-                        handle.title = 'Drag to reorder; Alt+Shift+arrows moves the selected block';
-                        handle.onpointerdown = (event) => {
-                          event.stopPropagation();
-                          view.dispatch(
-                            view.state.tr.setSelection(NodeSelection.create(view.state.doc, pos)),
-                          );
-                        };
-                        handle.ondragstart = (event) => {
-                          event.stopPropagation();
-                          event.dataTransfer?.setData('application/x-cinnabar-block', String(pos));
-                        };
-                        return handle;
-                      },
-                      { side: 1, key: `handle-${node.attrs.id}-${pos}`, ignoreSelection: true },
-                    ),
-                  );
-                });
               view.dispatch(
                 view.state.tr
                   .setMeta(key, DecorationSet.create(view.state.doc, decorations))
@@ -285,6 +254,25 @@ export function measureNotebook(view: EditorView): { breaks: Break[]; layout: No
   const collect = (node: ProseMirrorNode, pos: number) => {
     const dom = view.nodeDOM(pos);
     if (!(dom instanceof HTMLElement)) return;
+    if (!dom.getClientRects().length) return;
+    if (node.type.name === 'columns') {
+      const cells: NonNullable<Unit['cells']> = [];
+      node.forEach((column, offset) => {
+        const columnPos = pos + 1 + offset;
+        const columnDom = view.nodeDOM(columnPos);
+        if (!(columnDom instanceof HTMLElement)) return;
+        const start = units.length;
+        column.forEach((child, childOffset) => collect(child, columnPos + 1 + childOffset));
+        const columnUnits = units.splice(start);
+        cells.push({
+          lines: columnUnits,
+          end: columnPos + column.nodeSize - 1,
+          bottom: rect(columnDom).bottom,
+        });
+      });
+      units.push({ from: pos, to: pos + node.nodeSize, ...rect(dom), cells });
+      return;
+    }
     if (node.type.name === 'sheetBreak') {
       units.push({ from: pos, to: pos + node.nodeSize, ...rect(dom), force: true });
       return;
@@ -311,9 +299,17 @@ export function measureNotebook(view: EditorView): { breaks: Break[]; layout: No
         } else units.push({ from: rowPos, to: rowPos + row.nodeSize, ...bounds, row: rowDom });
       });
     } else if (
-      ['bulletList', 'orderedList', 'taskList', 'listItem', 'taskItem', 'blockquote'].includes(
-        node.type.name,
-      )
+      [
+        'bulletList',
+        'orderedList',
+        'taskList',
+        'listItem',
+        'taskItem',
+        'blockquote',
+        'callout',
+        'toggle',
+        'toggleBody',
+      ].includes(node.type.name)
     ) {
       node.forEach((child, offset) => collect(child, pos + 1 + offset));
     } else {

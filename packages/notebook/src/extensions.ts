@@ -10,6 +10,7 @@ import Highlight from '@tiptap/extension-highlight';
 import TextAlign from '@tiptap/extension-text-align';
 import UniqueID from '@tiptap/extension-unique-id';
 import { BLOCK_TYPES } from './document';
+import { notebookWidgets } from './widgets';
 
 const SheetBreak = Node.create({
   name: 'sheetBreak',
@@ -147,5 +148,6 @@ export function notebookExtensions(editable = true) {
     UniqueID.configure({ types: BLOCK_TYPES, updateDocument: editable }),
     BlockAppearance,
     SheetBreak,
+    ...notebookWidgets,
   ];
 }

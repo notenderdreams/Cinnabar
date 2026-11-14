@@ -55,6 +55,17 @@ export function validateDocument(value: NotebookDocument): void {
   node.check();
   if (node.type.name !== 'doc') throw new Error('A notebook must contain a document.');
   node.descendants((child) => {
+    if (
+      child.type.name === 'reference' &&
+      (typeof child.attrs.kind !== 'string' ||
+        !['pdf', 'notebook'].includes(child.attrs.kind) ||
+        typeof child.attrs.target !== 'string' ||
+        !child.attrs.target ||
+        typeof child.attrs.label !== 'string' ||
+        !Number.isSafeInteger(child.attrs.page) ||
+        child.attrs.page < 1)
+    )
+      throw new Error('Invalid notebook reference.');
     if (child.type.name === 'image' && !imageSource.test(child.attrs.src))
       throw new Error('Notebook images must be embedded.');
     if (

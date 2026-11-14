@@ -12,6 +12,7 @@ export function NotebookPanel({
   onDocumentChange,
   pageRequest,
   fitRequest,
+  onOpenPdfReference,
 }: {
   isOpen: boolean;
   zoom: number;
@@ -20,6 +21,7 @@ export function NotebookPanel({
   onDocumentChange: (document: { title: string; pages: number; page: number } | null) => void;
   pageRequest: { page: number; id: number } | null;
   fitRequest: number;
+  onOpenPdfReference: (data: Uint8Array, name: string, path: string, page: number) => Promise<boolean>;
 }) {
   const [target, setTarget] = useState<NotebookTarget | null>(null);
   const [split, setSplit] = useState<number | null>(null);
@@ -49,6 +51,7 @@ export function NotebookPanel({
             key={target.kind === 'existing' ? target.id : 'new'}
             initialTarget={target}
             embedded
+            onOpenPdfReference={onOpenPdfReference}
             zoom={zoom}
             onZoomChange={onZoomChange}
             onActivate={onActivate}

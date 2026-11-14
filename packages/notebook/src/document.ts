@@ -48,6 +48,14 @@ export const BLOCK_TYPES = [
   'tableHeader',
   'blockMath',
   'sheetBreak',
+  'callout',
+  'columns',
+  'column',
+  'toggle',
+  'toggleTitle',
+  'toggleBody',
+  'reference',
+  'contents',
 ];
 
 export function identifyBlocks(content: JSONContent, used = new Set<string>()): JSONContent {
@@ -76,6 +84,8 @@ export function emptyNotebook(minimumSheets = 1): NotebookDocument {
 }
 
 export function notebookText(node: JSONContent): string {
+  if (node.type === 'reference')
+    return `${node.attrs?.label ?? ''}${node.attrs?.kind === 'pdf' ? ` · p. ${node.attrs?.page ?? 1}` : ''}`;
   if (node.type === 'text') return node.text ?? '';
   if (node.type === 'inlineMath' || node.type === 'blockMath')
     return String(node.attrs?.latex ?? '');
