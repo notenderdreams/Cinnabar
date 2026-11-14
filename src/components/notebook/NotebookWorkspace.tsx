@@ -312,7 +312,7 @@ export function NotebookWorkspace({
                     top: index * (PAPER.height + PAPER.gap) * zoom,
                     width: PAPER.width * zoom,
                     height: PAPER.height * zoom,
-                    background: file.document.styles.background,
+                    background: `var(--notebook-paper-background, ${file.document.styles.background})`,
                   }}
                 />
               ))}

@@ -184,7 +184,7 @@ export function NotebookEditor(props: Props) {
         'font-family': props.document.styles.fontFamily,
         'font-size': `${props.document.styles.fontSize}px`,
         'line-height': String(props.document.styles.lineHeight),
-        color: props.document.styles.color,
+        color: `var(--notebook-paper-foreground, ${props.document.styles.color})`,
         '--notebook-spacing': `${props.document.styles.paragraphSpacing}px`,
       })
         .map(([key, value]) => `${key}:${value}`)

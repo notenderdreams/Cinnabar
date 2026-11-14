@@ -1,16 +1,66 @@
-import { Extension, Node, mergeAttributes } from '@tiptap/core';
+import { Extension, Node, mergeAttributes, isValidCSSStyleValue } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import { TableKit } from '@tiptap/extension-table';
 import Image from '@tiptap/extension-image';
 import Mathematics from '@tiptap/extension-mathematics';
 import TaskList from '@tiptap/extension-task-list';
 import TaskItem from '@tiptap/extension-task-item';
-import { TextStyleKit } from '@tiptap/extension-text-style';
+import { TextStyle, TextStyleKit } from '@tiptap/extension-text-style';
 import Highlight from '@tiptap/extension-highlight';
 import TextAlign from '@tiptap/extension-text-align';
 import UniqueID from '@tiptap/extension-unique-id';
 import { BLOCK_TYPES } from './document';
 import { notebookWidgets } from './widgets';
+
+// Keep original colors in the document; CSS adapts only their on-screen appearance.
+function themeColors(ink: unknown, fill: unknown) {
+  const attributes: Record<string, string> = {};
+  const declarations: string[] = [];
+  for (const [role, value] of [
+    ['ink', ink],
+    ['fill', fill],
+  ] as const) {
+    if (typeof value !== 'string' || !isValidCSSStyleValue(value)) continue;
+    attributes[`data-notebook-${role}`] = '';
+    declarations.push(`--notebook-saved-${role}: ${value}`);
+  }
+  if (declarations.length) attributes.style = declarations.join(';');
+  return attributes;
+}
+
+function themeTableColor(attribute: string, value: unknown) {
+  if (
+    !['headerColor', 'borderColor'].includes(attribute) ||
+    typeof value !== 'string' ||
+    !isValidCSSStyleValue(value)
+  )
+    return {};
+  const role = attribute === 'headerColor' ? 'header' : 'border';
+  return { [`data-notebook-${role}`]: '', style: `--notebook-saved-${role}: ${value}` };
+}
+
+const ThemeTextStyle = TextStyle.extend({
+  renderHTML({ mark, HTMLAttributes }) {
+    return [
+      'span',
+      mergeAttributes(HTMLAttributes, themeColors(mark.attrs.color, mark.attrs.backgroundColor)),
+      0,
+    ];
+  },
+});
+const ThemeHighlight = Highlight.extend({
+  renderHTML({ mark, HTMLAttributes }) {
+    return [
+      'mark',
+      mergeAttributes(
+        this.options.HTMLAttributes,
+        HTMLAttributes,
+        themeColors(null, mark.attrs.color),
+      ),
+      0,
+    ];
+  },
+});
 
 const SheetBreak = Node.create({
   name: 'sheetBreak',
@@ -49,9 +99,14 @@ const BlockAppearance = Extension.create({
               renderHTML: (attrs: Record<string, unknown>) =>
                 attrs[attribute] === null || attrs[attribute] === undefined
                   ? {}
-                  : {
-                      style: `${property}: ${attrs[attribute]}${unit}`,
-                    },
+                  : mergeAttributes(
+                      { style: `${property}: ${attrs[attribute]}${unit}` },
+                      themeColors(
+                        attribute === 'color' ? attrs[attribute] : null,
+                        attribute === 'background' ? attrs[attribute] : null,
+                      ),
+                      themeTableColor(attribute, attrs[attribute]),
+                    ),
             },
           ]),
         ),
@@ -142,8 +197,9 @@ export function notebookExtensions(editable = true) {
     Mathematics.configure({ katexOptions: { throwOnError: false, strict: false } }),
     TaskList,
     TaskItem.configure({ nested: true }),
-    TextStyleKit,
-    Highlight.configure({ multicolor: true }),
+    TextStyleKit.configure({ textStyle: false }),
+    ThemeTextStyle,
+    ThemeHighlight.configure({ multicolor: true }),
     TextAlign.configure({ types: BLOCK_TYPES }),
     UniqueID.configure({ types: BLOCK_TYPES, updateDocument: editable }),
     BlockAppearance,

@@ -2716,6 +2716,66 @@
   box-shadow: 0 2px 12px rgb(0 0 0 / 12%);
   pointer-events: none;
 }
+[data-ui-theme='dark'] .standalone-notebook,
+[data-ui-theme='dark'] .notebook-editor-content,
+[data-ui-theme='dark'] .notebook-document {
+  --notebook-paper-background: #242429;
+  --notebook-paper-foreground: #e4e4e7;
+  --notebook-table-border: #45454d;
+  --notebook-table-header: #303037;
+  --notebook-link-color: #93c5fd;
+  --notebook-caption-color: #a1a1aa;
+}
+[data-ui-theme='dark'] .notebook-block-document,
+[data-ui-theme='dark'] .notebook-document {
+  color: var(--notebook-paper-foreground, #e4e4e7) !important;
+  caret-color: #f4f4f5;
+}
+[data-ui-theme='dark'] .notebook-block-document [data-notebook-ink] {
+  color: #e4e4e7 !important;
+  color: color-mix(in srgb, #f4f4f5 75%, var(--notebook-saved-ink)) !important;
+}
+[data-ui-theme='dark'] .notebook-block-document [data-notebook-fill] {
+  background-color: #34343b !important;
+  background-color: color-mix(in srgb, #242429 85%, var(--notebook-saved-fill)) !important;
+}
+[data-ui-theme='dark'] .notebook-block-document [data-notebook-header] {
+  --notebook-table-header: color-mix(in srgb, #242429 85%, var(--notebook-saved-header)) !important;
+}
+[data-ui-theme='dark'] .notebook-block-document [data-notebook-border] {
+  --notebook-table-border: color-mix(in srgb, #242429 70%, var(--notebook-saved-border)) !important;
+}
+[data-ui-theme='dark'] .notebook-block-document mark {
+  color: inherit;
+  background-color: #514625;
+}
+[data-ui-theme='dark'] .notebook-block-document .tiptap-mathematics-render {
+  color: inherit;
+}
+[data-ui-theme='dark'] .notebook-document :is(h1, h2, h3, h4, h5, h6, strong, th) {
+  color: #f4f4f5;
+}
+[data-ui-theme='dark'] .notebook-document :is(h1 + p, .notebook-image-caption) {
+  color: #b4b4bf;
+}
+[data-ui-theme='dark'] .notebook-document a,
+[data-ui-theme='dark'] .notebook-document li::marker {
+  color: #93c5fd;
+}
+[data-ui-theme='dark'] .notebook-document blockquote {
+  color: #e4e4e7;
+  background: #303037;
+  border-left-color: #93c5fd;
+}
+[data-ui-theme='dark'] .notebook-document :is(th, td, pre, hr, h2) {
+  border-color: #45454d;
+}
+[data-ui-theme='dark'] .notebook-document :is(th, pre, code, tbody tr:nth-child(even)) {
+  background: #303037;
+}
+[data-ui-theme='dark'] .notebook-document pre code {
+  background: transparent;
+}
 .notebook-editor-position {
   position: absolute;
   transform-origin: top left;
@@ -3074,7 +3134,7 @@
   font-family: var(--font-mono);
 }
 .notebook-block-document a {
-  color: #2563eb;
+  color: var(--notebook-link-color, #2563eb);
   text-decoration: underline;
 }
 .notebook-block-document hr {
@@ -3123,7 +3183,7 @@
   margin: 0 0 var(--notebook-spacing, 10px);
 }
 .notebook-figure figcaption {
-  color: #64748b;
+  color: var(--notebook-caption-color, #64748b);
   font-size: 0.9em;
   margin-top: 4px;
 }
