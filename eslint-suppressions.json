@@ -131,11 +131,8 @@
     "@typescript-eslint/no-redundant-type-constituents": {
       "count": 3
     },
-    "jsx-a11y/click-events-have-key-events": {
-      "count": 1
-    },
     "jsx-a11y/no-static-element-interactions": {
-      "count": 2
+      "count": 1
     }
   },
   "src/components/layout/Header.tsx": {

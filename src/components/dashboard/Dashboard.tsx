@@ -11,7 +11,6 @@ import {
   BookOpen,
   ArrowRight,
   HardDrive,
-  Folder,
   Moon,
   Sun,
   ChevronDown,
@@ -47,6 +46,12 @@ import {
 } from '../../lib/storage/storage';
 import { SettingsModal } from '../modals/SettingsModal';
 import { NotebookLibrary } from '../notebook/NotebookLibrary';
+import { LibraryFolderBranch } from './LibraryFolderBranch';
+import {
+  buildLibraryFolderTree,
+  findLibraryFolder,
+  isInLibraryFolder,
+} from '../../lib/library/folderTree';
 import type { NotebookTarget } from '../../lib/notebook/navigation';
 
 interface DashboardProps {
@@ -113,6 +118,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
 }) => {
   const [directories, setDirectories] = useState<SavedDirectory[]>([]);
   const [pdfItems, setPdfItems] = useState<DashboardPdfItem[]>([]);
+  const folderTree = useMemo(
+    () => buildLibraryFolderTree(directories, pdfItems),
+    [directories, pdfItems],
+  );
   const [activeFilter, setActiveFilter] = useState<FilterTab>(() => loadLibraryFilter());
   const [searchQuery, setSearchQuery] = useState('');
   const deferredSearchQuery = useDeferredValue(searchQuery);
@@ -151,11 +160,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
       activeFilter !== 'favorites' &&
       activeFilter !== 'notebooks' &&
       directories.length > 0 &&
-      !directories.some((d) => d.id === activeFilter)
+      !findLibraryFolder(folderTree, activeFilter)
     ) {
       setActiveFilter('all');
     }
-  }, [activeFilter, directories]);
+  }, [activeFilter, directories, folderTree]);
 
   // Persist library sorting preference
   useEffect(() => {
@@ -348,9 +357,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
     } else if (activeFilter === 'favorites') {
       list = list.filter((i) => i.isFavorite);
     } else if (activeFilter !== 'all') {
+      const folder = findLibraryFolder(folderTree, activeFilter);
       // Specific directory ID
       list = list.filter(
         (i) =>
+          (folder && isInLibraryFolder(i.filePath, folder.path)) ||
           i.folderIds?.includes(activeFilter) ||
           i.folderId === activeFilter ||
           i.directoryPath === activeFilter,
@@ -382,7 +393,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
     });
 
     return list;
-  }, [combinedItems, activeFilter, deferredSearchQuery, sortBy]);
+  }, [combinedItems, activeFilter, deferredSearchQuery, sortBy, folderTree]);
 
   const handleOpenSelectedPair = useCallback(async () => {
     if (selectedPdfIds.length !== 2 || isOpeningPair) return;
@@ -635,37 +646,17 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   No folders added yet. Click &quot;Add Folder&quot; above.
                 </div>
               ) : (
-                directories.map((dir) => (
-                  <div
-                    key={dir.id}
-                    onClick={() => setActiveFilter(dir.id)}
-                    className={`group flex cursor-pointer items-center justify-between rounded-lg px-2.5 py-1.5 text-xs transition-all ${
-                      activeFilter === dir.id
-                        ? 'bg-blue-500/15 font-semibold text-blue-400'
-                        : 'text-zinc-400 hover:bg-black/5 hover:text-zinc-200 dark:hover:bg-white/5'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2 overflow-hidden">
-                      <Folder
-                        className={`h-3.5 w-3.5 shrink-0 ${activeFilter === dir.id ? 'text-blue-500' : 'text-zinc-400'}`}
-                      />
-                      <span className="truncate font-medium">{dir.name}</span>
-                    </div>
-
-                    <div className="flex items-center gap-1">
-                      <span className="font-mono text-[10px] text-zinc-500 group-hover:text-zinc-300">
-                        {dir.pdfCount ?? 0}
-                      </span>
-                      <button
-                        onClick={(e) => handleRemoveDirectory(dir.id, e)}
-                        className="rounded-md p-1 text-zinc-400 opacity-0 transition-opacity group-hover:opacity-100 hover:text-red-400"
-                        title="Remove folder from library"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </button>
-                    </div>
-                  </div>
-                ))
+                <ul className="flex flex-col gap-1" aria-label="Library folders">
+                  {folderTree.map((node) => (
+                    <LibraryFolderBranch
+                      key={node.id}
+                      node={node}
+                      activeFilter={activeFilter}
+                      onSelect={setActiveFilter}
+                      onRemove={handleRemoveDirectory}
+                    />
+                  ))}
+                </ul>
               )}
             </div>
           </div>
@@ -707,7 +698,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         ? 'Recently Read Documents'
                         : activeFilter === 'favorites'
                           ? 'Favorite Documents'
-                          : directories.find((d) => d.id === activeFilter)?.name ||
+                          : findLibraryFolder(folderTree, activeFilter)?.name ||
                             'Directory Documents'}
                   </h2>
                   <span className="rounded-full border border-[var(--border)] bg-[var(--secondary)] px-2 py-0.5 font-mono text-[10.5px] text-zinc-400">
