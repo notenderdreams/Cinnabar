@@ -15,7 +15,7 @@ import type { AiNotebookReferenceOption } from '../../lib/ai/notebookEdits';
 import { createAiClipboardAttachment } from '../../lib/ai/chatClipboard';
 import type { AiChatAttachment } from '../../lib/types';
 import { PAPER, type NotebookLayout } from '@cinnabar/notebook/layout';
-import { serializeNotebook } from '@cinnabar/notebook';
+import { BLOCK_TYPES, serializeNotebook } from '@cinnabar/notebook';
 import { useViewportZoom } from '../../hooks/useViewportZoom';
 import { centerPageInViewport, fitPageZoom } from '../../lib/pdf/fitViewport';
 import { useNotebookSession } from '../../hooks/useNotebookSession';
@@ -410,7 +410,7 @@ export function NotebookWorkspace({
                 />
               ))}
               <NotebookEditor
-                key={file.id}
+                key={`${file.id}:${BLOCK_TYPES.join(',')}`}
                 document={file.document}
                 onSelectionChange={setAiSelection}
                 zoom={zoom}

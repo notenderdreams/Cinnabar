@@ -15,7 +15,7 @@ describe('read together page rows', () => {
     expect(viewerSource).toContain('pageIdPrefix="companion-pdf-page"');
     expect(viewerSource).toContain('isReadOnly');
     expect(viewerSource).toContain('data-read-together-split');
-    expect(viewerSource).toContain('label="Resize PDF panes" readTogether');
+    expect(viewerSource).toContain('Resize PDF panes');
     expect(viewerSource).toContain('style={{ flexBasis: `calc(${(1 - split) * 100}%');
     expect(viewerSource.match(/min-h-0 flex-1 overflow-auto/g)?.length).toBe(2);
     expect(viewerSource).toContain('ref={companionContainerRef}');

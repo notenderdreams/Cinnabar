@@ -130,17 +130,7 @@ export function App() {
     id: number;
   } | null>(null);
   const [notebookFitRequest, setNotebookFitRequest] = useState(0);
-  const [notebookPaneActive, setNotebookPaneActive] = useState(false);
   const [notebookZoom, setNotebookZoom] = useState(0.8);
-  const panelNotebookActive = isNotebookPanelOpen && notebookPaneActive && panelNotebook !== null;
-  const activateNotebookPane = useCallback(() => setNotebookPaneActive(true), []);
-  const [hasOpenedNotebookPanel, setHasOpenedNotebookPanel] = useState(false);
-  const closeNotebookPanel = useCallback(() => {
-    setIsNotebookPanelOpen(false);
-    document
-      .querySelector<HTMLButtonElement>('button[aria-controls="reader-notebooks-panel"]')
-      ?.focus();
-  }, []);
   const [notePaneActive, setNotePaneActive] = useState(false);
   const notesActive = isNoteMode && notePaneActive;
   const [noteZoom, setNoteZoom] = useState(0.8);
@@ -267,12 +257,28 @@ export function App() {
   } = useCompanionPDF({
     primaryFileName: docInfo?.fileName,
     onOpenCompanion: () => {
+      setIsNotebookPanelOpen(false);
       setIsNoteMode(false);
       setViewMode('continuous');
       saveViewMode('continuous');
     },
     showToast,
   });
+
+  const notebookReading = isNotebookPanelOpen && !isZenMode;
+  const panelNotebookActive =
+    notebookReading && activeReaderPane === 'companion' && panelNotebook !== null;
+  const activateNotebookPane = useCallback(
+    () => setActiveReaderPane('companion'),
+    [setActiveReaderPane],
+  );
+  const closeNotebookPanel = useCallback(() => {
+    setIsNotebookPanelOpen(false);
+    setActiveReaderPane('primary');
+    document
+      .querySelector<HTMLButtonElement>('button[aria-controls="reader-notebooks-panel"]')
+      ?.focus();
+  }, [setActiveReaderPane]);
 
   useEffect(() => closeCompanionPdf, [closeCompanionPdf]);
 
@@ -426,8 +432,9 @@ export function App() {
   // Handle View Mode persistence
   const handleChangeViewMode = (mode: ViewMode) => {
     setIsNoteMode(false);
-    if (companionPdfDoc && mode !== 'continuous') {
+    if (mode !== 'continuous') {
       closeCompanionPdf();
+      setIsNotebookPanelOpen(false);
     }
     setViewMode(mode);
     saveViewMode(mode);
@@ -1084,6 +1091,13 @@ export function App() {
       else setZoom(1.15);
     },
     onNextPage: () => {
+      if (panelNotebookActive) {
+        setNotebookPageRequest((value) => ({
+          page: Math.min(panelNotebook.pages, panelNotebook.page + 1),
+          id: (value?.id ?? 0) + 1,
+        }));
+        return;
+      }
       if (notesActive) {
         navigateNotePage(notebook.page + 1);
         return;
@@ -1096,6 +1110,13 @@ export function App() {
       handleNavigatePage(viewMode === 'spread' ? spreadStart + 2 : currentPage + 1);
     },
     onPrevPage: () => {
+      if (panelNotebookActive) {
+        setNotebookPageRequest((value) => ({
+          page: Math.max(1, panelNotebook.page - 1),
+          id: (value?.id ?? 0) + 1,
+        }));
+        return;
+      }
       if (notesActive) {
         navigateNotePage(notebook.page - 1);
         return;
@@ -1478,14 +1499,19 @@ export function App() {
                 ? setNotebookZoom
                 : notesActive
                   ? setNoteZoom
-                  : activeReaderPane === 'companion'
+                  : companionPdfDoc && activeReaderPane === 'companion'
                     ? setCompanionZoom
                     : setZoom
             }
             isNotebookPanelOpen={isNotebookPanelOpen}
             onToggleNotebooks={() => {
-              setHasOpenedNotebookPanel(true);
-              setIsNotebookPanelOpen((value) => !value);
+              if (isNotebookPanelOpen) closeNotebookPanel();
+              else {
+                closeCompanionPdf();
+                setIsNotebookPanelOpen(true);
+                setViewMode('continuous');
+                saveViewMode('continuous');
+              }
               setIsNoteMode(false);
               setNotePaneActive(false);
               setIsAiPanelOpen(false);
@@ -1595,16 +1621,29 @@ export function App() {
                   className={isNoteMode ? 'note-source-pane' : 'contents'}
                   onPointerDownCapture={() => {
                     setNotePaneActive(false);
-                    setNotebookPaneActive(false);
                   }}
                   onFocusCapture={() => {
                     setNotePaneActive(false);
-                    setNotebookPaneActive(false);
                   }}
                 >
                   <PDFViewer
-                    key={companionPdfDoc ? 'read-together' : 'single-document'}
                     pdfDoc={pdfDoc}
+                    companionContent={
+                      notebookReading ? (
+                        <React.Suspense fallback={null}>
+                          <NotebookPanel
+                            onAiNotebookChange={setIndependentAiNotebook}
+                            onOpenPdfReference={openPdfInReader}
+                            zoom={notebookZoom}
+                            onZoomChange={setNotebookZoom}
+                            onActivate={activateNotebookPane}
+                            onDocumentChange={setPanelNotebook}
+                            pageRequest={notebookPageRequest}
+                            fitRequest={notebookFitRequest}
+                          />
+                        </React.Suspense>
+                      ) : null
+                    }
                     companionPdfDoc={companionPdfDoc}
                     primaryFileName={docInfo?.fileName || 'Primary PDF'}
                     companionFileName={companionFileName}
@@ -1762,22 +1801,6 @@ export function App() {
                   />
                 )}
               </div>
-
-              {hasOpenedNotebookPanel && (
-                <React.Suspense fallback={null}>
-                  <NotebookPanel
-                    onAiNotebookChange={setIndependentAiNotebook}
-                    onOpenPdfReference={openPdfInReader}
-                    zoom={notebookZoom}
-                    onZoomChange={setNotebookZoom}
-                    onActivate={activateNotebookPane}
-                    onDocumentChange={setPanelNotebook}
-                    pageRequest={notebookPageRequest}
-                    fitRequest={notebookFitRequest}
-                    isOpen={isNotebookPanelOpen && !isZenMode}
-                  />
-                </React.Suspense>
-              )}
             </div>
 
             {!isZenMode && !isNotebookPanelOpen && (

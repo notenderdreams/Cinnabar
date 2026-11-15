@@ -79,3 +79,36 @@ test('rejects incomplete columns and malformed source references', () => {
   };
   expect(() => serializeNotebook(file)).toThrow('Invalid notebook reference');
 });
+
+test('resizable splits preserve arbitrary pane counts and widths through save and undo', () => {
+  const file = createNotebook();
+  const split = {
+    type: 'split',
+    attrs: { widths: [0.1, 0.2, 0.1, 0.2, 0.1, 0.1, 0.2] },
+    content: Array.from({ length: 7 }, (_, i) => ({
+      type: 'column',
+      content: [paragraph(`Pane ${i + 1}`)],
+    })),
+  };
+  const next = editNotebook(openNotebookSession(file), {
+    document: { ...file.document, content: { type: 'doc', content: [split] } },
+  });
+  const restored = parseNotebookFile(serializeNotebook(next.present));
+  expect(restored.document.content.content?.[0].content).toHaveLength(7);
+  expect(restored.document.content.content?.[0].attrs?.widths).toEqual(split.attrs.widths);
+  expect(undoNotebook(next).present.document).toEqual(file.document);
+  for (const widths of [[0.5], [-1, 2], [NaN, 0.5]]) {
+    const invalid = createNotebook();
+    invalid.document.content.content = [
+      {
+        type: 'split',
+        attrs: { widths },
+        content: [
+          { type: 'column', content: [paragraph('Left')] },
+          { type: 'column', content: [paragraph('Right')] },
+        ],
+      },
+    ];
+    expect(() => serializeNotebook(invalid)).toThrow('Invalid split pane widths');
+  }
+});

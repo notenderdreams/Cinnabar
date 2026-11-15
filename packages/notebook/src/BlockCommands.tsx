@@ -4,6 +4,7 @@ import type { Editor, JSONContent } from '@tiptap/core';
 import { Plugin, PluginKey } from '@tiptap/pm/state';
 import { BookOpen, FileText, Scissors } from 'lucide-react';
 import { blockCommands } from './blockCommandItems';
+import { slashTrigger } from './slashTrigger';
 
 export interface BlockChoice {
   id: string;
@@ -143,7 +144,7 @@ export function BlockCommands({
       if (editor.isDestroyed) return;
       const { $from, empty } = editor.state.selection;
       const before = $from.parent.textBetween(0, $from.parentOffset, '\n', '\ufffc');
-      const match = /^\/([^/\n]*)$/.exec(before);
+      const match = slashTrigger(before, $from.pos);
       if (!editor.isEditable || !empty || $from.parent.type.name !== 'paragraph' || !match) {
         setTrigger(null);
         setPicker(null);
@@ -151,12 +152,12 @@ export function BlockCommands({
         dismissed.current = null;
         return;
       }
-      const from = $from.start();
+      const from = match.from;
       if (dismissed.current === from) return;
       setTrigger({
         from,
         to: $from.pos,
-        query: match[1],
+        query: match.query,
       });
     };
     const plugin = new Plugin({
@@ -170,7 +171,9 @@ export function BlockCommands({
     window.addEventListener('scroll', sync, true);
     const outside = (event: PointerEvent) => {
       if (menu.current && !menu.current.contains(event.target as globalThis.Node)) {
-        dismissed.current = editor.state.selection.$from.start();
+        const { $from } = editor.state.selection;
+        const before = $from.parent.textBetween(0, $from.parentOffset, '\n', '\ufffc');
+        dismissed.current = slashTrigger(before, $from.pos)?.from ?? $from.start();
         generation.current++;
         setTrigger(null);
         setPicker(null);

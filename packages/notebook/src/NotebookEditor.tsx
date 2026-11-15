@@ -267,10 +267,11 @@ export function NotebookEditor(props: Props) {
         break;
       case 'columns2':
       case 'columns3':
+      case 'split':
         chain
           .insertContent({
-            type: 'columns',
-            content: Array.from({ length: type === 'columns2' ? 2 : 3 }, () => ({
+            type: type === 'split' ? 'split' : 'columns',
+            content: Array.from({ length: type === 'columns3' ? 3 : 2 }, () => ({
               type: 'column',
               content: [{ type: 'paragraph' }],
             })),

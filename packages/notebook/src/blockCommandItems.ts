@@ -38,6 +38,12 @@ export const blockCommands: { type: string; label: string; keywords: string; ico
     { type: 'toggle', label: 'Toggle', keywords: 'collapse details section', icon: ChevronRight },
     { type: 'columns2', label: '2 columns', keywords: 'columns side by side', icon: Columns2 },
     { type: 'columns3', label: '3 columns', keywords: 'columns side by side', icon: Columns3 },
+    {
+      type: 'split',
+      label: 'Vertical split',
+      keywords: 'resize divider panes side by side',
+      icon: Columns2,
+    },
     { type: 'codeBlock', label: 'Code', keywords: 'codeblock', icon: Code },
     { type: 'blockMath', label: 'Formula', keywords: 'math equation latex', icon: Sigma },
     { type: 'image', label: 'Image', keywords: 'picture photo', icon: Image },

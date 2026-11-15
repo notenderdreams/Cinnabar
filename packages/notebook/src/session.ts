@@ -55,6 +55,19 @@ export function validateDocument(value: NotebookDocument): void {
   node.check();
   if (node.type.name !== 'doc') throw new Error('A notebook must contain a document.');
   node.descendants((child) => {
+    if (child.type.name === 'split') {
+      const widths: unknown = child.attrs.widths;
+      if (
+        !Array.isArray(widths) ||
+        (widths.length !== 0 &&
+          (widths.length !== child.childCount ||
+            !widths.every(
+              (width: unknown) =>
+                typeof width === 'number' && Number.isFinite(width) && width > 0 && width <= 1,
+            )))
+      )
+        throw new Error('Invalid split pane widths.');
+    }
     if (
       child.type.name === 'reference' &&
       (typeof child.attrs.kind !== 'string' ||

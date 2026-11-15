@@ -33,6 +33,9 @@ src/lib/bindings.ts
 # local graphify output
 graphify-out/
 
+# local architecture notes and implementation plans
+.dead-brain/
+
 # IntelliJ based IDEs
 .idea
 

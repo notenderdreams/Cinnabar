@@ -2952,6 +2952,81 @@
   gap: 20px;
   margin-bottom: var(--notebook-spacing, 10px);
 }
+.notebook-block-document [data-notebook-split] {
+  position: relative;
+  margin-bottom: var(--notebook-spacing, 10px);
+}
+.notebook-block-document [data-notebook-split-content] {
+  display: grid;
+  align-items: stretch;
+  min-height: 56px;
+}
+.notebook-block-document [data-notebook-split-content] > [data-notebook-column] {
+  min-width: 0;
+  padding: 0 10px;
+}
+.notebook-block-document [data-notebook-split-content] > [data-notebook-column]:first-child {
+  padding-left: 0;
+}
+.notebook-block-document [data-notebook-split-content] > [data-notebook-column]:last-child {
+  padding-right: 0;
+}
+.notebook-block-document
+  [data-notebook-split-content]
+  > [data-notebook-column]
+  + [data-notebook-column] {
+  border-left: 1px solid color-mix(in srgb, currentColor 28%, transparent);
+}
+.notebook-split-controls {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+/* Existing node views can retain the removed control across a live update. */
+.notebook-split-controls > .notebook-split-add {
+  display: none;
+}
+.notebook-split-handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 18px;
+  transform: translateX(-50%);
+  cursor: col-resize;
+  touch-action: none;
+  pointer-events: auto;
+}
+/* A quiet grip marks each divider so the resize affordance is discoverable. */
+.notebook-split-handle::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 3px;
+  height: 28px;
+  transform: translate(-50%, -50%);
+  border-radius: 2px;
+  background: color-mix(in srgb, currentColor 22%, transparent);
+  transition: background-color 100ms ease;
+}
+.notebook-split-handle:hover::after,
+.notebook-split-handle:focus-visible::after,
+[data-notebook-split][data-resizing] > .notebook-split-controls > .notebook-split-handle::after {
+  background: var(--primary);
+}
+.notebook-split-handle:hover,
+.notebook-split-handle:focus-visible,
+[data-notebook-split][data-resizing] > .notebook-split-controls > .notebook-split-handle {
+  background: color-mix(in srgb, var(--primary) 14%, transparent);
+}
+.notebook-split-handle:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 1px;
+}
+[data-notebook-split][data-resizing] > [data-notebook-split-content] {
+  user-select: none;
+  pointer-events: none;
+}
 .notebook-block-document [data-notebook-column] {
   flex: 1;
   min-width: 0;
@@ -3321,8 +3396,9 @@
 .reader-notebooks-panel {
   display: flex;
   flex-direction: column;
-  flex: 0 0 min(52%, 780px);
-  min-width: min(320px, 45%);
+  flex: 1;
+  min-width: 0;
+  width: 100%;
   min-height: 0;
   overflow: hidden;
   background: var(--workspace);
@@ -3349,9 +3425,6 @@
 .reader-split-divider:focus-visible {
   outline: 2px solid var(--primary);
   outline-offset: -2px;
-}
-.reader-notebooks-panel.is-closed {
-  display: none;
 }
 .reader-notebooks-panel > .notebook-library {
   width: min(100%, 480px);

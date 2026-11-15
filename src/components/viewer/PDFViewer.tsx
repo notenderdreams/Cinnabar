@@ -47,6 +47,7 @@ const getFocalPageInContainer = (container: HTMLElement, fallbackPage: number) =
 interface PDFViewerProps {
   pdfDoc: PDFDocumentProxy | null;
   companionPdfDoc?: PDFDocumentProxy | null;
+  companionContent?: React.ReactNode;
   primaryFileName?: string;
   companionFileName?: string | null;
   companionCurrentPage?: number;
@@ -118,6 +119,7 @@ interface PDFViewerProps {
 export const PDFViewer: React.FC<PDFViewerProps> = ({
   pdfDoc,
   companionPdfDoc = null,
+  companionContent,
   primaryFileName = 'Primary PDF',
   companionFileName = null,
   companionCurrentPage = 1,
@@ -177,6 +179,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
   onSelectTool,
 }) => {
   const viewerContainerRef = useRef<HTMLDivElement | null>(null);
+  const hasReadingSplit = Boolean(companionPdfDoc || companionContent);
   const companionContainerRef = useRef<HTMLDivElement | null>(null);
   const [split, setSplit] = useState(0.5);
   const [isViewerDraggingFile, setIsViewerDraggingFile] = useState(false);
@@ -201,6 +204,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
   const lastNavTimestampRef = useRef<number>(0);
   const prevDocRef = useRef<PDFDocumentProxy | null>(null);
   const prevViewModeRef = useRef<ViewMode>(viewMode);
+  const prevSplitRef = useRef(hasReadingSplit);
   const prevPropCurrentPageRef = useRef<number>(currentPage);
   const lastFitPageRequestRef = useRef(0);
   const pendingFitScrollPageRef = useRef<number | null>(null);
@@ -469,7 +473,9 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
   // Initial horizontal centering & initial page restore on document load or viewMode switch
   useEffect(() => {
     const isNewDoc = pdfDoc !== prevDocRef.current;
-    const isNewMode = viewMode !== prevViewModeRef.current;
+    const isNewMode =
+      viewMode !== prevViewModeRef.current || hasReadingSplit !== prevSplitRef.current;
+    prevSplitRef.current = hasReadingSplit;
     prevDocRef.current = pdfDoc;
     prevViewModeRef.current = viewMode;
 
@@ -477,6 +483,8 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
       shouldRestoreViewerPosition(Boolean(pdfDoc), isNewDoc, isNewMode) &&
       viewerContainerRef.current
     ) {
+      fitCenteringCleanupRef.current?.();
+      fitCenteringCleanupRef.current = null;
       const container = viewerContainerRef.current;
       const centerAndRestore = () => {
         const centerScrollLeft = (container.scrollWidth - container.clientWidth) / 2;
@@ -496,7 +504,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
       const timer = setTimeout(centerAndRestore, 120);
       return () => clearTimeout(timer);
     }
-  }, [pdfDoc, viewMode, scrollToPage]);
+  }, [pdfDoc, viewMode, scrollToPage, hasReadingSplit]);
 
   // Prevent unintended page shifts and false scroll events during window resize or fullscreen transition
   useEffect(() => {
@@ -642,7 +650,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
       resize.disconnect();
       marks.forEach((mark) => mark.remove());
     };
-  }, [searchMatch, pdfDoc, viewMode, zoom, scrollToPage]);
+  }, [searchMatch, pdfDoc, viewMode, zoom, scrollToPage, hasReadingSplit]);
 
   // Fit the active page inside the available viewport, then bring it into view.
   useEffect(() => {
@@ -692,7 +700,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
     return () => {
       cancelled = true;
     };
-  }, [centerFittedPage, fitPageRequest, onChangeZoom, pdfDoc, zoom]);
+  }, [centerFittedPage, fitPageRequest, onChangeZoom, pdfDoc, zoom, viewMode, hasReadingSplit]);
 
   // A fit action must scroll after the zoom effect has finished preserving the focal point.
   useEffect(() => {
@@ -819,7 +827,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
       container.removeEventListener('scroll', handleScroll);
       if (rafId !== null) cancelAnimationFrame(rafId);
     };
-  }, [viewMode, pdfDoc, numPages, onPageChange]);
+  }, [viewMode, pdfDoc, numPages, onPageChange, hasReadingSplit]);
 
   // The companion pane owns independent page tracking and programmatic navigation.
   useEffect(() => {
@@ -934,7 +942,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
     zoom,
     onChangeZoom,
     pdfDoc,
-    `${viewMode}-${Boolean(companionPdfDoc)}`,
+    `${viewMode}-${hasReadingSplit}`,
     '[data-pdf-page-number]',
     () => onActivePaneChange?.('primary'),
   );
@@ -965,7 +973,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
     );
     return () =>
       containers.forEach((element) => element.removeEventListener('wheel', interruptFit));
-  }, [pdfDoc, companionPdfDoc, viewMode]);
+  }, [pdfDoc, companionPdfDoc, viewMode, hasReadingSplit]);
 
   // Mouse Wheel: Pinch-to-zoom and intuitive single-page turn on boundary scroll
   useEffect(() => {
@@ -1007,6 +1015,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
     numPages,
     onPageChange,
     onActivePaneChange,
+    hasReadingSplit,
   ]);
 
   const getTargetContainerForPoint = useCallback(
@@ -1398,27 +1407,41 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
           ? 'cursor-text'
           : 'cursor-default';
 
+  const isCompanionContentTarget = (target: EventTarget) =>
+    Boolean(
+      companionContent &&
+      target instanceof Element &&
+      target.closest('[data-reader-pane="companion"]'),
+    );
+
   return (
     <main
-      ref={companionPdfDoc ? undefined : viewerContainerRef}
+      ref={hasReadingSplit ? undefined : viewerContainerRef}
       onMouseDownCapture={
         isSpacePressed
           ? (event) => {
+              if (isCompanionContentTarget(event.target)) return;
               handleSpaceOverlayMouseDown(event);
               event.stopPropagation();
             }
           : undefined
       }
       data-hand-mode={isSpacePressed || undefined}
-      onMouseDown={companionPdfDoc ? undefined : handleStartPan}
-      onPointerDown={companionPdfDoc ? undefined : handleViewerPointerDown}
-      onPointerMove={companionPdfDoc ? undefined : handleViewerPointerMove}
-      onPointerLeave={companionPdfDoc ? undefined : handleViewerPointerLeave}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
+      onMouseDown={hasReadingSplit ? undefined : handleStartPan}
+      onPointerDown={hasReadingSplit ? undefined : handleViewerPointerDown}
+      onPointerMove={hasReadingSplit ? undefined : handleViewerPointerMove}
+      onPointerLeave={hasReadingSplit ? undefined : handleViewerPointerLeave}
+      onDragOver={(event) => {
+        if (!isCompanionContentTarget(event.target)) handleDragOver(event);
+      }}
+      onDragLeave={(event) => {
+        if (!isCompanionContentTarget(event.target)) handleDragLeave(event);
+      }}
+      onDrop={(event) => {
+        if (!isCompanionContentTarget(event.target)) void handleDrop(event);
+      }}
       className={`pdf-viewer-viewport relative flex-1 bg-[#1c1c22] select-none ${
-        companionPdfDoc ? 'overflow-hidden' : 'overflow-x-auto overflow-y-auto'
+        hasReadingSplit ? 'overflow-hidden' : 'overflow-x-auto overflow-y-auto'
       } ${cursorStyle}`}
     >
       {/* Visual Eraser Brush Circle Indicator - Single global indicator across all pages */}
@@ -1485,13 +1508,13 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
       {/* 2D Canvas Workspace Wrapper with expansive horizontal and vertical panning canvas */}
       <div
         className={
-          companionPdfDoc
+          hasReadingSplit
             ? 'h-full w-full'
             : 'canvas-background-layer box-border flex min-h-full w-max min-w-full flex-col items-center justify-start px-[50vw] py-6 sm:px-[60vw]'
         }
       >
         {/* READ TOGETHER: TWO DOCUMENTS IN ONE CONTINUOUS, PAGE-ALIGNED STREAM */}
-        {viewMode === 'continuous' && companionPdfDoc && (
+        {viewMode === 'continuous' && hasReadingSplit && (
           <div className="flex h-full min-h-0 w-full" data-read-together-split>
             <section
               onPointerDownCapture={() => onActivePaneChange?.('primary')}
@@ -1499,18 +1522,21 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
               className={`flex h-full min-w-0 flex-1 flex-col overflow-hidden bg-[var(--workspace)] transition-shadow duration-150 ${
                 activePane === 'primary' ? 'shadow-[inset_0_0_0_1px_var(--primary)]' : ''
               }`}
+              data-reader-pane="primary"
               aria-label={`${primaryFileName} pages`}
               data-active-pane={activePane === 'primary' || undefined}
             >
-              <div
-                className={`z-20 flex shrink-0 items-center justify-center gap-2 border-b px-3 py-2 text-center text-[11px] font-medium backdrop-blur-xl ${
-                  activePane === 'primary'
-                    ? 'border-blue-400/60 bg-blue-500/20 font-semibold text-white shadow-sm'
-                    : 'border-[var(--border)] bg-[var(--popover)]/90 text-[var(--foreground)]'
-                }`}
-              >
-                <span className="truncate">{primaryFileName}</span>
-              </div>
+              {!companionContent && (
+                <div
+                  className={`z-20 flex shrink-0 items-center justify-center gap-2 border-b px-3 py-2 text-center text-[11px] font-medium backdrop-blur-xl ${
+                    activePane === 'primary'
+                      ? 'border-blue-400/60 bg-blue-500/20 font-semibold text-white shadow-sm'
+                      : 'border-[var(--border)] bg-[var(--popover)]/90 text-[var(--foreground)]'
+                  }`}
+                >
+                  <span className="truncate">{primaryFileName}</span>
+                </div>
+              )}
               <div
                 ref={viewerContainerRef}
                 onMouseDown={handleStartPan}
@@ -1570,7 +1596,13 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
               </div>
             </section>
 
-            <SplitDivider value={split} onChange={setSplit} label="Resize PDF panes" readTogether />
+            <SplitDivider
+              value={split}
+              onChange={setSplit}
+              label={companionContent ? 'Resize PDF and notebook panes' : 'Resize PDF panes'}
+              minRight={companionContent ? 320 : 240}
+              readTogether
+            />
 
             <section
               onPointerDownCapture={() => onActivePaneChange?.('companion')}
@@ -1579,74 +1611,85 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
               className={`flex h-full min-w-0 flex-none flex-col overflow-hidden bg-[var(--workspace)] transition-shadow duration-150 ${
                 activePane === 'companion' ? 'shadow-[inset_0_0_0_1px_var(--primary)]' : ''
               }`}
-              aria-label={`${companionFileName || 'Companion PDF'} pages`}
+              data-reader-pane="companion"
+              aria-label={
+                companionContent
+                  ? 'Notebook reading pane'
+                  : `${companionFileName || 'Companion PDF'} pages`
+              }
               data-active-pane={activePane === 'companion' || undefined}
             >
-              <div
-                className={`z-20 flex shrink-0 items-center justify-center gap-2 border-b px-3 py-2 text-center text-[11px] font-medium backdrop-blur-xl ${
-                  activePane === 'companion'
-                    ? 'border-blue-400/60 bg-blue-500/20 font-semibold text-white shadow-sm'
-                    : 'border-[var(--border)] bg-[var(--popover)]/90 text-[var(--foreground)]'
-                }`}
-              >
-                <span className="truncate">{companionFileName || 'Companion PDF'}</span>
-              </div>
-              <div
-                ref={companionContainerRef}
-                onMouseDown={handleStartCompanionPan}
-                className="min-h-0 flex-1 overflow-auto"
-              >
-                <div className="canvas-workspace-area box-border flex min-h-full w-max min-w-full flex-col items-center justify-start gap-3 px-[40vw] py-6">
-                  {getReadTogetherPageRows(companionPdfDoc.numPages, 0).map((pageNum) => (
-                    <PDFPage
-                      key={pageNum}
-                      pdfDoc={companionPdfDoc}
-                      pageNumber={pageNum}
-                      scale={companionZoom}
-                      currentTheme={currentTheme}
-                      filterClass={filterClass}
-                      customFilterStyle={customFilterStyle}
-                      activeTool="select"
-                      selectedColor={selectedColor}
-                      highlightColors={highlightColors}
-                      strokeWidth={strokeWidth}
-                      opacity={opacity}
-                      highlightStyle={highlightStyle}
-                      lineHighlightStyle={lineHighlightStyle}
-                      annotations={EMPTY_ANNOTATIONS}
-                      selectedAnnotationId={null}
-                      onSelectAnnotation={() => {}}
-                      onAddAnnotation={() => {}}
-                      onUpdateAnnotation={() => {}}
-                      onChangeHighlightStyle={() => {}}
-                      onChangeLineHighlightStyle={() => {}}
-                      onDeleteAnnotation={() => {}}
-                      onImageDrop={() => {}}
-                      aiJobs={{}}
-                      onAiBoxCreated={() => {}}
-                      onSubmitAi={() => {}}
-                      onCancelAi={() => {}}
-                      onCloseAi={() => {}}
-                      onAddPageBelow={() => {}}
-                      onDeletePage={() => {}}
-                      onCopyPageText={() => {}}
-                      onCopyPageImage={() => {}}
-                      onAskAiAboutPage={() => {}}
-                      onSelectTool={onSelectTool}
-                      showToast={showToast}
-                      isFlush
-                      isReadOnly
-                      pageIdPrefix="companion-pdf-page"
-                    />
-                  ))}
-                </div>
-              </div>
+              {companionContent ??
+                (companionPdfDoc && (
+                  <>
+                    {' '}
+                    <div
+                      className={`z-20 flex shrink-0 items-center justify-center gap-2 border-b px-3 py-2 text-center text-[11px] font-medium backdrop-blur-xl ${
+                        activePane === 'companion'
+                          ? 'border-blue-400/60 bg-blue-500/20 font-semibold text-white shadow-sm'
+                          : 'border-[var(--border)] bg-[var(--popover)]/90 text-[var(--foreground)]'
+                      }`}
+                    >
+                      <span className="truncate">{companionFileName || 'Companion PDF'}</span>
+                    </div>
+                    <div
+                      ref={companionContainerRef}
+                      onMouseDown={handleStartCompanionPan}
+                      className="min-h-0 flex-1 overflow-auto"
+                    >
+                      <div className="canvas-workspace-area box-border flex min-h-full w-max min-w-full flex-col items-center justify-start gap-3 px-[40vw] py-6">
+                        {getReadTogetherPageRows(companionPdfDoc.numPages, 0).map((pageNum) => (
+                          <PDFPage
+                            key={pageNum}
+                            pdfDoc={companionPdfDoc}
+                            pageNumber={pageNum}
+                            scale={companionZoom}
+                            currentTheme={currentTheme}
+                            filterClass={filterClass}
+                            customFilterStyle={customFilterStyle}
+                            activeTool="select"
+                            selectedColor={selectedColor}
+                            highlightColors={highlightColors}
+                            strokeWidth={strokeWidth}
+                            opacity={opacity}
+                            highlightStyle={highlightStyle}
+                            lineHighlightStyle={lineHighlightStyle}
+                            annotations={EMPTY_ANNOTATIONS}
+                            selectedAnnotationId={null}
+                            onSelectAnnotation={() => {}}
+                            onAddAnnotation={() => {}}
+                            onUpdateAnnotation={() => {}}
+                            onChangeHighlightStyle={() => {}}
+                            onChangeLineHighlightStyle={() => {}}
+                            onDeleteAnnotation={() => {}}
+                            onImageDrop={() => {}}
+                            aiJobs={{}}
+                            onAiBoxCreated={() => {}}
+                            onSubmitAi={() => {}}
+                            onCancelAi={() => {}}
+                            onCloseAi={() => {}}
+                            onAddPageBelow={() => {}}
+                            onDeletePage={() => {}}
+                            onCopyPageText={() => {}}
+                            onCopyPageImage={() => {}}
+                            onAskAiAboutPage={() => {}}
+                            onSelectTool={onSelectTool}
+                            showToast={showToast}
+                            isFlush
+                            isReadOnly
+                            pageIdPrefix="companion-pdf-page"
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                ))}
             </section>
           </div>
         )}
 
         {/* CONTINUOUS VIEW MODE */}
-        {viewMode === 'continuous' && !companionPdfDoc && (
+        {viewMode === 'continuous' && !hasReadingSplit && (
           <div className="canvas-workspace-area flex flex-col items-center gap-3 py-2 pb-6">
             {Array.from({ length: numPages }, (_, i) => i + 1).map((pageNum) => (
               <PDFPage

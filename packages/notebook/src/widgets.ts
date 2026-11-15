@@ -1,4 +1,5 @@
 import { Node, mergeAttributes } from '@tiptap/core';
+import { SplitBlock } from './SplitBlock';
 
 const container = (name: string, tag: string, content: string) =>
   Node.create({
@@ -168,6 +169,7 @@ const Contents = Node.create({
 export const notebookWidgets = [
   Callout,
   Columns,
+  SplitBlock,
   Column,
   Toggle,
   ToggleTitle,

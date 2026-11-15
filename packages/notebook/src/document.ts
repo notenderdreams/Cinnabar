@@ -50,6 +50,7 @@ export const BLOCK_TYPES = [
   'sheetBreak',
   'callout',
   'columns',
+  'split',
   'column',
   'toggle',
   'toggleTitle',

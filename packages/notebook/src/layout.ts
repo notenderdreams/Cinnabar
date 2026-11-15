@@ -255,7 +255,7 @@ export function measureNotebook(view: EditorView): { breaks: Break[]; layout: No
     const dom = view.nodeDOM(pos);
     if (!(dom instanceof HTMLElement)) return;
     if (!dom.getClientRects().length) return;
-    if (node.type.name === 'columns') {
+    if (node.type.name === 'columns' || node.type.name === 'split') {
       const cells: NonNullable<Unit['cells']> = [];
       node.forEach((column, offset) => {
         const columnPos = pos + 1 + offset;
