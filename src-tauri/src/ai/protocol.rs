@@ -1,3 +1,4 @@
+use super::notebook_protocol::{validate_edits, NotebookEdit};
 use anyhow::{Context, Result};
 use std::path::Path;
 
@@ -10,6 +11,8 @@ struct NotebookReply {
     notebook_text: Option<String>,
     #[serde(default)]
     notebook_image: Option<NotebookImage>,
+    #[serde(default)]
+    notebook_edits: Option<Vec<NotebookEdit>>,
 }
 
 #[derive(serde::Deserialize, serde::Serialize)]
@@ -27,14 +30,21 @@ enum ImagePlacement {
     End,
 }
 
-pub(super) fn antigravity_arguments(prompt: &str) -> Vec<String> {
-    vec![
+pub(super) fn antigravity_arguments(prompt: &str, schema: Option<&Path>) -> Vec<String> {
+    let mut args = vec![
         "--output-format".into(),
         "json".into(),
         "--disable-slash-commands".into(),
         "--sandbox".into(),
-        format!("-p={}", prompt),
-    ]
+    ];
+    if let Some(schema) = schema {
+        args.extend([
+            "--json-schema".into(),
+            schema.to_string_lossy().into_owned(),
+        ]);
+    }
+    args.push(format!("-p={}", prompt));
+    args
 }
 
 pub(super) fn codex_arguments(
@@ -76,7 +86,13 @@ pub(super) fn parse_ai_output(contents: &str) -> Result<String> {
     let value: serde_json::Value =
         serde_json::from_str(trimmed).context("AI CLI response was not valid JSON")?;
 
-    if value.get("message").is_some() && value.get("notebookText").is_some() {
+    // Providers may omit unused optional actions instead of returning explicit nulls.
+    // Deserialize and validate the notebook action before normalizing those fields.
+    if value.get("message").is_some()
+        && ["notebookText", "notebookImage", "notebookEdits"]
+            .iter()
+            .any(|field| value.get(field).is_some())
+    {
         let reply: NotebookReply =
             serde_json::from_value(value).context("Invalid notebook response")?;
         anyhow::ensure!(!reply.message.trim().is_empty(), "Empty notebook reply");
@@ -87,9 +103,20 @@ pub(super) fn parse_ai_output(contents: &str) -> Result<String> {
             );
         }
         anyhow::ensure!(
-            reply.notebook_text.is_none() || reply.notebook_image.is_none(),
+            [
+                reply.notebook_text.is_some(),
+                reply.notebook_image.is_some(),
+                reply.notebook_edits.is_some()
+            ]
+            .into_iter()
+            .filter(|set| *set)
+            .count()
+                <= 1,
             "Only one notebook action is allowed per response"
         );
+        if let Some(edits) = &reply.notebook_edits {
+            validate_edits(edits)?;
+        }
         if let Some(image) = &reply.notebook_image {
             anyhow::ensure!(
                 !image.attachment_id.trim().is_empty() && image.attachment_id.len() <= 200,

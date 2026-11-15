@@ -1,6 +1,7 @@
 //! Local AI provider discovery and cancellable explanation execution.
 
 mod models;
+mod notebook_protocol;
 mod protocol;
 mod providers;
 mod runner;

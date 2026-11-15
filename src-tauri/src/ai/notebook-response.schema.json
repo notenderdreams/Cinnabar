@@ -1,19 +1,132 @@
 {
   "type": "object",
   "properties": {
-    "message": { "type": "string" },
-    "notebookText": { "type": ["string", "null"] },
+    "message": {
+      "type": "string"
+    },
+    "notebookText": {
+      "type": ["string", "null"]
+    },
     "notebookImage": {
       "type": ["object", "null"],
       "properties": {
-        "attachmentId": { "type": "string" },
-        "pageNumber": { "type": ["integer", "null"] },
-        "placement": { "type": "string", "enum": ["after_title", "end"] }
+        "attachmentId": {
+          "type": "string"
+        },
+        "pageNumber": {
+          "type": ["integer", "null"]
+        },
+        "placement": {
+          "type": "string",
+          "enum": ["after_title", "end"]
+        }
       },
       "required": ["attachmentId", "pageNumber", "placement"],
       "additionalProperties": false
+    },
+    "notebookEdits": {
+      "type": ["array", "null"],
+      "items": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "enum": [
+              "append",
+              "prepend",
+              "insert_before",
+              "insert_after",
+              "replace",
+              "delete",
+              "move_before",
+              "move_after",
+              "format"
+            ]
+          },
+          "targetId": {
+            "type": ["string", "null"]
+          },
+          "anchorId": {
+            "type": ["string", "null"]
+          },
+          "content": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "markdown",
+                      "callout",
+                      "toggle",
+                      "columns",
+                      "contents",
+                      "pageBreak",
+                      "image",
+                      "reference"
+                    ]
+                  },
+                  "text": {
+                    "type": ["string", "null"]
+                  },
+                  "title": {
+                    "type": ["string", "null"]
+                  },
+                  "columns": {
+                    "type": ["array", "null"],
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "attachmentId": {
+                    "type": ["string", "null"]
+                  },
+                  "referenceId": {
+                    "type": ["string", "null"]
+                  }
+                },
+                "required": ["kind", "text", "title", "columns", "attachmentId", "referenceId"],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "style": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "fontSize": {
+                    "type": ["number", "null"]
+                  },
+                  "color": {
+                    "type": ["string", "null"]
+                  },
+                  "background": {
+                    "type": ["string", "null"]
+                  },
+                  "textAlign": {
+                    "type": ["string", "null"],
+                    "enum": [null, "left", "center", "right", "justify"]
+                  }
+                },
+                "required": ["fontSize", "color", "background", "textAlign"],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": ["op", "targetId", "anchorId", "content", "style"],
+        "additionalProperties": false
+      }
     }
   },
-  "required": ["message", "notebookText", "notebookImage"],
+  "required": ["message", "notebookText", "notebookImage", "notebookEdits"],
   "additionalProperties": false
 }

@@ -13,6 +13,10 @@ import { blockCommands } from './blockCommandItems';
 import type { NotebookReference } from './widgets';
 export type { BlockChoice, BlockChoiceKind } from './BlockCommands';
 export type { NotebookReference } from './widgets';
+export interface NotebookSelection {
+  blockIds: string[];
+  text: string;
+}
 import { PaperLayout, PAPER, requestNotebookReflow, type NotebookLayout } from './layout';
 import {
   identifyBlocks,
@@ -37,6 +41,7 @@ interface Props {
   onPickImage?: () => Promise<File | null>;
   loadBlockChoices?: (kind: BlockChoiceKind) => Promise<BlockChoice[]>;
   onOpenReference?: (reference: NotebookReference) => void;
+  onSelectionChange?: (selection: NotebookSelection) => void;
 }
 function selectedBlock(editor: Editor) {
   const { $from } = editor.state.selection;
@@ -70,6 +75,20 @@ export function NotebookEditor(props: Props) {
     ],
     content: props.document.content,
     editable: props.editable,
+    onSelectionUpdate: ({ editor: instance }) => {
+      const { from, to, $from } = instance.state.selection;
+      const blockIds: string[] = [];
+      instance.state.doc.forEach((node, offset) => {
+        if (offset < to && offset + node.nodeSize > from && typeof node.attrs.id === 'string')
+          blockIds.push(node.attrs.id);
+      });
+      const cursorBlockId: unknown = $from.depth ? $from.node(1).attrs.id : undefined;
+      if (!blockIds.length && typeof cursorBlockId === 'string') blockIds.push(cursorBlockId);
+      current.current.onSelectionChange?.({
+        blockIds: blockIds.slice(0, 30),
+        text: instance.state.doc.textBetween(from, to, '\n').slice(0, 4000),
+      });
+    },
     editorProps: {
       attributes: {
         class: 'notebook-block-document',

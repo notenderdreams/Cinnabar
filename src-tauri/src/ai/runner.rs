@@ -155,7 +155,13 @@ pub(crate) async fn run_ai_explanation(
         };
 
         command
-            .args(antigravity_arguments(&request.prompt))
+            .args(antigravity_arguments(
+                &request.prompt,
+                request
+                    .response_format
+                    .as_ref()
+                    .map(|_| schema_path.as_path()),
+            ))
             .current_dir(&temporary.0)
             .stdout(Stdio::from(out_file))
             .stderr(Stdio::from(diagnostics));

@@ -52,6 +52,12 @@ export function handleKeyboardShortcut(e: KeyboardEvent, options: KeyboardShortc
     }
   }
 
+  if (isCmdOrCtrl && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'j') {
+    e.preventDefault();
+    options.onToggleAiPanel?.();
+    return;
+  }
+
   // Don't intercept other shortcuts if user is typing in an input, textarea or contenteditable
   if (
     target &&
@@ -118,9 +124,6 @@ export function handleKeyboardShortcut(e: KeyboardEvent, options: KeyboardShortc
     } else if (e.shiftKey && e.key.toLowerCase() === 'j') {
       e.preventDefault();
       options.onCopyPageJpg?.();
-    } else if (!e.shiftKey && e.key.toLowerCase() === 'j') {
-      e.preventDefault();
-      options.onToggleAiPanel?.();
     } else if (e.key.toLowerCase() === 'o') {
       e.preventDefault();
       options.onOpenPdf();

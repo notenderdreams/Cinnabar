@@ -3,6 +3,7 @@ import type { NotebookTarget } from '../../lib/notebook/navigation';
 import { NotebookLibrary } from './NotebookLibrary';
 import { NotebookWorkspace } from './NotebookWorkspace';
 import { SplitDivider } from '../ui/SplitDivider';
+import type { AiNotebookBinding } from '../../lib/ai/notebookBinding';
 
 export function NotebookPanel({
   isOpen,
@@ -13,6 +14,7 @@ export function NotebookPanel({
   pageRequest,
   fitRequest,
   onOpenPdfReference,
+  onAiNotebookChange,
 }: {
   isOpen: boolean;
   zoom: number;
@@ -21,7 +23,13 @@ export function NotebookPanel({
   onDocumentChange: (document: { title: string; pages: number; page: number } | null) => void;
   pageRequest: { page: number; id: number } | null;
   fitRequest: number;
-  onOpenPdfReference: (data: Uint8Array, name: string, path: string, page: number) => Promise<boolean>;
+  onAiNotebookChange?: (binding: AiNotebookBinding | null) => void;
+  onOpenPdfReference: (
+    data: Uint8Array,
+    name: string,
+    path: string,
+    page: number,
+  ) => Promise<boolean>;
 }) {
   const [target, setTarget] = useState<NotebookTarget | null>(null);
   const [split, setSplit] = useState<number | null>(null);
@@ -51,6 +59,7 @@ export function NotebookPanel({
             key={target.kind === 'existing' ? target.id : 'new'}
             initialTarget={target}
             embedded
+            onAiNotebookChange={onAiNotebookChange}
             onOpenPdfReference={onOpenPdfReference}
             zoom={zoom}
             onZoomChange={onZoomChange}

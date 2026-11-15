@@ -6,6 +6,7 @@ import { PDFViewer } from './components/viewer/PDFViewer';
 import { NotePanel } from './components/viewer/NotePanel';
 import type { NotebookTarget } from './lib/notebook/navigation';
 import { createAiClipboardAttachment } from './lib/ai/chatClipboard';
+import type { AiNotebookBinding } from './lib/ai/notebookBinding';
 import {
   appendAiNotebookText,
   getAiNotebookContext,
@@ -104,6 +105,9 @@ export function App() {
   const [viewMode, setViewMode] = useState<ViewMode>(() => loadViewMode());
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
   const [isAiPanelOpen, setIsAiPanelOpen] = useState<boolean>(false);
+  const [independentAiNotebook, setIndependentAiNotebook] = useState<AiNotebookBinding | null>(
+    null,
+  );
   const [pendingAiAttachments, setPendingAiAttachments] = useState<AiChatAttachment[]>([]);
   const [snipTarget, setSnipTarget] = useState<'snippets' | 'ai-prompt'>('snippets');
   const [sidebarTab, setSidebarTab] = useState<SidebarTabType>('thumbnails');
@@ -1171,8 +1175,7 @@ export function App() {
       }
     },
     onToggleAiPanel: () => {
-      if (currentScreen === 'reader') {
-        setIsNotebookPanelOpen(false);
+      if (currentScreen === 'reader' || currentScreen === 'notebook') {
         setIsAiPanelOpen((prev) => !prev);
       }
     },
@@ -1384,6 +1387,9 @@ export function App() {
         <React.Suspense fallback={<div role="status">Opening notebook…</div>}>
           <NotebookWorkspace
             initialTarget={notebookTarget}
+            onAiNotebookChange={setIndependentAiNotebook}
+            aiOpen={isAiPanelOpen}
+            onCloseAi={() => setIsAiPanelOpen(false)}
             onOpenPdfReference={openPdfInReader}
             onBack={() => setCurrentScreen('dashboard')}
           />
@@ -1760,6 +1766,7 @@ export function App() {
               {hasOpenedNotebookPanel && (
                 <React.Suspense fallback={null}>
                   <NotebookPanel
+                    onAiNotebookChange={setIndependentAiNotebook}
                     onOpenPdfReference={openPdfInReader}
                     zoom={notebookZoom}
                     onZoomChange={setNotebookZoom}
@@ -1797,9 +1804,20 @@ export function App() {
               pdfDoc={pdfDoc}
               docInfo={docInfo}
               currentPage={currentPage}
-              notebook={aiNotebook ? { ...aiNotebook, currentPage: notebook.page } : undefined}
+              notebook={
+                (isNotebookPanelOpen ? independentAiNotebook?.context : undefined) ??
+                (aiNotebook ? { ...aiNotebook, currentPage: notebook.page } : undefined)
+              }
               isDocumentLoading={isLoading}
               onWriteNotebook={async (key, write, canApply) => {
+                if (
+                  isNotebookPanelOpen &&
+                  independentAiNotebook &&
+                  key === independentAiNotebook.context.docKey
+                )
+                  return independentAiNotebook.write(key, write, canApply);
+                if (write.type === 'edits')
+                  throw new Error('Open a block notebook before editing blocks.');
                 if (key !== activeNotesKey.current)
                   throw new Error('The document changed. No notes were added.');
                 const snapshot = notebookWriteState.current;

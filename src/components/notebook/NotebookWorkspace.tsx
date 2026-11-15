@@ -1,6 +1,19 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { NotebookEditor, type NotebookReference } from '@cinnabar/notebook/editor';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, useMemo } from 'react';
+import {
+  NotebookEditor,
+  type NotebookReference,
+  type NotebookSelection,
+} from '@cinnabar/notebook/editor';
 import { loadNotebookBlockChoices } from '../../lib/notebook/blockSources';
+import { AiChatPanel } from '../ai/AiChatPanel';
+import {
+  independentNotebookContext,
+  applyAiNotebookWrite,
+  type AiNotebookBinding,
+} from '../../lib/ai/notebookBinding';
+import type { AiNotebookReferenceOption } from '../../lib/ai/notebookEdits';
+import { createAiClipboardAttachment } from '../../lib/ai/chatClipboard';
+import type { AiChatAttachment } from '../../lib/types';
 import { PAPER, type NotebookLayout } from '@cinnabar/notebook/layout';
 import { serializeNotebook } from '@cinnabar/notebook';
 import { useViewportZoom } from '../../hooks/useViewportZoom';
@@ -20,6 +33,9 @@ export function NotebookWorkspace({
   pageRequest,
   fitRequest,
   onOpenPdfReference,
+  onAiNotebookChange,
+  aiOpen = false,
+  onCloseAi,
 }: {
   onBack: () => void;
   initialTarget?: NotebookTarget;
@@ -30,6 +46,9 @@ export function NotebookWorkspace({
   onDocumentChange?: (document: { title: string; pages: number; page: number } | null) => void;
   pageRequest?: { page: number; id: number } | null;
   fitRequest?: number;
+  onAiNotebookChange?: (binding: AiNotebookBinding | null) => void;
+  aiOpen?: boolean;
+  onCloseAi?: () => void;
   onOpenPdfReference?: (
     data: Uint8Array,
     name: string,
@@ -67,6 +86,45 @@ export function NotebookWorkspace({
     }
   }
   const exportedRevision = useRef('');
+  const [aiReferences, setAiReferences] = useState<AiNotebookReferenceOption[]>([]);
+  const [aiAttachments, setAiAttachments] = useState<AiChatAttachment[]>([]);
+  const [aiSelection, setAiSelection] = useState<NotebookSelection>();
+  useEffect(() => {
+    let alive = true;
+    setAiReferences([]);
+    setAiAttachments([]);
+    setAiSelection(undefined);
+    void Promise.all([loadNotebookBlockChoices('pdf'), loadNotebookBlockChoices('notebook')])
+      .then((groups) => {
+        if (!alive) return;
+        setAiReferences(
+          groups
+            .flatMap((choices, index) =>
+              choices.flatMap((choice) => {
+                const attrs = choice.content[0]?.attrs;
+                if (!attrs || typeof attrs.target !== 'string' || typeof attrs.label !== 'string')
+                  return [];
+                return [
+                  {
+                    id: `${index === 0 ? 'pdf' : 'notebook'}:${choice.id}`,
+                    kind: index === 0 ? ('pdf' as const) : ('notebook' as const),
+                    target: attrs.target,
+                    label: attrs.label,
+                    page: 1,
+                  },
+                ];
+              }),
+            )
+            .slice(0, 100),
+        );
+      })
+      .catch(() => {
+        /* Reference discovery is optional. */
+      });
+    return () => {
+      alive = false;
+    };
+  }, [file?.id]);
 
   useEffect(() => {
     const down = (event: KeyboardEvent) => {
@@ -137,6 +195,35 @@ export function NotebookWorkspace({
     }
   }
   const pageCount = Math.max(1, layout.pages.length, file?.document.minimumSheets ?? 1);
+  const aiBinding = useMemo<AiNotebookBinding | null>(
+    () =>
+      file
+        ? {
+            context: {
+              ...independentNotebookContext(file, pageCount, page, aiReferences),
+              selection: aiSelection,
+            },
+            write: async (key, write, canApply) => {
+              const session = latest.current.session;
+              if (
+                !session ||
+                key !== `notebook:${session.present.id}` ||
+                write.revision !== session.present.revision ||
+                !canApply()
+              )
+                throw new Error('The notebook changed. Retry using its latest version.');
+              const document = applyAiNotebookWrite(session.present.document, write, aiReferences);
+              await latest.current.applyAi(write.revision, document, canApply);
+              return 'Notebook updated. You can undo this change.';
+            },
+          }
+        : null,
+    [file, pageCount, page, aiReferences, aiSelection],
+  );
+  useEffect(() => {
+    onAiNotebookChange?.(aiBinding);
+  }, [aiBinding, onAiNotebookChange]);
+  useEffect(() => () => onAiNotebookChange?.(null), [onAiNotebookChange]);
 
   useEffect(() => {
     onDocumentChange?.(
@@ -210,8 +297,14 @@ export function NotebookWorkspace({
         if (event.key === 'Escape') {
           event.preventDefault();
           event.stopPropagation();
+          if (aiOpen && !embedded) {
+            onCloseAi?.();
+            return;
+          }
           void leave();
         } else if (event.metaKey || event.ctrlKey) {
+          // Let the app's AI shortcut work while the editor or chat input has focus.
+          if (event.key.toLowerCase() === 'j' && !event.shiftKey && !event.altKey) return;
           if (event.key.toLowerCase() === 's') {
             event.preventDefault();
             void save();
@@ -319,6 +412,7 @@ export function NotebookWorkspace({
               <NotebookEditor
                 key={file.id}
                 document={file.document}
+                onSelectionChange={setAiSelection}
                 zoom={zoom}
                 editable
                 onChange={notebook.change}
@@ -341,6 +435,25 @@ export function NotebookWorkspace({
           )}
         </div>
       </main>
+      {!embedded && aiBinding && (
+        <AiChatPanel
+          isOpen={aiOpen}
+          onClose={() => onCloseAi?.()}
+          currentPage={page}
+          notebook={aiBinding.context}
+          onWriteNotebook={aiBinding.write}
+          pendingAttachments={aiAttachments}
+          onRemoveAttachment={(id) =>
+            setAiAttachments((items) => items.filter((item) => item.id !== id))
+          }
+          onPasteImages={async (files) => {
+            const identity = latest.current.session?.present.id;
+            const attachments = await Promise.all(files.map(createAiClipboardAttachment));
+            if (latest.current.session?.present.id === identity)
+              setAiAttachments((items) => [...items, ...attachments]);
+          }}
+        />
+      )}
     </section>
   );
 }

@@ -37,6 +37,12 @@ const QUICK_QUESTIONS = [
   'What are the core conclusions or takeaways?',
   'Quiz me with 3 questions on this topic',
 ];
+const NOTEBOOK_QUESTIONS = [
+  'Add a short summary of these notes',
+  'Add a worked example with editable equations',
+  'Turn the key points into a checklist',
+  'Arrange theory and examples in two columns',
+];
 
 export const AiChatPanel: React.FC<AiChatPanelProps> = ({
   isOpen,
@@ -55,7 +61,18 @@ export const AiChatPanel: React.FC<AiChatPanelProps> = ({
   isDocumentLoading,
 }) => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const panelRef = useRef<HTMLElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const previous = document.activeElement;
+    panelRef.current?.querySelector('textarea')?.focus({ preventScroll: true });
+    return () => {
+      if (previous instanceof HTMLElement && previous.isConnected)
+        previous.focus({ preventScroll: true });
+    };
+  }, [isOpen]);
 
   const {
     sessions,
@@ -86,8 +103,11 @@ export const AiChatPanel: React.FC<AiChatPanelProps> = ({
 
   return (
     <aside
+      ref={panelRef}
       id="app-ai-chat-sidebar"
       aria-label="AI Reading Assistant & Chat"
+      aria-hidden={!isOpen}
+      inert={!isOpen}
       className={`macos-sidebar absolute inset-y-0 right-0 z-40 flex w-80 flex-col border-l border-[var(--border)] shadow-2xl transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] select-none sm:w-96 ${
         isOpen ? 'pointer-events-auto translate-x-0' : 'pointer-events-none translate-x-full'
       }`}
@@ -171,13 +191,17 @@ export const AiChatPanel: React.FC<AiChatPanelProps> = ({
                 AI Reading Companion
               </h4>
               <p className="mb-4 max-w-[240px] text-[11px] leading-relaxed text-zinc-400">
-                Ask questions, explain your PDF, or ask me to add a summary to your notebook.
+                {notebook?.blocks
+                  ? 'Ask questions, edit your notes, or add equations, tables, and other blocks.'
+                  : 'Ask questions, explain your PDF, or ask me to add a summary to your notebook.'}
               </p>
 
               {/* Context Pill */}
               <div className="mb-5 inline-flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--card)] px-2.5 py-1 text-[11px] text-zinc-300">
                 <BookOpen className="h-3 w-3 text-blue-400" />
-                <span className="max-w-[140px] truncate">{docInfo?.fileName || 'Document'}</span>
+                <span className="max-w-[140px] truncate">
+                  {notebook?.title || docInfo?.fileName || 'Document'}
+                </span>
                 <span className="text-zinc-500">·</span>
                 <span className="font-medium text-blue-400">Page {currentPage}</span>
               </div>
@@ -187,7 +211,7 @@ export const AiChatPanel: React.FC<AiChatPanelProps> = ({
                 <span className="mb-0.5 pl-1 text-[10px] font-medium tracking-wider text-zinc-400 uppercase">
                   Suggested Prompts
                 </span>
-                {QUICK_QUESTIONS.map((question, i) => (
+                {(notebook?.blocks ? NOTEBOOK_QUESTIONS : QUICK_QUESTIONS).map((question, i) => (
                   <button
                     key={i}
                     onClick={() => handleQuickQuestionClick(question)}

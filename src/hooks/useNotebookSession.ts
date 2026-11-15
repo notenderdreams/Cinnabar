@@ -131,6 +131,20 @@ export function useNotebookSession(initialTarget?: NotebookTarget) {
     const file = current.current?.present;
     if (file) await persist(file);
   }, [persist]);
+  const applyAi = useCallback(
+    async (revision: string | undefined, document: NotebookDocument, canApply: () => boolean) => {
+      const snapshot = current.current;
+      if (!snapshot || !revision || snapshot.present.revision !== revision || !canApply())
+        throw new Error(
+          'The notebook changed or the request was cancelled. Retry using the latest notebook.',
+        );
+      const next = editNotebook(snapshot, { document });
+      current.current = next;
+      setSession(next);
+      await persist(next.present);
+    },
+    [persist],
+  );
 
   return {
     session,
@@ -144,6 +158,7 @@ export function useNotebookSession(initialTarget?: NotebookTarget) {
     activate,
     open,
     flush,
+    applyAi,
     create: () => activate(createNotebook()),
     change,
     rename: (title: string) =>

@@ -304,7 +304,7 @@ export function useAiChat({
           .map((m) => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`)
           .join('\n\n');
 
-        const docName = docInfo?.fileName || 'PDF Document';
+        const docName = requestNotebook?.title || docInfo?.fileName || 'Notebook';
         const fullPrompt = [
           `You are an expert AI reading assistant for Cinnabar PDF reader.`,
           `Document: ${docName}`,
@@ -319,7 +319,7 @@ export function useAiChat({
           `\nUser: ${trimmed || 'Please analyze this attached snippet.'}`,
           `\nAssistant: Respond clearly with structured Markdown and concise explanations. Separate paragraphs, headings, and lists with blank lines. Use bullets or tables for descriptive comparisons. Reserve LaTeX for mathematical expressions: use $...$ inline, and put each $$ display delimiter on its own line with the formula between them.`,
           requestNotebook
-            ? 'Final response format: the notebook JSON schema with message, notebookText, and notebookImage. Return this object directly. Do not wrap it in explanation or a Markdown fence.'
+            ? 'Final response format: the notebook JSON schema with message, notebookText, notebookImage, and notebookEdits. Return this object directly. Do not wrap it in explanation or a Markdown fence.'
             : null,
         ]
           .filter(Boolean)
@@ -341,17 +341,27 @@ export function useAiChat({
           if (requestNotebook) {
             const reply = parseNotebookReply(result.response);
             assistantContent = reply.message;
-            if (reply.notebookText !== null || reply.notebookImage) {
+            if (reply.notebookText !== null || reply.notebookImage || reply.notebookEdits) {
               const current = notebookRef.current;
               if (
                 current.isDocumentLoading ||
                 current.notebook?.docKey !== requestNotebook.docKey ||
+                current.notebook?.revision !== requestNotebook.revision ||
                 !current.onWriteNotebook
               ) {
                 throw new Error('The document changed. No notes were added.');
               }
               let write: AiNotebookWrite;
-              if (reply.notebookImage) {
+              if (reply.notebookEdits) {
+                if (!requestNotebook.blocks)
+                  throw new Error('Open a block notebook before editing blocks.');
+                write = {
+                  type: 'edits',
+                  edits: reply.notebookEdits,
+                  images: availableImages,
+                  revision: requestNotebook.revision,
+                };
+              } else if (reply.notebookImage) {
                 const image = availableImages.find(
                   (attachment) => attachment.id === reply.notebookImage?.attachmentId,
                 );
@@ -359,15 +369,26 @@ export function useAiChat({
                   throw new Error(
                     'The referenced image is unavailable. Attach it again and retry.',
                   );
-                write = { type: 'image', image, action: reply.notebookImage };
-              } else write = { type: 'text', text: reply.notebookText! };
+                write = {
+                  type: 'image',
+                  image,
+                  action: reply.notebookImage,
+                  revision: requestNotebook.revision,
+                };
+              } else
+                write = {
+                  type: 'text',
+                  text: reply.notebookText!,
+                  revision: requestNotebook.revision,
+                };
               const receipt = await current.onWriteNotebook(
                 requestNotebook.docKey,
                 write,
                 () =>
                   activeRequestIdRef.current === requestId &&
                   !notebookRef.current.isDocumentLoading &&
-                  notebookRef.current.notebook?.docKey === requestNotebook.docKey,
+                  notebookRef.current.notebook?.docKey === requestNotebook.docKey &&
+                  notebookRef.current.notebook?.revision === requestNotebook.revision,
               );
               if (activeRequestIdRef.current !== requestId) return;
               assistantContent += `\n\n*${receipt}*`;
