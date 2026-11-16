@@ -210,6 +210,9 @@ export const PDFPageComponent: React.FC<PDFPageProps> = ({
 
   const releasePageResources = useCallback(() => {
     textContentRef.current = null;
+    unbindSelectionRef.current?.();
+    unbindSelectionRef.current = null;
+    textLayerRef.current?.replaceChildren();
     if (pageProxyRef.current) {
       try {
         pageProxyRef.current.cleanup();
@@ -232,14 +235,14 @@ export const PDFPageComponent: React.FC<PDFPageProps> = ({
         canvas.width = 0;
         canvas.height = 0;
       }
-      const textLayerDiv = textLayerRef.current;
-      if (textLayerDiv) {
-        textLayerDiv.innerHTML = '';
-      }
       releasePageResources();
       setIsRendered(false);
       return;
     }
+
+    // The existing text layer keeps its spans and scales with the page via CSS until the
+    // replacement is ready, so selection and search marks survive a zoom change.
+    textLayerRef.current?.style.setProperty('--scale-factor', `${scale}`);
 
     let isCancelled = false;
     let textLayer: TextLayer | null = null;
@@ -304,12 +307,12 @@ export const PDFPageComponent: React.FC<PDFPageProps> = ({
 
         const textLayerDiv = textLayerRef.current;
         if (textLayerDiv) {
-          textLayerDiv.innerHTML = '';
-          textLayerDiv.style.setProperty('--scale-factor', `${scale}`);
+          const nextLayer = document.createElement('div');
+          nextLayer.style.setProperty('--scale-factor', `${scale}`);
 
           textLayer = new TextLayer({
             textContentSource: textContent,
-            container: textLayerDiv,
+            container: nextLayer,
             viewport: baseViewport,
           });
 
@@ -319,8 +322,18 @@ export const PDFPageComponent: React.FC<PDFPageProps> = ({
             span.dataset.searchItem = String(index);
           });
 
-          unbindSelectionRef.current?.();
-          unbindSelectionRef.current = bindTextLayerSelection(textLayerDiv);
+          // Keep the current layer while text is selected in it; it already scales via CSS.
+          const selection = window.getSelection();
+          const hasSelectionHere =
+            !!selection &&
+            !selection.isCollapsed &&
+            !!selection.anchorNode &&
+            textLayerDiv.contains(selection.anchorNode);
+          if (!hasSelectionHere || !unbindSelectionRef.current) {
+            unbindSelectionRef.current?.();
+            textLayerDiv.replaceChildren(...nextLayer.childNodes);
+            unbindSelectionRef.current = bindTextLayerSelection(textLayerDiv);
+          }
         }
       } catch (err: unknown) {
         if (
@@ -347,17 +360,11 @@ export const PDFPageComponent: React.FC<PDFPageProps> = ({
       isCancelled = true;
       window.clearTimeout(renderTimer);
       textLayer?.cancel();
-      unbindSelectionRef.current?.();
-      unbindSelectionRef.current = null;
       if (renderTaskRef.current) {
         try {
           (renderTaskRef.current as { cancel: () => void }).cancel();
         } catch {}
         renderTaskRef.current = null;
-      }
-      const textLayerDiv = textLayerRef.current;
-      if (textLayerDiv) {
-        textLayerDiv.innerHTML = '';
       }
       setIsRendered(false);
     };
