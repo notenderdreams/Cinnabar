@@ -32,7 +32,7 @@
     "@cinnabar/notebook": "workspace:*",
     "@hugeicons/core-free-icons": "^4.3.0",
     "@hugeicons/react": "^1.1.10",
-    "@tauri-apps/api": "^2.11.1",
+    "@tauri-apps/api": "^2.12.5",
     "@tiptap/core": "3.33.1",
     "@tiptap/pm": "3.33.1",
     "canvas-confetti": "^1.9.4",
@@ -54,7 +54,7 @@
   "devDependencies": {
     "@eslint/js": "9.39.5",
     "@tailwindcss/vite": "^4.3.3",
-    "@tauri-apps/cli": "^2.11.4",
+    "@tauri-apps/cli": "^2.12.5",
     "@types/canvas-confetti": "^1.9.0",
     "@types/mdast": "^4.0.4",
     "@types/node": "^22.13.4",
