@@ -1081,42 +1081,12 @@ export function App() {
     onUndo: handleGlobalUndo,
     onRedo: handleGlobalRedo,
     onZoomIn: () => {
-      if (activeZoomPane) {
-        requestZoomStep(0.15, 'keyboard');
-        return;
-      }
-      if (panelNotebookActive) {
-        setNotebookZoom((value) => Math.min(MAX_ZOOM, value + 0.15));
-        return;
-      }
-      if (notesActive) {
-        setNoteZoom((zoom) => Math.min(MAX_ZOOM, zoom + 0.15));
-        return;
-      }
-      if (companionPdfDoc && activeReaderPane === 'companion') {
-        setCompanionZoom((z) => Math.min(MAX_ZOOM, z + 0.15));
-      } else {
-        setZoom((z) => Math.min(MAX_ZOOM, z + 0.15));
-      }
+      if (activeZoomPane) requestZoomStep(0.15, 'keyboard');
+      else setZoom((z) => Math.min(MAX_ZOOM, z + 0.15));
     },
     onZoomOut: () => {
-      if (activeZoomPane) {
-        requestZoomStep(-0.15, 'keyboard');
-        return;
-      }
-      if (panelNotebookActive) {
-        setNotebookZoom((value) => Math.max(0.4, value - 0.15));
-        return;
-      }
-      if (notesActive) {
-        setNoteZoom((zoom) => Math.max(0.3, zoom - 0.15));
-        return;
-      }
-      if (companionPdfDoc && activeReaderPane === 'companion') {
-        setCompanionZoom((z) => Math.max(0.3, z - 0.15));
-      } else {
-        setZoom((z) => Math.max(0.3, z - 0.15));
-      }
+      if (activeZoomPane) requestZoomStep(-0.15, 'keyboard');
+      else setZoom((z) => Math.max(0.3, z - 0.15));
     },
     onResetZoom: () => {
       if (panelNotebookActive) {

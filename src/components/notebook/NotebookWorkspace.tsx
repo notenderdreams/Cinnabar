@@ -276,7 +276,6 @@ export function NotebookWorkspace({
     embedded,
     '.independent-paper-stack',
     onActivate,
-    true,
     zoomStepRequest,
   );
 

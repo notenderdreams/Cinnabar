@@ -6,6 +6,8 @@ export type ZoomPane = 'main' | 'companion' | 'note' | 'notebook';
 export type ZoomStepRequest = { id: number; pane: ZoomPane; delta: number; min: number };
 
 const STEP_TRANSITION = 'transform 100ms ease-out';
+/** Fallback if a settled zoom never reaches the layout effect (e.g. the parent rejects it). */
+const COMMIT_TIMEOUT_MS = 400;
 
 type Anchor = { element: HTMLElement; x: number; y: number; screenX: number; screenY: number };
 
@@ -18,13 +20,15 @@ export function useViewportZoom(
   layoutKey: unknown,
   selector: string,
   onActivate?: () => void,
-  smooth = false,
   stepRequest: ZoomStepRequest | null = null,
 ) {
   const anchor = useRef<Anchor | null>(null);
   const previousZoom = useRef(zoom);
-  const targetZoom = useRef(zoom);
   const frame = useRef<number | null>(null);
+  const committing = useRef(false);
+  const commitTimer = useRef<number | null>(null);
+  const pendingInputs = useRef<Array<() => void>>([]);
+  const finishCommit = useRef<() => void>(() => undefined);
   const gesture = useRef<ZoomGestureController | null>(null);
   const stack = useRef<HTMLElement | null>(null);
   const stepZoom = useRef<((delta: number, min: number) => void) | null>(null);
@@ -81,37 +85,49 @@ export function useViewportZoom(
       container.scrollLeft += rect.left + point.x * rect.width - bounds.left - point.screenX;
       container.scrollTop += rect.top + point.y * rect.height - bounds.top - point.screenY;
     }
-    if (previousZoom.current !== zoom) targetZoom.current = zoom;
+    const committed = previousZoom.current !== zoom && committing.current;
     previousZoom.current = zoom;
     if (frame.current === null && !gesture.current?.isActive) capture();
+    if (committed) finishCommit.current();
   });
 
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
     anchor.current = null;
-    targetZoom.current = latest.current.zoom;
     capture();
     const scroll = () => {
-      if (!gesture.current?.isActive) capture();
+      if (!gesture.current?.isActive && !committing.current) capture();
     };
-    gesture.current = smooth
-      ? new ZoomGestureController({
-          initialZoom: latest.current.zoom,
-          schedule: (callback, delayMs) => {
-            const id = window.setTimeout(callback, delayMs);
-            return () => window.clearTimeout(id);
-          },
-          onSettle: ({ zoom: settled }) => {
-            if (frame.current !== null) {
-              cancelAnimationFrame(frame.current);
-              frame.current = null;
-            }
-            if (settled === latest.current.zoom) clearLiveZoom();
-            else latest.current.onZoomChange?.(settled);
-          },
-        })
-      : null;
+    finishCommit.current = () => {
+      if (commitTimer.current !== null) window.clearTimeout(commitTimer.current);
+      commitTimer.current = null;
+      committing.current = false;
+      const replay = pendingInputs.current;
+      pendingInputs.current = [];
+      for (const input of replay) input();
+    };
+    gesture.current = new ZoomGestureController({
+      initialZoom: latest.current.zoom,
+      schedule: (callback, delayMs) => {
+        const id = window.setTimeout(callback, delayMs);
+        return () => window.clearTimeout(id);
+      },
+      onSettle: ({ zoom: settled }) => {
+        if (frame.current !== null) {
+          cancelAnimationFrame(frame.current);
+          frame.current = null;
+        }
+        if (settled === latest.current.zoom) {
+          clearLiveZoom();
+          return;
+        }
+        // Inputs arriving before React commits this zoom are replayed afterwards, not lost.
+        committing.current = true;
+        commitTimer.current = window.setTimeout(finishCommit.current, COMMIT_TIMEOUT_MS);
+        latest.current.onZoomChange?.(settled);
+      },
+    });
     const applyLiveZoom = () => {
       frame.current = null;
       const element = stack.current;
@@ -129,6 +145,10 @@ export function useViewportZoom(
     ): boolean => {
       const controller = gesture.current;
       if (!controller) return false;
+      if (committing.current) {
+        pendingInputs.current.push(() => feedGesture(nextZoom, clientX, clientY, transition));
+        return true;
+      }
       if (!controller.isActive) {
         clearLiveZoom();
         stack.current = container.querySelector<HTMLElement>(selector)?.parentElement ?? null;
@@ -165,30 +185,15 @@ export function useViewportZoom(
       if ((!event.ctrlKey && !event.metaKey) || !latest.current.onZoomChange) return;
       event.preventDefault();
       latest.current.onActivate?.();
-      const bounds = container.getBoundingClientRect();
       const pixels =
         event.deltaY *
         (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? container.clientHeight : 1);
-      if (
-        feedGesture(
-          (base) => Math.min(MAX_ZOOM, Math.max(0.3, base * Math.exp(-pixels * 0.002))),
-          event.clientX,
-          event.clientY,
-          '',
-        )
-      ) {
-        return;
-      }
-      capture(event.clientX - bounds.left, event.clientY - bounds.top);
-      targetZoom.current = Math.min(
-        MAX_ZOOM,
-        Math.max(0.3, targetZoom.current * Math.exp(-pixels * 0.002)),
+      feedGesture(
+        (base) => Math.min(MAX_ZOOM, Math.max(0.3, base * Math.exp(-pixels * 0.002))),
+        event.clientX,
+        event.clientY,
+        '',
       );
-      if (frame.current !== null) return;
-      frame.current = requestAnimationFrame(() => {
-        frame.current = null;
-        latest.current.onZoomChange?.(targetZoom.current);
-      });
     };
     container.addEventListener('scroll', scroll, { passive: true });
     container.addEventListener('wheel', wheel, { passive: false });
@@ -200,11 +205,15 @@ export function useViewportZoom(
       gesture.current?.dispose();
       gesture.current = null;
       stepZoom.current = null;
+      if (commitTimer.current !== null) window.clearTimeout(commitTimer.current);
+      commitTimer.current = null;
+      committing.current = false;
+      pendingInputs.current = [];
       clearLiveZoom();
       stack.current = null;
       anchor.current = null;
     };
-  }, [containerRef, documentKey, layoutKey, selector, smooth]);
+  }, [containerRef, documentKey, layoutKey, selector]);
 
   useEffect(() => {
     if (!stepRequest || stepRequest.id === lastStepId.current) return;

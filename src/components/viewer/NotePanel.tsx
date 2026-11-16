@@ -155,7 +155,6 @@ export function NotePanel({
     docKey,
     '[data-pdf-page-number]',
     onActivate,
-    true,
     zoomStepRequest,
   );
 
