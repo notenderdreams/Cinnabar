@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import type { PDFDocumentProxy } from 'pdfjs-dist';
 import { useViewportZoom } from '../../hooks/useViewportZoom';
-import { centerPageInViewport, fitPageZoom } from '../../lib/pdf/fitViewport';
+import { centerPageInViewport, fitPageWidthZoom, fitPageZoom } from '../../lib/pdf/fitViewport';
 import { PDFPage } from './PDFPage';
 import { SplitDivider } from '../ui/SplitDivider';
 import { UploadCloud } from 'lucide-react';
@@ -92,7 +92,7 @@ interface PDFViewerProps {
   onPdfFileDrop: (file: File) => void;
   onOpenPdfClick: () => void;
   onChangeZoom: (newZoom: number) => void;
-  fitPageRequest?: { id: number; page: number } | null;
+  fitPageRequest?: { id: number; page: number; fit?: 'page' | 'width' } | null;
   companionFitRequest?: { id: number } | null;
   onCursorMove?: (pageNumber: number, normalizedX: number, normalizedY: number) => void;
   onCaptureSnippet?: (
@@ -208,6 +208,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
   const prevPropCurrentPageRef = useRef<number>(currentPage);
   const lastFitPageRequestRef = useRef(0);
   const pendingFitScrollPageRef = useRef<number | null>(null);
+  const pendingFitVerticalRef = useRef<'center' | 'start'>('center');
   const fitCenteringCleanupRef = useRef<(() => void) | null>(null);
   const lastCompanionFit = useRef<number | null>(null);
   const pendingCompanionFit = useRef<{ page: number; zoom: number } | null>(null);
@@ -414,61 +415,64 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
     [pdfDoc, numPages, viewMode],
   );
 
-  const centerFittedPage = useCallback((pageNumber: number, followResize = false) => {
-    fitCenteringCleanupRef.current?.();
-    fitCenteringCleanupRef.current = null;
-
-    const center = () => {
-      if (panStartRef.current) return;
-      const container = viewerContainerRef.current;
-      const page = document.getElementById(`pdf-page-${pageNumber}`);
-      if (!container || !page) return;
-
-      isProgrammaticScrollRef.current = true;
-      if (programmaticScrollTimerRef.current) {
-        clearTimeout(programmaticScrollTimerRef.current);
-      }
-      programmaticScrollTimerRef.current = setTimeout(() => {
-        isProgrammaticScrollRef.current = false;
-        lastReportedPageRef.current = pageNumber;
-      }, 80);
-
-      centerPageInViewport(container, page);
-      lastReportedPageRef.current = pageNumber;
-    };
-
-    requestAnimationFrame(center);
-
-    // PDFPage learns its real dimensions asynchronously from PDF.js. Keep the
-    // target centered while that one layout update lands, rather than allowing
-    // the newly-sized pages above it to push the reader back through the file.
-    if (!followResize || typeof ResizeObserver === 'undefined') return;
-
-    const page = document.getElementById(`pdf-page-${pageNumber}`);
-    if (!page) return;
-
-    let animationFrame: number | null = null;
-    const observer = new ResizeObserver(() => {
-      if (animationFrame !== null) return;
-      animationFrame = requestAnimationFrame(() => {
-        animationFrame = null;
-        center();
-      });
-    });
-    observer.observe(page);
-
-    const settleTimer = setTimeout(() => {
-      if (animationFrame !== null) cancelAnimationFrame(animationFrame);
-      observer.disconnect();
+  const centerFittedPage = useCallback(
+    (pageNumber: number, followResize = false, vertical: 'center' | 'start' = 'center') => {
+      fitCenteringCleanupRef.current?.();
       fitCenteringCleanupRef.current = null;
+
+      const center = () => {
+        if (panStartRef.current) return;
+        const container = viewerContainerRef.current;
+        const page = document.getElementById(`pdf-page-${pageNumber}`);
+        if (!container || !page) return;
+
+        isProgrammaticScrollRef.current = true;
+        if (programmaticScrollTimerRef.current) {
+          clearTimeout(programmaticScrollTimerRef.current);
+        }
+        programmaticScrollTimerRef.current = setTimeout(() => {
+          isProgrammaticScrollRef.current = false;
+          lastReportedPageRef.current = pageNumber;
+        }, 80);
+
+        centerPageInViewport(container, page, vertical);
+        lastReportedPageRef.current = pageNumber;
+      };
+
       requestAnimationFrame(center);
-    }, 750);
-    fitCenteringCleanupRef.current = () => {
-      if (animationFrame !== null) cancelAnimationFrame(animationFrame);
-      clearTimeout(settleTimer);
-      observer.disconnect();
-    };
-  }, []);
+
+      // PDFPage learns its real dimensions asynchronously from PDF.js. Keep the
+      // target centered while that one layout update lands, rather than allowing
+      // the newly-sized pages above it to push the reader back through the file.
+      if (!followResize || typeof ResizeObserver === 'undefined') return;
+
+      const page = document.getElementById(`pdf-page-${pageNumber}`);
+      if (!page) return;
+
+      let animationFrame: number | null = null;
+      const observer = new ResizeObserver(() => {
+        if (animationFrame !== null) return;
+        animationFrame = requestAnimationFrame(() => {
+          animationFrame = null;
+          center();
+        });
+      });
+      observer.observe(page);
+
+      const settleTimer = setTimeout(() => {
+        if (animationFrame !== null) cancelAnimationFrame(animationFrame);
+        observer.disconnect();
+        fitCenteringCleanupRef.current = null;
+        requestAnimationFrame(center);
+      }, 750);
+      fitCenteringCleanupRef.current = () => {
+        if (animationFrame !== null) cancelAnimationFrame(animationFrame);
+        clearTimeout(settleTimer);
+        observer.disconnect();
+      };
+    },
+    [],
+  );
 
   // Initial horizontal centering & initial page restore on document load or viewMode switch
   useEffect(() => {
@@ -683,16 +687,21 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
       if (cancelled || interaction !== fitInteraction.current) return;
 
       const viewport = page.getViewport({ scale: 1 });
-      const roundedZoom = fitPageZoom(
-        container.clientWidth,
-        container.clientHeight,
-        viewport.width,
-        viewport.height,
-      );
+      const fitWidth = fitPageRequest.fit === 'width';
+      const vertical = fitWidth ? 'start' : 'center';
+      const roundedZoom = fitWidth
+        ? fitPageWidthZoom(container.clientWidth, viewport.width)
+        : fitPageZoom(
+            container.clientWidth,
+            container.clientHeight,
+            viewport.width,
+            viewport.height,
+          );
       if (roundedZoom === zoom) {
-        centerFittedPage(targetPage, true);
+        centerFittedPage(targetPage, true, vertical);
       } else {
         pendingFitScrollPageRef.current = targetPage;
+        pendingFitVerticalRef.current = vertical;
         onChangeZoom(roundedZoom);
       }
     });
@@ -758,7 +767,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
     if (pageNumber === null) return;
 
     pendingFitScrollPageRef.current = null;
-    centerFittedPage(pageNumber, true);
+    centerFittedPage(pageNumber, true, pendingFitVerticalRef.current);
   }, [centerFittedPage, zoom]);
 
   // High-performance, jitter-free scroll listener for active page detection

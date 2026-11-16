@@ -101,7 +101,11 @@ export function App() {
 
   // View & UI State
   const [zoom, setZoom] = useState<number>(1.15);
-  const [fitPageRequest, setFitPageRequest] = useState<{ id: number; page: number } | null>(null);
+  const [fitPageRequest, setFitPageRequest] = useState<{
+    id: number;
+    page: number;
+    fit?: 'page' | 'width';
+  } | null>(null);
   const [companionFitRequest, setCompanionFitRequest] = useState<{ id: number } | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>(() => loadViewMode());
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
@@ -138,7 +142,11 @@ export function App() {
   const [noteNavRequest, setNoteNavRequest] = useState<{ page: number; timestamp: number } | null>(
     null,
   );
-  const [noteFitRequest, setNoteFitRequest] = useState<{ id: number; page: number } | null>(null);
+  const [noteFitRequest, setNoteFitRequest] = useState<{
+    id: number;
+    page: number;
+    fit?: 'page' | 'width';
+  } | null>(null);
 
   // Active Toast Feedback
   const { toastMessage, showToast } = useToast();
@@ -1517,7 +1525,7 @@ export function App() {
               setNotePaneActive(false);
               setIsAiPanelOpen(false);
             }}
-            onFitPage={() => {
+            onFitPage={(mode = 'page') => {
               if (panelNotebookActive) {
                 setNotebookFitRequest((value) => value + 1);
                 return;
@@ -1526,6 +1534,7 @@ export function App() {
                 setNoteFitRequest((request) => ({
                   id: (request?.id ?? 0) + 1,
                   page: notebook.page,
+                  fit: mode,
                 }));
                 navigateNotePage(notebook.page);
                 return;
@@ -1536,6 +1545,7 @@ export function App() {
                 setFitPageRequest((request) => ({
                   id: (request?.id ?? 0) + 1,
                   page: currentPage,
+                  fit: mode,
                 }));
               }
             }}

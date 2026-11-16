@@ -41,7 +41,7 @@ interface HeaderProps {
   onToggleShortcuts: () => void;
   onChangeViewMode: (mode: ViewMode) => void;
   onChangeZoom: (newZoom: number) => void;
-  onFitPage: () => void;
+  onFitPage: (mode?: 'page' | 'width') => void;
   onPageChange: (page: number) => void;
   onCopyPageText?: () => void;
   onCopyPageJpg?: () => void;
@@ -355,7 +355,7 @@ export const Header: React.FC<HeaderProps> = ({
             onMouseDown={(event) => {
               if (event.metaKey || event.ctrlKey) {
                 event.preventDefault();
-                onFitPage();
+                onFitPage(event.shiftKey ? 'width' : 'page');
               }
             }}
             onDoubleClick={(event) => {
@@ -364,7 +364,7 @@ export const Header: React.FC<HeaderProps> = ({
               }
             }}
             className="min-w-[2.25rem] cursor-pointer rounded-md px-1.5 py-0.5 text-center text-zinc-300 transition-colors hover:bg-[var(--hover)] hover:text-[var(--foreground)]"
-            title="Double-click to reset to 100%; Cmd/Ctrl-click to fit page"
+            title="Double-click to reset to 100%; Cmd/Ctrl-click to fit page; Cmd/Ctrl-Shift-click to fit width"
           >
             {Math.round(zoom * 100)}%
           </button>
