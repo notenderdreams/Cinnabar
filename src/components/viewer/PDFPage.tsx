@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import type { PDFDocumentProxy, PDFPageProxy } from 'pdfjs-dist';
 import { TextLayer } from 'pdfjs-dist';
+import type { TextContent } from 'pdfjs-dist/types/src/display/api';
 import { AnnotationCanvas } from '../annotations/AnnotationCanvas';
 import { ImageOverlay } from '../annotations/ImageOverlay';
 import { TextNoteOverlay } from '../annotations/TextNoteOverlay';
@@ -156,6 +157,7 @@ export const PDFPageComponent: React.FC<PDFPageProps> = ({
 
   const [isVisible, setIsVisible] = useState(typeof IntersectionObserver === 'undefined');
   const pageProxyRef = useRef<PDFPageProxy | null>(null);
+  const textContentRef = useRef<TextContent | null>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -207,9 +209,23 @@ export const PDFPageComponent: React.FC<PDFPageProps> = ({
     return () => observer.disconnect();
   }, []);
 
+  // Release decoded page resources only when the page leaves the viewport or unmounts, not on zoom.
+  useEffect(() => {
+    if (!isVisible) return;
+    return () => {
+      textContentRef.current = null;
+      if (pageProxyRef.current) {
+        try {
+          pageProxyRef.current.cleanup();
+        } catch {}
+        pageProxyRef.current = null;
+      }
+    };
+  }, [pdfDoc, pageNumber, isVisible]);
+
   useEffect(() => {
     if (!isVisible) {
-      // Release GPU canvas buffer, text layer DOM nodes, and PDF.js page resources when offscreen
+      // Release GPU canvas buffer and text layer DOM nodes when offscreen
       if (renderTaskRef.current) {
         try {
           (renderTaskRef.current as { cancel: () => void }).cancel();
@@ -224,12 +240,6 @@ export const PDFPageComponent: React.FC<PDFPageProps> = ({
       const textLayerDiv = textLayerRef.current;
       if (textLayerDiv) {
         textLayerDiv.innerHTML = '';
-      }
-      if (pageProxyRef.current) {
-        try {
-          pageProxyRef.current.cleanup();
-        } catch {}
-        pageProxyRef.current = null;
       }
       setIsRendered(false);
       return;
@@ -292,8 +302,9 @@ export const PDFPageComponent: React.FC<PDFPageProps> = ({
         setIsRendered(true);
 
         // Render Selectable Text Layer
-        const textContent = await page.getTextContent();
+        const textContent = textContentRef.current ?? (await page.getTextContent());
         if (isCancelled) return;
+        textContentRef.current = textContent;
 
         const textLayerDiv = textLayerRef.current;
         if (textLayerDiv) {
@@ -351,12 +362,6 @@ export const PDFPageComponent: React.FC<PDFPageProps> = ({
       const textLayerDiv = textLayerRef.current;
       if (textLayerDiv) {
         textLayerDiv.innerHTML = '';
-      }
-      if (pageProxyRef.current) {
-        try {
-          pageProxyRef.current.cleanup();
-        } catch {}
-        pageProxyRef.current = null;
       }
       setIsRendered(false);
     };
