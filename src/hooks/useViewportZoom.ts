@@ -2,6 +2,10 @@ import { useEffect, useLayoutEffect, useRef, type RefObject } from 'react';
 import { ZoomGestureController } from '../lib/pdf/zoomGestureController';
 import { MAX_ZOOM } from '../lib/pdf/zoomLimits';
 
+export type ZoomStepRequest = { id: number; delta: number; min: number };
+
+const STEP_TRANSITION = 'transform 100ms ease-out';
+
 type Anchor = { element: HTMLElement; x: number; y: number; screenX: number; screenY: number };
 
 /** Keep the viewed content steady and combine high-frequency pinch events per frame. */
@@ -14,6 +18,7 @@ export function useViewportZoom(
   selector: string,
   onActivate?: () => void,
   smooth = false,
+  stepRequest: ZoomStepRequest | null = null,
 ) {
   const anchor = useRef<Anchor | null>(null);
   const previousZoom = useRef(zoom);
@@ -21,6 +26,8 @@ export function useViewportZoom(
   const frame = useRef<number | null>(null);
   const gesture = useRef<ZoomGestureController | null>(null);
   const stack = useRef<HTMLElement | null>(null);
+  const stepZoom = useRef<((delta: number, min: number) => void) | null>(null);
+  const lastStepId = useRef(stepRequest?.id ?? 0);
   const latest = useRef({ onZoomChange, onActivate, zoom });
   latest.current = { onZoomChange, onActivate, zoom };
 
@@ -29,6 +36,7 @@ export function useViewportZoom(
     if (!element) return;
     element.style.transform = '';
     element.style.transformOrigin = '';
+    element.style.transition = '';
     element.style.willChange = '';
   };
 
@@ -111,6 +119,47 @@ export function useViewportZoom(
         element.style.transform = `scale(${controller.liveZoom / latest.current.zoom})`;
       }
     };
+    /** Feeds one zoom input into the gesture; the first input of a gesture fixes the anchor. */
+    const feedGesture = (
+      nextZoom: (base: number) => number,
+      clientX: number,
+      clientY: number,
+      transition: string,
+    ): boolean => {
+      const controller = gesture.current;
+      if (!controller) return false;
+      if (!controller.isActive) {
+        clearLiveZoom();
+        stack.current = container.querySelector<HTMLElement>(selector)?.parentElement ?? null;
+      }
+      const element = stack.current;
+      if (!element) return false;
+      const bounds = container.getBoundingClientRect();
+      const x = clientX - bounds.left;
+      const y = clientY - bounds.top;
+      if (!controller.isActive) {
+        capture(x, y);
+        const stackRect = element.getBoundingClientRect();
+        element.style.transformOrigin = `${clientX - stackRect.left}px ${clientY - stackRect.top}px`;
+        element.style.willChange = 'transform';
+      }
+      element.style.transition = transition;
+      const base = controller.isActive ? controller.liveZoom : latest.current.zoom;
+      controller.input(nextZoom(base), { x, y });
+      frame.current ??= requestAnimationFrame(applyLiveZoom);
+      return true;
+    };
+    stepZoom.current = (delta, min) => {
+      if (!latest.current.onZoomChange) return;
+      latest.current.onActivate?.();
+      const bounds = container.getBoundingClientRect();
+      feedGesture(
+        (base) => Math.min(MAX_ZOOM, Math.max(min, base + delta)),
+        bounds.left + bounds.width / 2,
+        bounds.top + bounds.height / 2,
+        STEP_TRANSITION,
+      );
+    };
     const wheel = (event: WheelEvent) => {
       if ((!event.ctrlKey && !event.metaKey) || !latest.current.onZoomChange) return;
       event.preventDefault();
@@ -119,27 +168,14 @@ export function useViewportZoom(
       const pixels =
         event.deltaY *
         (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? container.clientHeight : 1);
-      const controller = gesture.current;
-      if (controller && !controller.isActive) {
-        clearLiveZoom();
-        stack.current = container.querySelector<HTMLElement>(selector)?.parentElement ?? null;
-      }
-      const element = stack.current;
-      if (controller && element) {
-        const x = event.clientX - bounds.left;
-        const y = event.clientY - bounds.top;
-        if (!controller.isActive) {
-          capture(x, y);
-          const stackRect = element.getBoundingClientRect();
-          element.style.transformOrigin = `${event.clientX - stackRect.left}px ${event.clientY - stackRect.top}px`;
-          element.style.willChange = 'transform';
-        }
-        const base = controller.isActive ? controller.liveZoom : latest.current.zoom;
-        controller.input(Math.min(MAX_ZOOM, Math.max(0.3, base * Math.exp(-pixels * 0.002))), {
-          x,
-          y,
-        });
-        frame.current ??= requestAnimationFrame(applyLiveZoom);
+      if (
+        feedGesture(
+          (base) => Math.min(MAX_ZOOM, Math.max(0.3, base * Math.exp(-pixels * 0.002))),
+          event.clientX,
+          event.clientY,
+          '',
+        )
+      ) {
         return;
       }
       capture(event.clientX - bounds.left, event.clientY - bounds.top);
@@ -162,9 +198,16 @@ export function useViewportZoom(
       frame.current = null;
       gesture.current?.dispose();
       gesture.current = null;
+      stepZoom.current = null;
       clearLiveZoom();
       stack.current = null;
       anchor.current = null;
     };
   }, [containerRef, documentKey, layoutKey, selector, smooth]);
+
+  useEffect(() => {
+    if (!stepRequest || stepRequest.id === lastStepId.current) return;
+    lastStepId.current = stepRequest.id;
+    stepZoom.current?.(stepRequest.delta, stepRequest.min);
+  }, [stepRequest]);
 }

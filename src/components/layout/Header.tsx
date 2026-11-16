@@ -41,6 +41,8 @@ interface HeaderProps {
   onToggleShortcuts: () => void;
   onChangeViewMode: (mode: ViewMode) => void;
   onChangeZoom: (newZoom: number) => void;
+  /** Animated +/- zoom when the active pane supports it. */
+  onZoomStep?: (delta: number) => void;
   onFitPage: (mode?: 'page' | 'width') => void;
   onPageChange: (page: number) => void;
   onCopyPageText?: () => void;
@@ -67,6 +69,7 @@ export const Header: React.FC<HeaderProps> = ({
   onToggleZen,
   onChangeViewMode,
   onChangeZoom,
+  onZoomStep,
   onFitPage,
   onPageChange,
   onCopyPageText,
@@ -345,7 +348,9 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Zoom Controls */}
         <div className="flex items-center gap-0.5 font-mono text-[11px] text-zinc-300">
           <button
-            onClick={() => onChangeZoom(Math.max(0.4, zoom - 0.15))}
+            onClick={() =>
+              onZoomStep ? onZoomStep(-0.15) : onChangeZoom(Math.max(0.4, zoom - 0.15))
+            }
             className="flex h-6 w-6 items-center justify-center rounded-md text-zinc-400 transition-colors hover:bg-[var(--hover)] hover:text-[var(--foreground)]"
             title="Zoom Out (Cmd -)"
           >
@@ -369,7 +374,9 @@ export const Header: React.FC<HeaderProps> = ({
             {Math.round(zoom * 100)}%
           </button>
           <button
-            onClick={() => onChangeZoom(Math.min(MAX_ZOOM, zoom + 0.15))}
+            onClick={() =>
+              onZoomStep ? onZoomStep(0.15) : onChangeZoom(Math.min(MAX_ZOOM, zoom + 0.15))
+            }
             className="flex h-6 w-6 items-center justify-center rounded-md text-zinc-400 transition-colors hover:bg-[var(--hover)] hover:text-[var(--foreground)]"
             title="Zoom In (Cmd +)"
           >

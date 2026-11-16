@@ -83,6 +83,7 @@ import type {
 } from './lib/types/index';
 import type { SidebarTabType } from './components/layout/Sidebar';
 import { MAX_ZOOM } from './lib/pdf/zoomLimits';
+import type { ZoomStepRequest } from './hooks/useViewportZoom';
 
 const NotebookWorkspace = React.lazy(() =>
   import('./components/notebook/NotebookWorkspace').then((module) => ({
@@ -106,6 +107,7 @@ export function App() {
     page: number;
     fit?: 'page' | 'width';
   } | null>(null);
+  const [zoomStepRequest, setZoomStepRequest] = useState<ZoomStepRequest | null>(null);
   const [companionFitRequest, setCompanionFitRequest] = useState<{ id: number } | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>(() => loadViewMode());
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
@@ -1024,6 +1026,15 @@ export function App() {
   }, [addHighlightsFromSelection, handleSelectTool]);
 
   // Global Keyboard Shortcuts
+  // The main PDF pane animates +/- zoom through its gesture controller; other panes step directly.
+  const mainPaneZoomActive =
+    !!pdfDoc &&
+    !panelNotebookActive &&
+    !notesActive &&
+    !(companionPdfDoc && activeReaderPane === 'companion');
+  const requestZoomStep = (delta: number, min: number) =>
+    setZoomStepRequest((request) => ({ id: (request?.id ?? 0) + 1, delta, min }));
+
   useKeyboard({
     onOpenPdf: handleOpenPdf,
     onSavePdf: () => setIsExportModalOpen(true),
@@ -1058,6 +1069,10 @@ export function App() {
     onUndo: handleGlobalUndo,
     onRedo: handleGlobalRedo,
     onZoomIn: () => {
+      if (mainPaneZoomActive) {
+        requestZoomStep(0.15, 0.3);
+        return;
+      }
       if (panelNotebookActive) {
         setNotebookZoom((value) => Math.min(MAX_ZOOM, value + 0.15));
         return;
@@ -1073,6 +1088,10 @@ export function App() {
       }
     },
     onZoomOut: () => {
+      if (mainPaneZoomActive) {
+        requestZoomStep(-0.15, 0.3);
+        return;
+      }
       if (panelNotebookActive) {
         setNotebookZoom((value) => Math.max(0.4, value - 0.15));
         return;
@@ -1264,6 +1283,7 @@ export function App() {
     setIsZenMode,
     setIsShortcutsModalOpen,
     pdfDoc,
+    requestZoomStep: mainPaneZoomActive ? requestZoomStep : undefined,
   });
 
   menuHandlerRef.current = {
@@ -1287,6 +1307,7 @@ export function App() {
     setIsZenMode,
     setIsShortcutsModalOpen,
     pdfDoc,
+    requestZoomStep: mainPaneZoomActive ? requestZoomStep : undefined,
   };
 
   useEffect(() => {
@@ -1356,10 +1377,12 @@ export function App() {
           h.handleChangeViewMode('spread');
           break;
         case 'zoom_in':
-          h.setZoom((z) => Math.min(MAX_ZOOM, z + 0.15));
+          if (h.requestZoomStep) h.requestZoomStep(0.15, 0.4);
+          else h.setZoom((z) => Math.min(MAX_ZOOM, z + 0.15));
           break;
         case 'zoom_out':
-          h.setZoom((z) => Math.max(0.4, z - 0.15));
+          if (h.requestZoomStep) h.requestZoomStep(-0.15, 0.4);
+          else h.setZoom((z) => Math.max(0.4, z - 0.15));
           break;
         case 'zoom_reset':
           h.setZoom(1.0);
@@ -1503,6 +1526,7 @@ export function App() {
             onToggleZen={() => setIsZenMode((prev) => !prev)}
             onToggleShortcuts={() => setIsShortcutsModalOpen(true)}
             onChangeViewMode={handleChangeViewMode}
+            onZoomStep={mainPaneZoomActive ? (delta) => requestZoomStep(delta, 0.4) : undefined}
             onChangeZoom={
               panelNotebookActive
                 ? setNotebookZoom
@@ -1742,6 +1766,7 @@ export function App() {
                     onOpenPdfClick={handleOpenPdf}
                     onChangeZoom={setZoom}
                     fitPageRequest={fitPageRequest}
+                    zoomStepRequest={zoomStepRequest}
                   />
 
                   {pdfDoc && (

@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import type { PDFDocumentProxy } from 'pdfjs-dist';
-import { useViewportZoom } from '../../hooks/useViewportZoom';
+import { useViewportZoom, type ZoomStepRequest } from '../../hooks/useViewportZoom';
 import { centerPageInViewport, fitPageWidthZoom, fitPageZoom } from '../../lib/pdf/fitViewport';
 import { PDFPage } from './PDFPage';
 import { SplitDivider } from '../ui/SplitDivider';
@@ -93,6 +93,7 @@ interface PDFViewerProps {
   onOpenPdfClick: () => void;
   onChangeZoom: (newZoom: number) => void;
   fitPageRequest?: { id: number; page: number; fit?: 'page' | 'width' } | null;
+  zoomStepRequest?: ZoomStepRequest | null;
   companionFitRequest?: { id: number } | null;
   onCursorMove?: (pageNumber: number, normalizedX: number, normalizedY: number) => void;
   onCaptureSnippet?: (
@@ -159,6 +160,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
   onOpenPdfClick,
   onChangeZoom,
   fitPageRequest,
+  zoomStepRequest,
   companionFitRequest,
   onCursorMove,
   onCaptureSnippet,
@@ -955,6 +957,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
     '[data-pdf-page-number]',
     () => onActivePaneChange?.('primary'),
     true,
+    zoomStepRequest,
   );
   useViewportZoom(
     companionContainerRef,
