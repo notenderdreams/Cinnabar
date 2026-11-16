@@ -945,6 +945,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
     `${viewMode}-${hasReadingSplit}`,
     '[data-pdf-page-number]',
     () => onActivePaneChange?.('primary'),
+    true,
   );
   useViewportZoom(
     companionContainerRef,
