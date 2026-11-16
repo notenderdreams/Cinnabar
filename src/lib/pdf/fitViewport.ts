@@ -1,7 +1,9 @@
+import { MAX_ZOOM } from './zoomLimits';
+
 export function fitPageZoom(width: number, height: number, pageWidth: number, pageHeight: number) {
   return Math.max(
     0.05,
-    Math.min(3.5, Math.max(1, width - 48) / pageWidth, Math.max(1, height - 48) / pageHeight),
+    Math.min(MAX_ZOOM, Math.max(1, width - 48) / pageWidth, Math.max(1, height - 48) / pageHeight),
   );
 }
 

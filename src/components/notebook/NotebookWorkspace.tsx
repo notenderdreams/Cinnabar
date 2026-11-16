@@ -18,6 +18,7 @@ import { PAPER, type NotebookLayout } from '@cinnabar/notebook/layout';
 import { BLOCK_TYPES, serializeNotebook } from '@cinnabar/notebook';
 import { useViewportZoom } from '../../hooks/useViewportZoom';
 import { centerPageInViewport, fitPageZoom } from '../../lib/pdf/fitViewport';
+import { MAX_ZOOM } from '../../lib/pdf/zoomLimits';
 import { useNotebookSession } from '../../hooks/useNotebookSession';
 import type { NotebookTarget } from '../../lib/notebook/navigation';
 import { saveNotebookFile, tauriOpenImage, tauriReadFile } from '../../utils/tauriBridge';
@@ -314,7 +315,7 @@ export function NotebookWorkspace({
             changeZoom(
               event.key === '0'
                 ? 0.8
-                : Math.min(3, Math.max(0.4, zoom + (event.key === '-' ? -0.15 : 0.15))),
+                : Math.min(MAX_ZOOM, Math.max(0.4, zoom + (event.key === '-' ? -0.15 : 0.15))),
             );
           }
           event.stopPropagation();

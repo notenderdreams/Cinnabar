@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { fitPageZoom } from '../src/lib/pdf/fitViewport';
+import { MAX_ZOOM } from '../src/lib/pdf/zoomLimits';
 
 describe('fit a page to its pane', () => {
   test('fits portrait pages by height and landscape pages by width', () => {
@@ -16,6 +17,7 @@ describe('fit a page to its pane', () => {
 
   test('responds to pane resizing and caps enlargement', () => {
     expect(fitPageZoom(450, 900, 595, 842)).toBeLessThan(fitPageZoom(700, 900, 595, 842));
-    expect(fitPageZoom(6000, 6000, 595, 842)).toBe(3.5);
+    expect(fitPageZoom(60000, 60000, 595, 842)).toBe(MAX_ZOOM);
+    expect(MAX_ZOOM).toBe(9);
   });
 });

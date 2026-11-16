@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, type RefObject } from 'react';
 import { ZoomGestureController } from '../lib/pdf/zoomGestureController';
+import { MAX_ZOOM } from '../lib/pdf/zoomLimits';
 
 type Anchor = { element: HTMLElement; x: number; y: number; screenX: number; screenY: number };
 
@@ -134,13 +135,16 @@ export function useViewportZoom(
           element.style.willChange = 'transform';
         }
         const base = controller.isActive ? controller.liveZoom : latest.current.zoom;
-        controller.input(Math.min(3.5, Math.max(0.3, base * Math.exp(-pixels * 0.002))), { x, y });
+        controller.input(Math.min(MAX_ZOOM, Math.max(0.3, base * Math.exp(-pixels * 0.002))), {
+          x,
+          y,
+        });
         frame.current ??= requestAnimationFrame(applyLiveZoom);
         return;
       }
       capture(event.clientX - bounds.left, event.clientY - bounds.top);
       targetZoom.current = Math.min(
-        3.5,
+        MAX_ZOOM,
         Math.max(0.3, targetZoom.current * Math.exp(-pixels * 0.002)),
       );
       if (frame.current !== null) return;

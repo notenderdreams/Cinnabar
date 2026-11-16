@@ -15,6 +15,7 @@ import {
   NotebookPen,
 } from 'lucide-react';
 import type { DocumentInfo, ReadingTheme, ViewMode } from '../../lib/types/index';
+import { MAX_ZOOM } from '../../lib/pdf/zoomLimits';
 import { handleTitlebarMouseDown } from '../../utils/tauriBridge';
 
 interface HeaderProps {
@@ -368,7 +369,7 @@ export const Header: React.FC<HeaderProps> = ({
             {Math.round(zoom * 100)}%
           </button>
           <button
-            onClick={() => onChangeZoom(Math.min(3.0, zoom + 0.15))}
+            onClick={() => onChangeZoom(Math.min(MAX_ZOOM, zoom + 0.15))}
             className="flex h-6 w-6 items-center justify-center rounded-md text-zinc-400 transition-colors hover:bg-[var(--hover)] hover:text-[var(--foreground)]"
             title="Zoom In (Cmd +)"
           >

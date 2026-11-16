@@ -82,6 +82,7 @@ import type {
   StitchOptions,
 } from './lib/types/index';
 import type { SidebarTabType } from './components/layout/Sidebar';
+import { MAX_ZOOM } from './lib/pdf/zoomLimits';
 
 const NotebookWorkspace = React.lazy(() =>
   import('./components/notebook/NotebookWorkspace').then((module) => ({
@@ -1050,17 +1051,17 @@ export function App() {
     onRedo: handleGlobalRedo,
     onZoomIn: () => {
       if (panelNotebookActive) {
-        setNotebookZoom((value) => Math.min(3, value + 0.15));
+        setNotebookZoom((value) => Math.min(MAX_ZOOM, value + 0.15));
         return;
       }
       if (notesActive) {
-        setNoteZoom((zoom) => Math.min(3.5, zoom + 0.15));
+        setNoteZoom((zoom) => Math.min(MAX_ZOOM, zoom + 0.15));
         return;
       }
       if (companionPdfDoc && activeReaderPane === 'companion') {
-        setCompanionZoom((z) => Math.min(3.5, z + 0.15));
+        setCompanionZoom((z) => Math.min(MAX_ZOOM, z + 0.15));
       } else {
-        setZoom((z) => Math.min(3.5, z + 0.15));
+        setZoom((z) => Math.min(MAX_ZOOM, z + 0.15));
       }
     },
     onZoomOut: () => {
@@ -1347,7 +1348,7 @@ export function App() {
           h.handleChangeViewMode('spread');
           break;
         case 'zoom_in':
-          h.setZoom((z) => Math.min(3.0, z + 0.15));
+          h.setZoom((z) => Math.min(MAX_ZOOM, z + 0.15));
           break;
         case 'zoom_out':
           h.setZoom((z) => Math.max(0.4, z - 0.15));
