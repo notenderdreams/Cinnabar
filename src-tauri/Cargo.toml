@@ -34,7 +34,11 @@ sha2 = "0.10"
 rusqlite = { version = "0.41", features = ["bundled", "fallible_uint"] }
 rusqlite_migration = "2.7"
 uuid = { version = "1", features = ["v4"] }
-tauri-plugin-mcp-bridge = "0.13.2"
+tauri-plugin-mcp-bridge = { version = "0.13.2", optional = true }
+
+[features]
+# Dev-only UI automation bridge for AI agents; enabled by `bun run dev`.
+mcp-bridge = ["dep:tauri-plugin-mcp-bridge"]
 
 [profile.release]
 opt-level = 3

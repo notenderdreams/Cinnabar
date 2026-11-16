@@ -66,13 +66,14 @@ pub fn run() -> Result<()> {
                         .level_for("lopdf", log::LevelFilter::Error)
                         .build(),
                 )?;
-                // Dev-only UI automation bridge for AI agents; loopback only.
-                app.handle().plugin(
-                    tauri_plugin_mcp_bridge::Builder::new()
-                        .bind_address("127.0.0.1")
-                        .build(),
-                )?;
             }
+            // Dev-only UI automation bridge for AI agents; loopback only.
+            #[cfg(feature = "mcp-bridge")]
+            app.handle().plugin(
+                tauri_plugin_mcp_bridge::Builder::new()
+                    .bind_address("127.0.0.1")
+                    .build(),
+            )?;
             Ok(())
         })
         .invoke_handler(specta.invoke_handler())

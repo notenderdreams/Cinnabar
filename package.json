@@ -22,11 +22,11 @@
     "check:rust": "cargo fmt --manifest-path src-tauri/Cargo.toml -- --check && cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings && cargo test --manifest-path src-tauri/Cargo.toml",
     "audit:rust": "cargo deny --manifest-path src-tauri/Cargo.toml check",
     "check": "bun run format:check && bun run lint && bun run typecheck && bun run knip && bun test",
-    "dev": "tauri dev",
+    "dev": "tauri dev --features mcp-bridge --config src-tauri/tauri.dev.conf.json",
     "dev:frontend": "bun run generate:bindings && vite",
     "build": "tauri build",
     "build:frontend": "bun run generate:bindings && tsc && vite build",
-    "generate:bindings": "cargo test --manifest-path src-tauri/Cargo.toml exports_typescript_bindings --quiet"
+    "generate:bindings": "cargo test --manifest-path src-tauri/Cargo.toml --features mcp-bridge exports_typescript_bindings --quiet"
   },
   "dependencies": {
     "@cinnabar/notebook": "workspace:*",
