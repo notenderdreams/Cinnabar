@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { NotebookTarget } from '../../lib/notebook/navigation';
 import { NotebookLibrary } from './NotebookLibrary';
 import { NotebookWorkspace } from './NotebookWorkspace';
+import type { ZoomStepRequest } from '../../hooks/useViewportZoom';
 import type { AiNotebookBinding } from '../../lib/ai/notebookBinding';
 
 export function NotebookPanel({
@@ -11,6 +12,7 @@ export function NotebookPanel({
   onDocumentChange,
   pageRequest,
   fitRequest,
+  zoomStepRequest,
   onOpenPdfReference,
   onAiNotebookChange,
 }: {
@@ -20,6 +22,7 @@ export function NotebookPanel({
   onDocumentChange: (document: { title: string; pages: number; page: number } | null) => void;
   pageRequest: { page: number; id: number } | null;
   fitRequest: number;
+  zoomStepRequest?: ZoomStepRequest | null;
   onAiNotebookChange?: (binding: AiNotebookBinding | null) => void;
   onOpenPdfReference: (
     data: Uint8Array,
@@ -48,6 +51,7 @@ export function NotebookPanel({
           onDocumentChange={onDocumentChange}
           pageRequest={pageRequest}
           fitRequest={fitRequest}
+          zoomStepRequest={zoomStepRequest}
           onBack={() => setTarget(null)}
         />
       ) : (

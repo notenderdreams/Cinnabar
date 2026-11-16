@@ -1,8 +1,9 @@
-import { useEffect, useLayoutEffect, useRef, type RefObject } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, type RefObject } from 'react';
 import { ZoomGestureController } from '../lib/pdf/zoomGestureController';
 import { MAX_ZOOM } from '../lib/pdf/zoomLimits';
 
-export type ZoomStepRequest = { id: number; delta: number; min: number };
+export type ZoomPane = 'main' | 'companion' | 'note' | 'notebook';
+export type ZoomStepRequest = { id: number; pane: ZoomPane; delta: number; min: number };
 
 const STEP_TRANSITION = 'transform 100ms ease-out';
 
@@ -210,4 +211,6 @@ export function useViewportZoom(
     lastStepId.current = stepRequest.id;
     stepZoom.current?.(stepRequest.delta, stepRequest.min);
   }, [stepRequest]);
+
+  return useCallback((delta: number, min: number) => stepZoom.current?.(delta, min), []);
 }

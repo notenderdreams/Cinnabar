@@ -957,7 +957,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
     '[data-pdf-page-number]',
     () => onActivePaneChange?.('primary'),
     true,
-    zoomStepRequest,
+    zoomStepRequest?.pane === 'main' ? zoomStepRequest : null,
   );
   useViewportZoom(
     companionContainerRef,
@@ -967,6 +967,8 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
     viewMode,
     '[data-pdf-page-number]',
     () => onActivePaneChange?.('companion'),
+    true,
+    zoomStepRequest?.pane === 'companion' ? zoomStepRequest : null,
   );
 
   // A user's scroll/pinch takes ownership from any outstanding fit operation.

@@ -10,6 +10,8 @@ import { copyPageImageToClipboard, copyTextToClipboard } from '../../lib/pdf/pag
 import { exportAnnotatedPDF } from '../../lib/pdf/pdfExporter';
 import { isAnnotationHitByEraser } from '../../lib/annotations/eraserUtils';
 import { cropCanvasRegion } from '../../lib/snippets/snippetExtractor';
+import { useViewportZoom, type ZoomStepRequest } from '../../hooks/useViewportZoom';
+import { MAX_ZOOM } from '../../lib/pdf/zoomLimits';
 import type { AiExplanationAnnotation, Annotation, SnippetImageEntry } from '../../lib/types';
 
 type SharedTools = Pick<
@@ -44,6 +46,7 @@ interface NotePanelProps extends SharedTools {
   onAddPageAfter: (page: number) => void;
   onDeletePage: (page: number) => void;
   onActivate: () => void;
+  zoomStepRequest?: ZoomStepRequest | null;
   onCapture: (entry: SnippetImageEntry) => void;
   showToast: (message: string, isError?: boolean) => void;
 }
@@ -62,6 +65,7 @@ export function NotePanel({
   onAddPageAfter,
   onDeletePage,
   onActivate,
+  zoomStepRequest,
   onCapture,
   showToast,
   ...tools
@@ -143,13 +147,25 @@ export function NotePanel({
       ?.scrollIntoView({ block: 'start', behavior: 'instant' });
   }, [paper, pageNavRequest]);
 
+  useViewportZoom(
+    container,
+    zoom,
+    onZoomChange,
+    paper,
+    docKey,
+    '[data-pdf-page-number]',
+    onActivate,
+    true,
+    zoomStepRequest,
+  );
+
   useEffect(() => {
     if (!fitPageRequest || !container.current) return;
     onZoomChange(
       Math.max(
         0.3,
         Math.min(
-          3.5,
+          MAX_ZOOM,
           (container.current.clientWidth - 48) / 595,
           (container.current.clientHeight - 48) / 842,
         ),

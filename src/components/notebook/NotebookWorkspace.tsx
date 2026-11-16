@@ -16,9 +16,8 @@ import { createAiClipboardAttachment } from '../../lib/ai/chatClipboard';
 import type { AiChatAttachment } from '../../lib/types';
 import { PAPER, type NotebookLayout } from '@cinnabar/notebook/layout';
 import { BLOCK_TYPES, serializeNotebook } from '@cinnabar/notebook';
-import { useViewportZoom } from '../../hooks/useViewportZoom';
+import { useViewportZoom, type ZoomStepRequest } from '../../hooks/useViewportZoom';
 import { centerPageInViewport, fitPageZoom } from '../../lib/pdf/fitViewport';
-import { MAX_ZOOM } from '../../lib/pdf/zoomLimits';
 import { useNotebookSession } from '../../hooks/useNotebookSession';
 import type { NotebookTarget } from '../../lib/notebook/navigation';
 import { saveNotebookFile, tauriOpenImage, tauriReadFile } from '../../utils/tauriBridge';
@@ -33,6 +32,7 @@ export function NotebookWorkspace({
   onDocumentChange,
   pageRequest,
   fitRequest,
+  zoomStepRequest,
   onOpenPdfReference,
   onAiNotebookChange,
   aiOpen = false,
@@ -47,6 +47,7 @@ export function NotebookWorkspace({
   onDocumentChange?: (document: { title: string; pages: number; page: number } | null) => void;
   pageRequest?: { page: number; id: number } | null;
   fitRequest?: number;
+  zoomStepRequest?: ZoomStepRequest | null;
   onAiNotebookChange?: (binding: AiNotebookBinding | null) => void;
   aiOpen?: boolean;
   onCloseAi?: () => void;
@@ -267,7 +268,7 @@ export function NotebookWorkspace({
     }
   }, [fitRequest]);
 
-  useViewportZoom(
+  const stepZoom = useViewportZoom(
     viewport,
     zoom,
     changeZoom,
@@ -275,6 +276,8 @@ export function NotebookWorkspace({
     embedded,
     '.independent-paper-stack',
     onActivate,
+    true,
+    zoomStepRequest,
   );
 
   useLayoutEffect(() => {
@@ -312,11 +315,8 @@ export function NotebookWorkspace({
           }
           if (['+', '=', '-', '0'].includes(event.key)) {
             event.preventDefault();
-            changeZoom(
-              event.key === '0'
-                ? 0.8
-                : Math.min(MAX_ZOOM, Math.max(0.4, zoom + (event.key === '-' ? -0.15 : 0.15))),
-            );
+            if (event.key === '0') changeZoom(0.8);
+            else stepZoom(event.key === '-' ? -0.15 : 0.15, 0.4);
           }
           event.stopPropagation();
         }

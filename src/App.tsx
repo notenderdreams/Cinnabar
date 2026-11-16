@@ -83,7 +83,7 @@ import type {
 } from './lib/types/index';
 import type { SidebarTabType } from './components/layout/Sidebar';
 import { MAX_ZOOM } from './lib/pdf/zoomLimits';
-import type { ZoomStepRequest } from './hooks/useViewportZoom';
+import type { ZoomPane, ZoomStepRequest } from './hooks/useViewportZoom';
 
 const NotebookWorkspace = React.lazy(() =>
   import('./components/notebook/NotebookWorkspace').then((module) => ({
@@ -1026,14 +1026,26 @@ export function App() {
   }, [addHighlightsFromSelection, handleSelectTool]);
 
   // Global Keyboard Shortcuts
-  // The main PDF pane animates +/- zoom through its gesture controller; other panes step directly.
-  const mainPaneZoomActive =
-    !!pdfDoc &&
-    !panelNotebookActive &&
-    !notesActive &&
-    !(companionPdfDoc && activeReaderPane === 'companion');
-  const requestZoomStep = (delta: number, min: number) =>
-    setZoomStepRequest((request) => ({ id: (request?.id ?? 0) + 1, delta, min }));
+  // +/- zoom animates through the active pane's gesture controller.
+  const activeZoomPane: ZoomPane | null = panelNotebookActive
+    ? 'notebook'
+    : notesActive
+      ? 'note'
+      : companionPdfDoc && activeReaderPane === 'companion'
+        ? 'companion'
+        : pdfDoc
+          ? 'main'
+          : null;
+  const requestZoomStep = (delta: number, source: 'keyboard' | 'ui') => {
+    if (!activeZoomPane) return;
+    const min = source === 'keyboard' && activeZoomPane !== 'notebook' ? 0.3 : 0.4;
+    setZoomStepRequest((request) => ({
+      id: (request?.id ?? 0) + 1,
+      pane: activeZoomPane,
+      delta,
+      min,
+    }));
+  };
 
   useKeyboard({
     onOpenPdf: handleOpenPdf,
@@ -1069,8 +1081,8 @@ export function App() {
     onUndo: handleGlobalUndo,
     onRedo: handleGlobalRedo,
     onZoomIn: () => {
-      if (mainPaneZoomActive) {
-        requestZoomStep(0.15, 0.3);
+      if (activeZoomPane) {
+        requestZoomStep(0.15, 'keyboard');
         return;
       }
       if (panelNotebookActive) {
@@ -1088,8 +1100,8 @@ export function App() {
       }
     },
     onZoomOut: () => {
-      if (mainPaneZoomActive) {
-        requestZoomStep(-0.15, 0.3);
+      if (activeZoomPane) {
+        requestZoomStep(-0.15, 'keyboard');
         return;
       }
       if (panelNotebookActive) {
@@ -1283,7 +1295,7 @@ export function App() {
     setIsZenMode,
     setIsShortcutsModalOpen,
     pdfDoc,
-    requestZoomStep: mainPaneZoomActive ? requestZoomStep : undefined,
+    requestZoomStep: activeZoomPane ? requestZoomStep : undefined,
   });
 
   menuHandlerRef.current = {
@@ -1307,7 +1319,7 @@ export function App() {
     setIsZenMode,
     setIsShortcutsModalOpen,
     pdfDoc,
-    requestZoomStep: mainPaneZoomActive ? requestZoomStep : undefined,
+    requestZoomStep: activeZoomPane ? requestZoomStep : undefined,
   };
 
   useEffect(() => {
@@ -1377,11 +1389,11 @@ export function App() {
           h.handleChangeViewMode('spread');
           break;
         case 'zoom_in':
-          if (h.requestZoomStep) h.requestZoomStep(0.15, 0.4);
+          if (h.requestZoomStep) h.requestZoomStep(0.15, 'ui');
           else h.setZoom((z) => Math.min(MAX_ZOOM, z + 0.15));
           break;
         case 'zoom_out':
-          if (h.requestZoomStep) h.requestZoomStep(-0.15, 0.4);
+          if (h.requestZoomStep) h.requestZoomStep(-0.15, 'ui');
           else h.setZoom((z) => Math.max(0.4, z - 0.15));
           break;
         case 'zoom_reset':
@@ -1526,7 +1538,7 @@ export function App() {
             onToggleZen={() => setIsZenMode((prev) => !prev)}
             onToggleShortcuts={() => setIsShortcutsModalOpen(true)}
             onChangeViewMode={handleChangeViewMode}
-            onZoomStep={mainPaneZoomActive ? (delta) => requestZoomStep(delta, 0.4) : undefined}
+            onZoomStep={activeZoomPane ? (delta) => requestZoomStep(delta, 'ui') : undefined}
             onChangeZoom={
               panelNotebookActive
                 ? setNotebookZoom
@@ -1675,6 +1687,9 @@ export function App() {
                             onDocumentChange={setPanelNotebook}
                             pageRequest={notebookPageRequest}
                             fitRequest={notebookFitRequest}
+                            zoomStepRequest={
+                              zoomStepRequest?.pane === 'notebook' ? zoomStepRequest : null
+                            }
                           />
                         </React.Suspense>
                       ) : null
@@ -1808,6 +1823,7 @@ export function App() {
                     onZoomChange={setNoteZoom}
                     pageNavRequest={noteNavRequest}
                     fitPageRequest={noteFitRequest}
+                    zoomStepRequest={zoomStepRequest?.pane === 'note' ? zoomStepRequest : null}
                     activeTool={activeTool}
                     selectedColor={selectedColor}
                     highlightColors={highlightColors}
